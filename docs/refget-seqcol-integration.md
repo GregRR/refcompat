@@ -62,25 +62,19 @@ External `refget`, `gtars`, HTTP-client, or server-model objects should be trans
 - an alternative standards-conforming implementation should be substitutable later;
 - reasoning code should express RefCompat semantics, not library-specific mechanics.
 
-## Proposed core port
+## Implemented core port
 
-Conceptually:
+The first implementation slice freezes only the operation needed by the FASTA
+anchor:
 
 ```python
 class ReferenceIdentityProvider(Protocol):
-    def inspect_fasta(
-        self,
-        resource: Resource,
-    ) -> SequenceCollectionSnapshot: ...
-
-    def compare_complete_collections(
-        self,
-        a: SequenceCollectionSnapshot,
-        b: SequenceCollectionSnapshot,
-    ) -> SequenceCollectionComparison: ...
+    def inspect_fasta(self, resource: Resource) -> SequenceCollectionSnapshot: ...
 ```
 
-Exact signatures should be frozen only during the first implementation slice.
+Collection comparison remains standards-owned but is deliberately deferred
+until RefCompat has a concrete reasoning consumer for the comparison facets.
+This avoids expanding the adapter API ahead of demonstrated need.
 
 ## Local first; remote optional
 
@@ -178,10 +172,15 @@ ReferenceIdentityError
 ├── ReferenceUnreadableError
 ├── ReferenceParseError
 ├── IdentityComputationError
-└── IdentityProviderIncompatibleError
+├── IdentityProviderIncompatibleError
+└── UnsupportedResourceKindError
 ```
 
 Remote metadata errors belong to a separate hierarchy such as service unavailable, not found, invalid response, or timeout.
+
+For FASTA anchors, zero parsed sequence records, anonymous sequence records, and duplicate local sequence names are input errors rather than valid complete collections. Provider/API-shape failures are kept separate from those input errors so downstream analysis can distinguish malformed resources from an incompatible identity implementation.
+
+The refget 0.12 path-based digestion API can report both local I/O and parse failures as `OSError`. RefCompat preflights the path and rechecks readability after such an upstream failure so common deletion/permission races remain `ReferenceUnreadableError`; a narrow time-of-check/time-of-use window is unavoidable while the upstream operation accepts a path instead of the already-open handle.
 
 ## Initial adapter tests
 

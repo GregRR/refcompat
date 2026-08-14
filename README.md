@@ -106,7 +106,7 @@ Start with:
 
 ## Project status
 
-The design and repository-tooling foundation is established; substantive compatibility-engine implementation has not started yet. The first implementation slice will define RefCompat-owned domain types, add the local refget/SeqCol identity adapter, and implement FASTA/`.fai`/`.dict` checks before broader format support.
+The design and repository-tooling foundation is established. The first implementation slice now includes RefCompat-owned resource/sequence-identity types and a local refget/SeqCol FASTA identity adapter with GA4GH known-answer tests. FASTA/`.fai`/`.dict` compatibility checks are the next implementation target before broader format support.
 
 ## Development
 

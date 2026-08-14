@@ -27,7 +27,7 @@ Development/test-only dependencies and external command-line tools are evaluated
 
 ## Initial runtime dependency set
 
-The initial package declares only:
+The initial package declares one direct runtime dependency:
 
 ```text
 refget>=0.12,<0.13
@@ -36,6 +36,8 @@ refget>=0.12,<0.13
 The upper bound is intentional because `refget` is pre-1.0 and its Python API is actively evolving. RefCompat isolates it behind an adapter so an upstream minor-version change does not propagate external types through the domain model.
 
 Optional `refget` server/database extras are not part of RefCompat's dependency set.
+
+"One direct dependency" does not mean the installed environment has only one runtime package. `refget` 0.12 currently brings its own transitive stack, including `gtars` plus HTTP, CLI, YAML, and JSON-Schema-related packages. RefCompat does not import most of those packages directly, but they remain part of the installation footprint through `refget`. The committed lockfile is the authoritative dependency graph, and upstream dependency changes should be reviewed when the bounded `refget` line is updated.
 
 ## Format parsing
 

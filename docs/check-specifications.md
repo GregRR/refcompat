@@ -107,7 +107,7 @@ Capabilities include sequence presence, length, identity, name binding, coordina
 
 FASTA inspection primarily establishes capabilities and reference context. By itself it normally does not answer a multi-resource compatibility question.
 
-Malformed/unreadable anchor input affects analysis status (`INVALID_INPUT`) rather than becoming an `INCOMPATIBLE` biological verdict.
+Malformed/unreadable anchor input affects analysis status (`INVALID_INPUT`) rather than becoming an `INCOMPATIBLE` biological verdict. A usable authoritative FASTA anchor must contain at least one named sequence and must not reuse the same local sequence name for multiple records; ambiguous local identifiers are an input error, not a naming relationship for the reasoner to guess through.
 
 ### Must not infer
 

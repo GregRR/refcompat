@@ -575,13 +575,13 @@ Target properties include:
 
 RefCompat is licensed under Apache-2.0. Runtime dependencies should preferentially use permissive licenses such as Apache-2.0, MIT, BSD-2-Clause, or BSD-3-Clause. Dependencies with copyleft, source-available, noncommercial, or custom/restrictive terms require explicit review before adoption.
 
-The initial runtime dependency set is deliberately small:
+The initial direct runtime dependency set is deliberately narrow:
 
 ```text
 refget>=0.12,<0.13
 ```
 
-The upper bound protects the adapter boundary while the pre-1.0 `refget` Python API is evolving. Optional refget server/database extras are not required.
+The upper bound protects the adapter boundary while the pre-1.0 `refget` Python API is evolving. `refget` itself brings transitive runtime dependencies; "narrow" here describes RefCompat's direct dependency surface, not the total installed package count. Optional refget server/database extras are not required.
 
 Format dependencies are introduced by milestone rather than preinstalled speculatively. `.fai` and `.dict` begin with narrow readers; BAM/CRAM/VCF is expected to adopt `pysam` when that milestone begins; GTF/GFF3 begins with a narrow streaming parser for the fields and directives RefCompat actually evaluates.
 
@@ -656,4 +656,4 @@ Primary/standards references should be preferred in implementation documentation
 
 ## Design status
 
-The broad research, implementation-readiness design, and repository-tooling phases are complete. The next planned phase is a deliberately small implementation slice focused on RefCompat-owned domain types, local refget/SeqCol identity, and FASTA/derived-artifact checks. Additional broad corpus collection is not currently justified unless implementation exposes a new unresolved category, a profile requires targeted evidence, or a separate prevalence study becomes a project goal.
+The broad research, implementation-readiness design, and repository-tooling phases are complete. The first implementation slice now establishes RefCompat-owned resource/sequence-identity types and the local refget/SeqCol FASTA identity adapter. The next implementation target is FASTA/derived-artifact verification (`.fai` and `.dict`). Additional broad corpus collection is not currently justified unless implementation exposes a new unresolved category, a profile requires targeted evidence, or a separate prevalence study becomes a project goal.

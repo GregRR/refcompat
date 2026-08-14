@@ -6,6 +6,10 @@ The project is currently pre-release and still establishing its design and repos
 
 ## Unreleased
 
+- Add RefCompat-owned resource and sequence-identity value types.
+- Add the local refget/SeqCol FASTA identity adapter and GA4GH known-answer tests.
+- Harden FASTA identity ingestion after independent review: reject empty/headerless, anonymous, and duplicate-name anchors; separate malformed-input, unsupported-usage, and provider-shape errors; constrain collection-level digests to complete snapshots; and add offline/determinism/error-boundary regression tests.
+
 ### Foundation
 
 - Selected Apache-2.0 and added durable citation/provenance metadata.

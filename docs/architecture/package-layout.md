@@ -29,13 +29,16 @@ Owns the sequence-identity port and adapters.
 
 Direct imports from the external `refget` package are confined to the GA4GH identity adapter rather than scattered through the reasoning model.
 
-Expected first implementation files are:
+The initial identity implementation is:
 
 ```text
 identity/
 ├── protocol.py
 └── refget.py
 ```
+
+`ReferenceIdentityProvider.inspect_fasta()` is the first frozen port method.
+Comparison operations are added only when the reasoning layer requires them.
 
 Remote metadata/discovery is separate from deterministic local identity. A metadata boundary should be introduced only when remote enrichment is implemented.
 

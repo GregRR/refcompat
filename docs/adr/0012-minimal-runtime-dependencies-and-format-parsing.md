@@ -8,7 +8,7 @@ RefCompat spans several genomics formats, but importing broad parser frameworks 
 
 ## Decision
 
-The initial runtime dependency set contains only `refget>=0.12,<0.13`.
+The initial direct runtime dependency set contains only `refget>=0.12,<0.13`. This minimizes dependencies declared by RefCompat itself; it does not imply that the full installed environment is small, because `refget` has its own transitive runtime dependencies.
 
 Additional format dependencies are introduced only when a milestone needs them directly:
 
@@ -22,4 +22,4 @@ Additional format dependencies are introduced only when a milestone needs them d
 
 ## Consequences
 
-The base installation remains small. RefCompat does not depend on packages merely because they are transitive dependencies of another library. Parser code remains narrowly aligned with the actual checks, while mature HTSlib-backed support can be added for binary/variant formats when needed.
+The RefCompat-declared runtime surface remains small, while the actual installation footprint includes `refget`'s transitive dependency tree and is tracked by `uv.lock`. RefCompat does not depend on packages merely because they are transitive dependencies of another library. Parser code remains narrowly aligned with the actual checks, while mature HTSlib-backed support can be added for binary/variant formats when needed.
