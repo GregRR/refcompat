@@ -145,7 +145,9 @@ Determine whether a supplied FASTA index is actually the index of the supplied F
 - `FAI_LENGTH_MISMATCH`
 - `FAI_ORDER_MISMATCH`
 - `FAI_LAYOUT_MISMATCH`
-- `STALE_FASTA_INDEX`
+- `STALE_FASTA_INDEX` only when separate provenance evidence supports the stale-artifact interpretation
+
+The structural checker itself reports exact differences rather than guessing why the index differs. The initial implementation computes expected byte geometry for uncompressed FASTA; gzip/BGZF reference-index verification is explicitly unsupported until a compatible compressed-reference path is implemented. A named zero-length FASTA sequence is likewise reported as a geometry-computation limitation because the current refget/gtars calculator supplies no FAI line metadata for that record.
 
 ### Critical rule
 

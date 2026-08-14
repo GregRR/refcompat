@@ -13,3 +13,5 @@ The root [`DESIGN.md`](../DESIGN.md) is the normative project design baseline. F
 - [`adr/`](adr/) — architectural decision records.
 
 If a supporting document and `DESIGN.md` disagree, `DESIGN.md` wins until the discrepancy is resolved explicitly.
+
+- [`fasta-index-integrity.md`](fasta-index-integrity.md) — exact FASTA/`.fai` derived-artifact verification semantics.

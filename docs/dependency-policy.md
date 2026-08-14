@@ -44,7 +44,7 @@ Optional `refget` server/database extras are not part of RefCompat's dependency 
 Dependencies are added when the corresponding implementation milestone needs them directly.
 
 - FASTA/reference identity uses the `refget` adapter.
-- `.fai` and `.dict` begin with narrow readers for the fields required by their checks.
+- `.fai` uses a narrow five-column reader; expected uncompressed FASTA geometry is computed through the existing public `refget.compute_fai` API, so no additional runtime dependency is introduced. `.dict` begins with a narrow reader for the fields required by its check.
 - BAM/CRAM/VCF is expected to use `pysam` when that milestone begins; it is not installed before code uses it.
 - GTF/GFF3 begins with a narrow streaming parser for seqids, coordinates, required directives, and provenance fields. A larger annotation database/framework is not part of the initial scope.
 

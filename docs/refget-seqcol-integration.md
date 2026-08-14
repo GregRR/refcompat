@@ -151,11 +151,11 @@ Examples:
 
 `SequenceCollectionSnapshot.completeness` must represent this distinction explicitly.
 
-## `.fai` opportunity
+## `.fai` integration
 
-The current refget/gtars surface includes FASTA-index computation functionality. RefCompat can use standards/library-backed FASTA parsing to compare a supplied `.fai` against the exact FASTA representation, including byte-layout fields where supported, rather than checking only sequence names and lengths.
+The current refget/gtars surface includes the public `compute_fai` operation. RefCompat uses that operation to compute expected byte-layout geometry for an uncompressed FASTA, immediately copies the returned values into RefCompat-owned `FastaIndexRecord` objects, and compares them with a supplied five-column `.fai` parsed by RefCompat.
 
-Derived-artifact verification remains a RefCompat responsibility: biological sequence equivalence does not make an index for a differently represented FASTA a valid companion artifact.
+This use of `refget` is a format utility rather than a delegation of compatibility semantics: derived-artifact verification remains RefCompat's responsibility. Biological sequence equivalence does not make an index for a differently represented FASTA a valid companion artifact. The `refget` 0.12 calculator documents uncompressed FASTA support only, so RefCompat explicitly rejects gzip/BGZF geometry verification through this path instead of overclaiming support.
 
 ## `RefgetStore` is not required for v0.1
 

@@ -17,6 +17,8 @@ Cross-format checks that exercise a realistic small bundle through inspection, e
 
 Pin representative GA4GH refget/SeqCol identity/comparison outcomes to published compliance/specification fixtures where redistribution permits.
 
+The FASTA/`.fai` integration fixture also pins the canonical HTSlib `faidx(5)` example geometry and independently checks that `refget.compute_fai` produces the same five-column values.
+
 ### Corpus-derived fixtures
 
 Use small synthetic or clearly redistributable fixtures derived from the failure *patterns* in the 200-case corpus. Do not copy arbitrary users' genomic datasets into the repository.

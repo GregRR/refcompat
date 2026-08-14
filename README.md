@@ -102,11 +102,12 @@ Start with:
 - [`docs/evidence-model.md`](docs/evidence-model.md) — evidence hierarchy and provenance rules;
 - [`docs/refget-seqcol-integration.md`](docs/refget-seqcol-integration.md) — standards/integration boundary;
 - [`docs/check-specifications.md`](docs/check-specifications.md) — explicit v0.1 check contracts;
+- [`docs/fasta-index-integrity.md`](docs/fasta-index-integrity.md) — exact FASTA/`.fai` derived-artifact semantics;
 - [`docs/adr/`](docs/adr/) — architectural decisions.
 
 ## Project status
 
-The design and repository-tooling foundation is established. The first implementation slice now includes RefCompat-owned resource/sequence-identity types and a local refget/SeqCol FASTA identity adapter with GA4GH known-answer tests. FASTA/`.fai`/`.dict` compatibility checks are the next implementation target before broader format support.
+The design and repository-tooling foundation is established. RefCompat now includes RefCompat-owned resource/sequence-identity types, a local refget/SeqCol FASTA identity adapter with GA4GH known-answer tests, and exact FASTA ↔ `.fai` structural verification for uncompressed references. SAM/Picard `.dict` verification is the next derived-artifact target before broader format support.
 
 ## Development
 

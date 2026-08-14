@@ -27,7 +27,7 @@ Core domain objects use standard-library immutable dataclasses, enums, and typed
 
 Owns the sequence-identity port and adapters.
 
-Direct imports from the external `refget` package are confined to the GA4GH identity adapter rather than scattered through the reasoning model.
+GA4GH sequence/collection identity access to the external `refget` package is confined to the identity adapter. Format-specific code may use another documented public `refget` utility when it directly serves that format check (currently `compute_fai`), but external objects must still be copied immediately into RefCompat-owned values and may not leak into reasoning.
 
 The initial identity implementation is:
 
@@ -46,13 +46,13 @@ Remote metadata/discovery is separate from deterministic local identity. A metad
 
 Format-specific extraction. Inspectors produce immutable observations and claims. They do not emit top-level compatibility verdicts or decide that a familiar-looking name is a verified alias.
 
-Inspectors are added one format at a time rather than pre-populating unused modules.
+Inspectors are added one format at a time rather than pre-populating unused modules. The first derived-artifact inspector is `inspectors/fasta_index.py`, which parses supplied five-column FAI data and computes expected uncompressed FASTA geometry without deciding compatibility.
 
 ## `reasoning/`
 
 Builds scope-dependent resource contracts, evaluates requirements against capabilities, creates evidence-backed findings/conditions, and aggregates whole-bundle verdicts.
 
-The reasoning layer depends on RefCompat domain types, not format-parser internals.
+The reasoning layer depends on RefCompat domain types, not format-parser internals. `reasoning/fasta_index.py` is the first narrow evaluator: it compares expected and observed FAI structure and emits a localized Tier-B integrity result without producing a top-level bundle verdict.
 
 ## `profiles/`
 

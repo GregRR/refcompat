@@ -33,7 +33,7 @@ The roadmap intentionally avoids turning RefCompat into a universal genomics val
 - [x] Implement `ReferenceIdentityProvider` protocol.
 - [x] Implement local GA4GH refget/SeqCol adapter.
 - [x] Inspect FASTA into `SequenceCollectionSnapshot` without leaking upstream library types.
-- [ ] Implement FASTA ↔ `.fai` verification.
+- [x] Implement FASTA ↔ `.fai` verification.
 - [ ] Implement FASTA ↔ `.dict` verification.
 - [ ] Add human-readable and minimal JSON diagnostic output for this slice.
 - [x] Cross-check initial FASTA identity against GA4GH/refget known-answer behavior.
