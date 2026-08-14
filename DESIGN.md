@@ -1,0 +1,659 @@
+
+# RefCompat
+## Design Specification v0.5 — Evidence-Backed Reference/Resource Compatibility
+
+**Status:** Design baseline for repository and implementation planning
+**Date:** 2026-08-13
+**Project:** RefCompat
+**Working description:** A deterministic, standards-based Python tool that determines whether heterogeneous genomic resources can share a coherent reference-coordinate context for a stated use case, explains the evidence and conditions behind that conclusion, and avoids unsafe automatic repair.
+
+---
+
+## 1. Executive summary
+
+RefCompat exists to answer a recurring practical question in genomics:
+
+> **Do these genomic resources belong to a coherent reference environment, and are their reference-coordinate requirements jointly satisfiable for the operation I intend to perform?**
+
+The project is not a new reference-genome identifier, another GFF validator, another VCF normalizer, another reference asset manager, or a liftover engine. Those layers have substantial prior art.
+
+RefCompat's intended contribution is the reasoning layer above them. It inspects heterogeneous resources, preserves directly observed facts and provenance claims, obtains standards-based sequence/collection identities, represents what resources require and provide for an evaluation context, evaluates those constraints, and returns a scoped verdict with traceable evidence, conditions, conflicts, and unresolved questions.
+
+The design is informed by two independently assembled and reviewed 100-case incident samples (200 cases total) from public genomics support forums and issue trackers. The corpus is purposive, not population-representative. It tests whether the problem is real, identifies recurring failure classes, provides negative controls, and informs feature order.
+
+The main design conclusions are:
+
+1. **GA4GH refget Sequences and Refget Sequence Collections (SeqCol) own sequence and sequence-collection identity.** RefCompat consumes those standardized identities rather than redefining them.
+2. **Compatibility is constraint satisfaction, not similarity.** A hard contradiction cannot be averaged away by numerous weaker matches.
+3. **Compatibility is directional and contextual.** Equality of resources is not required when one resource's mandatory requirements are satisfied by a compatible superset.
+4. **Inspection and reasoning are separate.** Format inspectors emit observations/claims; they do not decide compatibility.
+5. **Provenance claims remain distinct from verification.** A filename or assembly label is evidence of a claim, not content identity.
+6. **Conditions require explicit scope.** RefCompat does not guess that ALT, decoy, patch, mitochondrial, or other sequence classes are irrelevant.
+7. **Derived-artifact correctness is stricter than biological equivalence.** A verified alias may satisfy a biological naming requirement while still failing an exact `.fai`/`.dict` derivation requirement.
+8. **The v0.1 bundle model is anchor-driven.** An explicitly selected FASTA establishes the candidate reference context; resources do not vote on what the reference probably is.
+9. **Consumer-specific requirements belong in profiles.** A future UCSC preflight profile is a preferred early showcase after the core stabilizes.
+10. **No silent scientific repair.** RefCompat diagnoses and explains; it does not silently rename, reheader, lift, rewrite, realign, or repair scientific data.
+
+---
+
+## 2. Research basis
+
+### 2.1 Corpus purpose
+
+The design corpus contains 200 reviewed incidents in two independent 100-case batches. Batch 2 excluded Batch 1 source URLs and intentionally used a different source mix to test whether the problem taxonomy or feature priorities changed materially.
+
+The final corpus contains 137 high-confidence and 63 medium-confidence records, with no retained low-confidence records. The row-level incident records are not distributed as part of RefCompat. Validation uses synthetic or otherwise redistributable fixtures derived from the observed failure patterns.
+
+These records are not a prevalence estimate.
+
+### 2.2 Leading normalized problem families
+
+| Problem family | Batch 1 | Batch 2 | Combined |
+|---|---:|---:|---:|
+| Bundle selection / provenance | 17 | 33 | 50 |
+| Negative / not actually compatibility | 8 | 11 | 19 |
+| Reference distribution / subset | 9 | 9 | 18 |
+| Alias / naming mismatch | 12 | 5 | 17 |
+| Consumer / profile requirement | 11 | 5 | 16 |
+| Annotation ↔ reference compatibility | 7 | 6 | 13 |
+| Assembly / build mismatch | 8 | 4 | 12 |
+| Annotation identifier / semantic | 4 | 6 | 10 |
+| Liftover / transformation ambiguity | 7 | 2 | 9 |
+| Derived artifact stale/corrupt | 2 | 6 | 8 |
+| VCF REF mismatch | 4 | 1 | 5 |
+| Sequence / distribution conflict | 4 | 1 | 5 |
+
+The important result is not the proportions. Batch 2 materially changed relative weights without introducing a new dominant problem family or displacing the core architecture.
+
+### 2.3 Product correction from the corpus
+
+The earliest concept emphasized pairwise checks. The corpus repeatedly shows a broader preflight question:
+
+> **I have a bundle of FASTA, annotations, known-sites resources, alignments, indexes, dictionaries, caches, and/or collaborator files. What reference environment do they represent, and is the bundle coherent?**
+
+Therefore bundle coherence and provenance are first-class concepts, not merely metadata attached to independent validators.
+
+### 2.4 Negative controls
+
+Many apparent compatibility symptoms eventually trace to strandedness, malformed input, resource limits, parser/consumer requirements, hosting failures, software bugs, or other causes.
+
+RefCompat must be able to conclude:
+
+> **No reference-coordinate incompatibility was demonstrated by the available evidence.**
+
+It must not turn every workflow failure into a speculative reference diagnosis.
+
+---
+
+## 3. Product thesis and scope
+
+### 3.1 Core statement
+
+**RefCompat determines whether the reference-coordinate requirements of heterogeneous genomic resources can be jointly satisfied by a coherent reference context for a stated evaluation scope, and explains the evidence, limitations, conflicts, conditions, and unresolved questions behind that conclusion.**
+
+### 3.2 Meaning of a positive verdict
+
+A positive RefCompat result means only:
+
+> For the evaluated reference-coordinate scope, the mandatory sequence, naming, coordinate, content, derived-artifact, and applicable provenance constraints represented by the supplied resources are satisfied to the stated evidence level, with any conditions explicitly reported.
+
+It does not certify that an experimental or biological analysis is globally safe, optimal, or scientifically preferable.
+
+### 3.3 Questions outside core scope
+
+Examples:
+
+- which annotation provider is biologically preferable;
+- which mouse reference is best for a study;
+- whether BQSR is scientifically appropriate;
+- whether an aligner/caller/model is optimal;
+- whether an observed biological result is correct;
+- whether a particular transcript model is biologically valid.
+
+### 3.4 Layer in the ecosystem
+
+```text
+Individual sequence identity
+        |
+        | GA4GH refget Sequences
+        v
+Sequence-collection identity/comparison
+        |
+        | GA4GH SeqCol
+        v
+Resource facts, requirements, capabilities, provenance
+        |
+        | RefCompat inspection + contracts
+        v
+Cross-resource constraint evaluation
+        |
+        | RefCompat reasoning
+        v
+Scoped verdict + evidence + conditions + unresolved questions
+        |
+        +--> human report
+        +--> machine-readable report
+        +--> future profiles
+```
+
+---
+
+## 4. Standards and prior-art boundary
+
+### 4.1 refget Sequences
+
+RefCompat SHALL NOT define a new biological sequence digest scheme. Individual sequence identity is delegated to GA4GH refget Sequences when applicable.
+
+Legacy checksums such as SAM M5/MD5 may be consumed as evidence where their semantics are valid, but are represented distinctly from refget identifiers.
+
+### 4.2 SeqCol
+
+RefCompat SHALL NOT redefine sequence-collection identity or comparison semantics. SeqCol owns the standardized collection model and relationships among names, lengths, sequence identities, ordering, and collection overlap.
+
+RefCompat preserves relevant SeqCol comparison facets as evidence and asks a different question: whether those relationships satisfy heterogeneous resource requirements.
+
+### 4.3 Refget/SeqCol Python integration
+
+Current integration design is local-first and adapter-based:
+
+```text
+RefCompat domain
+    ^
+ReferenceIdentityProvider
+    ^
+Ga4ghRefgetIdentityProvider
+    ^
+external refget / gtars implementation
+```
+
+External library types must be translated into RefCompat-owned immutable values before entering the reasoning model.
+
+Remote SeqCol/metadata services are optional enrichment and use a separate boundary. A network outage must not invalidate otherwise sufficient local analysis.
+
+See `docs/refget-seqcol-integration.md` and ADR 0001/0007.
+
+### 4.4 Important existing tools
+
+RefCompat should complement rather than duplicate:
+
+- GA4GH refget/SeqCol for identity/comparison;
+- GATK `CheckReferenceCompatibility` for its specific reference-comparison surface;
+- bcftools reference checking/normalization functions;
+- SAM/Picard validation tooling;
+- UCSC alias and hub validation facilities;
+- specialized GTF/GFF validators;
+- ref-solver for recognizing known human reference distributions;
+- reference asset managers such as refgenie/genomepy.
+
+The project should periodically revisit this boundary and remove planned functionality if another maintained tool already solves it adequately.
+
+---
+
+## 5. Formal domain model
+
+Supporting detail lives in `docs/compatibility-model.md`.
+
+### 5.1 `Resource`
+
+A thin identity for one supplied artifact/logical input. Artifact-byte identity remains separate from genomic sequence/collection identity.
+
+### 5.2 `ResourceObservation`
+
+Immutable directly extracted fact with source location where practical. Observations never contain compatibility conclusions.
+
+### 5.3 `ProvenanceClaim`
+
+Immutable statement about origin/identity, retaining the source of the statement.
+
+### 5.4 `ClaimAssessment`
+
+Later evaluation of a claim as `SUPPORTED`, `VERIFIED`, `CONTRADICTED`, or `UNRESOLVED`.
+
+### 5.5 `ResourceRelationClaim`
+
+Claimed relationships such as `DERIVED_FROM`, `ALIGNED_TO`, `CALLED_AGAINST`, `ANNOTATES`, or `BELONGS_TO_BUNDLE`.
+
+### 5.6 `SequenceCollectionSnapshot`
+
+Per-resource description of the sequence collection information the resource actually exposes. It must carry completeness semantics so sparse resources are not mistaken for complete references.
+
+### 5.7 `ReferenceContext`
+
+Reasoner-produced candidate/established shared reference context. In v0.1 the explicitly selected FASTA anchor establishes the candidate context.
+
+### 5.8 `SequenceBinding`
+
+Evidence-backed mapping from a resource-local name to sequence identity. Alias relationships should be derived from bindings rather than implemented as blind string substitution.
+
+### 5.9 `CoordinateContext`
+
+Describes coordinate encoding/interval semantics and local sequence namespace; it does not itself prove biological reference identity.
+
+### 5.10 `EvaluationRequest` and `EvaluationScope`
+
+Identify resources, anchor, explicit scope, profiles, and policy. Resource relationships are factual; sufficiency is scoped.
+
+### 5.11 `ResourceContract`
+
+Produced for a resource in a specific evaluation context. Contains typed capabilities and requirements.
+
+### 5.12 `CompatibilityConstraint` and `ConstraintEvaluation`
+
+Separate the immutable question from its evidence-backed result.
+
+Constraint states:
+
+- `SATISFIED`
+- `UNSATISFIED`
+- `UNRESOLVED`
+- `NOT_APPLICABLE`
+
+Mechanism is recorded separately in `SatisfactionMode`, such as `EXACT`, `VERIFIED_ALIAS`, `VERIFIED_SEQUENCE_IDENTITY`, or `VERIFIED_SUBSET`.
+
+### 5.13 `Evidence`
+
+Relationship/support/contradiction derived from observations/claims, with explicit strength and traceability.
+
+### 5.14 `CompatibilityFinding`
+
+Meaningful interpreted issue or verified relationship summarizing one or more evaluations.
+
+### 5.15 `CompatibilityCondition`
+
+Structured bounded statement describing what scope is compatible and what is excluded/unestablished. Conditions require explicit scope/profile semantics.
+
+### 5.16 `CompatibilityReport`
+
+Immutable root result containing enough structured information for every user-visible conclusion to trace back to observations/claims.
+
+---
+
+## 6. Evidence hierarchy and rules
+
+### 6.1 Tier A — conclusive content evidence
+
+Examples:
+
+- refget sequence identity;
+- applicable SeqCol identities/relationships;
+- valid comparable M5 content checksums;
+- direct reference-base comparison;
+- exhaustive VCF REF mismatch.
+
+### 6.2 Tier B — direct structural/content consistency
+
+Examples:
+
+- names+lengths where digest unavailable;
+- `.fai`/`.dict` structural correspondence;
+- GTF/GFF seqids resolved and coordinates in bounds.
+
+### 6.3 Tier C — provenance/metadata
+
+Examples:
+
+- VCF `##reference`;
+- assembly/provider/release metadata;
+- BAM assembly/URI/program metadata;
+- source URLs/pipeline configuration.
+
+### 6.4 Tier D — heuristic context
+
+Examples:
+
+- filename contains `hg38`;
+- familiar chromosome names;
+- coordinate values resemble a known build transition.
+
+### 6.5 Rules
+
+- Hard content contradiction vetoes weaker supporting evidence for the affected scope.
+- Absence of evidence is not incompatibility.
+- Local conflicts remain localized unless scope makes them global blockers.
+- Sampling weakens claims.
+- Metadata conflicts remain visible even when content identity governs reasoning.
+- No global numeric compatibility score.
+
+See `docs/evidence-model.md`.
+
+---
+
+## 7. Compatibility verdicts and analysis status
+
+### 7.1 `COMPATIBLE`
+
+All mandatory in-scope constraints are satisfied with adequate evidence and no unresolved mandatory issue could change the conclusion.
+
+### 7.2 `COMPATIBLE_WITH_CONDITIONS`
+
+Compatibility is established only within an explicit bounded scope/profile condition. The condition is structured and states what is and is not covered.
+
+### 7.3 `INCOMPATIBLE`
+
+At least one in-scope mandatory constraint is contradicted by sufficient evidence.
+
+### 7.4 `INDETERMINATE`
+
+No hard contradiction is established, but available evidence cannot establish at least one mandatory relationship.
+
+### 7.5 Analysis status
+
+Separately:
+
+- `COMPLETE`
+- `PARTIAL`
+- `INVALID_INPUT`
+
+A malformed mandatory input is not a biological incompatibility. Where no meaningful compatibility evaluation can be formed, the report may have `verdict = None` and `analysis_status = INVALID_INPUT`.
+
+Per-check execution may additionally distinguish `COMPLETE`, `PARTIAL`, `SKIPPED`, and `INVALID_INPUT`.
+
+---
+
+## 8. Explicit initial check specifications
+
+The normative detailed contracts live in `docs/check-specifications.md`.
+
+### RCHECK-000 — resource inventory and provenance
+
+Capture metadata and claims, assess them against stronger evidence, and detect incoherent bundle provenance without treating labels as proof.
+
+### RCHECK-010 — FASTA anchor identity
+
+Obtain local sequence names, lengths, ordering, refget sequence identities, SeqCol identity/relationships, bounds, and base-lookup capability.
+
+### RCHECK-020 — FASTA ↔ `.fai`
+
+Verify exact companion-index structure, including byte-layout/index geometry when supported. Verified biological aliases do not make a differently represented `.fai` valid.
+
+### RCHECK-030 — FASTA ↔ `.dict`
+
+Compare sequence names, lengths, order, M5, aliases, and provenance fields. Distinguish biological sequence relationships from exact companion-artifact correctness.
+
+### RCHECK-040 — BAM/CRAM ↔ FASTA
+
+Reconcile alignment `@SQ` reference context with the anchor. Header-only inspection does not establish actual read use of every declared sequence.
+
+### RCHECK-050 — VCF ↔ FASTA
+
+Use header/reference metadata plus **exhaustive** REF allele checking in authoritative v0.1 mode. A proven REF mismatch is a hard local conflict; mismatch rate aids interpretation rather than cancelling the conflict.
+
+### RCHECK-060 — GTF/GFF3 ↔ FASTA
+
+Resolve in-scope seqids, verify coordinate bounds, inspect GFF3 sequence-region/provenance directives, quantify affected features, and conservatively handle circular-coordinate semantics. Do not become a gene-model validator.
+
+### RCHECK-100 — whole-bundle coherence
+
+Evaluate all in-scope mandatory requirements against the FASTA-anchored reference context and aggregate the top-level verdict. Identify the smallest useful conflict/evidence core.
+
+### Shared alias infrastructure
+
+Alias/name resolution is shared evidence infrastructure, not a standalone validator. Familiar string patterns alone are insufficient for verification.
+
+---
+
+## 9. v0.1 scope
+
+### 9.1 Anchor requirement
+
+Authoritative multi-resource `check` SHOULD require an explicit FASTA anchor in v0.1.
+
+A reference-free `inspect` mode may report facts, claims, and relationships that can be established without an anchor, but it must not overclaim full bundle compatibility.
+
+### 9.2 Formats
+
+Initial supported formats should be limited to:
+
+- FASTA;
+- `.fai`;
+- SAM/Picard-style `.dict`;
+- VCF/bgzipped VCF;
+- SAM/BAM/CRAM headers/dictionaries;
+- GTF;
+- GFF3.
+
+Deferred:
+
+- BED;
+- chain/liftover files;
+- bigBed/bigWig;
+- full UCSC hubs;
+- arbitrary tabular coordinates;
+- complex tool-specific indexes.
+
+### 9.3 Diagnostic-only behavior
+
+v0.1 SHALL NOT automatically:
+
+- rename sequence identifiers;
+- reheader BAM/CRAM;
+- rewrite REF/ALT;
+- perform liftover;
+- remove ALT/decoy/patch sequences;
+- regenerate alignments;
+- alter annotation structure.
+
+---
+
+## 10. Output contract
+
+### 10.1 Human report order
+
+Prefer:
+
+1. resources evaluated;
+2. reference context: verified, observed, claimed, unresolved;
+3. scoped verdict and analysis status;
+4. failed/unresolved mandatory constraints;
+5. meaningful relationships/differences;
+6. evidence and provenance conflicts;
+7. explicit conditions;
+8. safest non-mutating next diagnostic action.
+
+### 10.2 Machine-readable report
+
+The eventual stable schema should include:
+
+- tool/schema version;
+- evaluation request/scope/profile;
+- resource identities and optional artifact digests;
+- observations and source locations;
+- provenance/relation claims and assessments;
+- refget/SeqCol evidence;
+- sequence-collection snapshots/reference contexts;
+- contracts;
+- constraints/evaluations;
+- findings;
+- conditions;
+- evidence strength/polarity;
+- verdict;
+- analysis status;
+- unresolved questions.
+
+Every conclusion must trace to evidence IDs.
+
+---
+
+## 11. Profile architecture
+
+Profiles model consumer-specific operational requirements without changing the facts.
+
+A profile may add requirements such as:
+
+- exact sequence ordering;
+- required local namespace;
+- explicit assembly declaration;
+- consumer-required metadata;
+- accepted resource subset semantics.
+
+A profile may not:
+
+- redefine refget/SeqCol identity;
+- declare `chr1`/`1` aliases without evidence;
+- mutate observations;
+- silently downgrade a content contradiction.
+
+### UCSC preflight
+
+After core stability, UCSC is the preferred early showcase profile. Likely checks include explicit assembly/db selection, authoritative alias resolution, bounds, VCF REF evidence, BAM/CRAM dictionary coherence, and later big* reference properties. Structural track-hub checks should be delegated to existing UCSC tools where appropriate rather than duplicated.
+
+---
+
+## 12. Validation strategy
+
+### 12.1 Synthetic corpus-derived fixtures
+
+Create small redistributable fixtures covering at least the 30 families in `docs/check-specifications.md`, including:
+
+- exact identity;
+- rename-only identity;
+- same-name/different-content;
+- order-only difference;
+- subset/superset;
+- stale `.fai`/`.dict`;
+- M5 conflict;
+- BAM/FASTA exact, alias, unresolved, and decoy-superset cases;
+- VCF exact, isolated REF conflict, and systematic conflict;
+- GTF/GFF exact, alias, missing-sequence, bounds, and circular cases;
+- contradicted provenance;
+- non-model/custom references;
+- negative controls;
+- cases that must remain `INDETERMINATE`.
+
+### 12.2 Cross-tool validation
+
+Where relevant, compare behavior against:
+
+- GA4GH/refget/SeqCol reference/compliance behavior;
+- GATK `CheckReferenceCompatibility`;
+- bcftools reference checks;
+- SAM/Picard tooling;
+- UCSC authoritative alias data;
+- appropriate GFF/GTF validators.
+
+RefCompat need not match another tool's final wording when its scope differs, but conflicting underlying facts require investigation.
+
+### 12.3 Safety properties
+
+Target properties include:
+
+- zero false `COMPATIBLE` results on known hard conflicts in the fixture suite;
+- near-zero/zero false verified aliases;
+- no metadata-to-verified promotion without appropriate evidence;
+- correct `INDETERMINATE` behavior when evidence is insufficient;
+- conflict localization;
+- non-human/custom-reference operation;
+- deterministic offline core behavior.
+
+---
+
+## 13. Security, privacy, and reproducibility
+
+- Local analysis should not upload genomic content by default.
+- Optional network enrichment should be explicit and report what was queried.
+- Artifact and standards identities should be recorded distinctly.
+- A future portable compatibility/reference manifest may record exact identities, resource roles, derivations, and evaluation metadata without pretending to solve whole-workflow reproducibility.
+
+---
+
+## 14. Implementation principles
+
+1. Model facts before workflows.
+2. Keep external library types at adapter boundaries.
+3. Prefer small typed domain objects over generic dictionaries.
+4. Add parsers/checks one format at a time.
+5. Preserve source locations/provenance for scientific transparency.
+6. Make uncertainty explicit.
+7. Keep comments/docstrings focused on non-obvious scientific and coordinate invariants.
+8. Reference standards/primary sources near materially derived implementation rules.
+9. Resist plugin/manager/factory frameworks until a concrete second implementation requires them.
+10. Use synthetic or clearly redistributable fixtures derived from observed failure patterns.
+
+---
+
+## 15. Licensing and dependency policy
+
+RefCompat is licensed under Apache-2.0. Runtime dependencies should preferentially use permissive licenses such as Apache-2.0, MIT, BSD-2-Clause, or BSD-3-Clause. Dependencies with copyleft, source-available, noncommercial, or custom/restrictive terms require explicit review before adoption.
+
+The initial runtime dependency set is deliberately small:
+
+```text
+refget>=0.12,<0.13
+```
+
+The upper bound protects the adapter boundary while the pre-1.0 `refget` Python API is evolving. Optional refget server/database extras are not required.
+
+Format dependencies are introduced by milestone rather than preinstalled speculatively. `.fai` and `.dict` begin with narrow readers; BAM/CRAM/VCF is expected to adopt `pysam` when that milestone begins; GTF/GFF3 begins with a narrow streaming parser for the fields and directives RefCompat actually evaluates.
+
+See [`docs/dependency-policy.md`](docs/dependency-policy.md).
+
+---
+
+## 16. Python, packaging, CLI, and model baseline
+
+The initial repository baseline is:
+
+- Python >=3.12;
+- repository development interpreter pinned to Python 3.14.7;
+- CI on Python 3.12, 3.13, and 3.14;
+- `uv` for environment management, locking, command execution, and builds;
+- `uv_build` as the pure-Python build backend;
+- committed `uv.lock`;
+- pytest for tests;
+- Ruff for linting and formatting;
+- mypy in strict mode;
+- standard-library immutable dataclasses/enums/typed value objects for the core domain model;
+- standard-library `argparse` for the initial CLI;
+- explicit RefCompat-owned serialization for machine-readable reports.
+
+A stable JSON Schema is not frozen before the report model stabilizes. Schema/versioning remains a compatibility boundary, but the project will not add a validation framework merely to generate an early schema.
+
+The source distribution explicitly excludes local/private research and maintainer-note directories as defense in depth in addition to `.gitignore`.
+
+See [`docs/development.md`](docs/development.md), ADR 0011, and ADR 0012.
+
+---
+
+## 17. Remaining implementation decisions
+
+No unresolved tooling choice blocks the first implementation slice. The remaining decisions are deliberately milestone-specific and should be resolved when their evidence exists, including:
+
+1. exact CRAM offline behavior when required reference content is unavailable;
+2. exact first UCSC profile subset;
+3. the first stable machine-readable report schema/versioning commitment;
+4. whether later performance or format requirements justify additional parser/storage dependencies.
+
+---
+
+## 18. Next implementation sequence
+
+1. implement RefCompat-owned resource/identity/evidence types;
+2. implement `ReferenceIdentityProvider` and the local refget/SeqCol adapter;
+3. implement FASTA ↔ `.fai` and FASTA ↔ `.dict` checks;
+4. build the first synthetic known-answer fixtures;
+5. produce human + minimal machine-readable reports;
+6. implement the core requirements/capabilities reasoning slice;
+7. add VCF, BAM/CRAM, and GTF/GFF inspectors one at a time;
+8. incorporate implementation feedback into the design as concrete edge cases expose missing constraints or evidence types.
+
+---
+
+## References
+
+Primary/standards references should be preferred in implementation documentation.
+
+- GA4GH Refget Sequence Collections v1.0.0: https://ga4gh.github.io/refget/seqcols/
+- Refget Python project documentation: https://refgenie.org/refget/
+- Local digest documentation: https://refgenie.org/refget/using-services/digests/
+- Refget Python source: https://github.com/refgenie/refget
+- GA4GH/Samtools HTS specifications index: https://samtools.github.io/hts-specs/
+- SAM specification: https://samtools.github.io/hts-specs/SAMv1.pdf
+- VCF v4.5 specification: https://samtools.github.io/hts-specs/VCFv4.5.pdf
+- Sequence Ontology GFF3 specification: https://github.com/The-Sequence-Ontology/Specifications/blob/master/gff3.md
+- NCBI GFF3 format notes: https://www.ncbi.nlm.nih.gov/datasets/docs/v2/reference-docs/file-formats/annotation-files/about-ncbi-gff3/
+
+---
+
+## Design status
+
+The broad research, implementation-readiness design, and repository-tooling phases are complete. The next planned phase is a deliberately small implementation slice focused on RefCompat-owned domain types, local refget/SeqCol identity, and FASTA/derived-artifact checks. Additional broad corpus collection is not currently justified unless implementation exposes a new unresolved category, a profile requires targeted evidence, or a separate prevalence study becomes a project goal.

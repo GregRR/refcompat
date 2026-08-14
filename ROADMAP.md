@@ -1,0 +1,131 @@
+
+# RefCompat Roadmap
+
+This roadmap is capability-driven rather than date-driven. Milestones may be split further as implementation evidence accumulates.
+
+## Guiding scope
+
+RefCompat should solve one problem well: determine whether heterogeneous genomic resources can share a coherent reference-coordinate context for a stated use case, and explain why.
+
+The roadmap intentionally avoids turning RefCompat into a universal genomics validator, asset manager, liftover engine, workflow manager, or scientific repair tool.
+
+## Milestone 0 — Foundation
+
+**Goal:** establish a coherent, reviewable project baseline before substantive implementation.
+
+- [x] Complete 200-incident discovery/validation corpus.
+- [x] Establish product thesis and prior-art boundary.
+- [x] Establish GA4GH refget/SeqCol standards boundary.
+- [x] Define domain model and invariants.
+- [x] Define evidence hierarchy and provenance model.
+- [x] Define explicit v0.1 check specifications.
+- [x] Record initial architectural decisions.
+- [x] Select software license: Apache-2.0.
+- [x] Select supported Python version and compatibility policy: Python >=3.12; CI on 3.12–3.14.
+- [x] Finalize initial packaging/dependency approach: `uv`/`uv_build`, committed lockfile, minimal runtime dependencies.
+- [x] Configure `uv`, pytest, Ruff, strict mypy, packaging, and CI.
+
+## Milestone 1 — Reference identity and derived artifacts
+
+**Goal:** prove the standards boundary and the first deterministic checks with small redistributable fixtures.
+
+- Implement stable RefCompat-owned domain types for resources, observations, sequence identity, and evidence.
+- Implement `ReferenceIdentityProvider` protocol.
+- Implement local GA4GH refget/SeqCol adapter.
+- Inspect FASTA into `SequenceCollectionSnapshot` without leaking upstream library types.
+- Implement FASTA ↔ `.fai` verification.
+- Implement FASTA ↔ `.dict` verification.
+- Add human-readable and minimal JSON diagnostic output for this slice.
+- Cross-check known-answer identity cases against GA4GH/refget reference behavior.
+
+**Exit criteria:** identity, stale `.fai`, stale `.dict`, same-name/different-sequence, alias-only, and order-difference fixtures have deterministic tests and traceable evidence.
+
+## Milestone 2 — Reasoning foundation and bundle report
+
+**Goal:** demonstrate that RefCompat is more than a collection of pairwise validators.
+
+- Implement evaluation requests and explicit scope.
+- Implement typed requirements and capabilities.
+- Implement compatibility constraints and evaluations.
+- Implement evidence aggregation without numeric compatibility scoring.
+- Implement structured findings and conditions.
+- Implement anchor-driven whole-bundle reasoning.
+- Implement `COMPATIBLE`, `COMPATIBLE_WITH_CONDITIONS`, `INCOMPATIBLE`, and `INDETERMINATE` aggregation.
+- Implement conflict-core reporting sufficient to identify the smallest useful conflicting resource/evidence set.
+
+## Milestone 3 — VCF
+
+**Goal:** establish variant/reference compatibility using both metadata and direct base evidence.
+
+- Parse VCF/bgzipped VCF header reference information.
+- Inspect `##contig` metadata and actual `CHROM` usage.
+- Exhaustively verify REF alleles against FASTA in authoritative mode.
+- Distinguish isolated/localized/systematic REF conflict patterns without averaging hard conflicts away.
+- Preserve unresolved sequence-name cases as `INDETERMINATE` unless verified aliases exist.
+- Do not rewrite REF/ALT.
+
+## Milestone 4 — BAM/CRAM
+
+**Goal:** reconcile alignment reference dictionaries with the FASTA anchor.
+
+- Inspect `@SQ` names, lengths, order, M5, aliases, assembly, URI, and species metadata where available.
+- Distinguish exact identity, verified naming-only differences, order differences, subset/superset relationships, and content conflicts.
+- Keep header-only completeness limitations explicit.
+- Define conservative CRAM behavior when required reference content is unavailable offline.
+- Do not reheader or realign data.
+
+## Milestone 5 — GTF/GFF3
+
+**Goal:** determine whether annotation coordinate requirements are satisfiable by the anchor reference.
+
+- Inspect seqids and feature coordinate bounds.
+- Handle exact and verified-alias name resolution.
+- Inspect GFF3 `##sequence-region` and relevant provenance directives.
+- Quantify affected features for missing sequences and out-of-bounds coordinates.
+- Handle defined circular-origin semantics conservatively.
+- Keep annotation biology, hierarchy repair, and consumer-specific dialect requirements out of core scope.
+
+## Milestone 6 — First ecosystem profile
+
+**Preferred first showcase:** UCSC preflight, after the core is stable.
+
+Potential checks:
+
+- explicit assembly/database selection;
+- sequence-name resolution using authoritative alias evidence;
+- coordinate bounds against the selected assembly;
+- VCF REF evidence;
+- BAM/CRAM dictionary coherence;
+- later bigBed/bigWig and hub-specific reference checks;
+- delegation of structural hub validation to existing UCSC tools such as `hubCheck` where appropriate.
+
+Profiles add consumer requirements. They do not redefine sequence identity or rewrite facts established by the core.
+
+## v1.0 target
+
+A stable v1.0 should additionally include:
+
+- BCF support;
+- BED support;
+- stable machine-readable report schema;
+- portable reference/compatibility manifest;
+- reference-free comparison when evidence is sufficient;
+- stable profile interface;
+- at least one production-quality ecosystem profile;
+- non-human and custom-reference validation at useful scale;
+- performance work for large resources;
+- offline metadata/cache strategy;
+- documented CI/workflow exit-code behavior.
+
+## Explicitly beyond v1 unless evidence changes
+
+- performing liftover;
+- automatic remapping or realignment;
+- general GFF/GTF repair;
+- complete annotation semantic comparison;
+- universal workflow/pipeline validation;
+- arbitrary plugin auto-discovery framework;
+- scientific-data rewriting;
+- reference asset management competing with refgenie/genomepy;
+- reference discovery service competing with refget/SeqCol tooling;
+- general-purpose industrial-scale resource graphs.
