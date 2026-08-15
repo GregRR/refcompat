@@ -472,6 +472,8 @@ The eventual stable schema should include:
 
 Every conclusion must trace to evidence IDs.
 
+Before that stable report model exists, Milestone 1 may expose provisional human and JSON diagnostics for local identity and derived-artifact checks. Those diagnostics must serialize only facts already represented by the implemented result models and must not synthesize whole-bundle verdicts, findings, conditions, or evidence IDs that the reasoner has not established.
+
 ---
 
 ## 11. Profile architecture
@@ -631,7 +633,7 @@ No unresolved tooling choice blocks the first implementation slice. The remainin
 2. implement `ReferenceIdentityProvider` and the local refget/SeqCol adapter;
 3. implement FASTA ↔ `.fai` and FASTA ↔ `.dict` checks (complete);
 4. build the first synthetic known-answer fixtures;
-5. produce human + minimal machine-readable reports;
+5. produce human + minimal machine-readable reports (complete);
 6. implement the core requirements/capabilities reasoning slice;
 7. add VCF, BAM/CRAM, and GTF/GFF inspectors one at a time;
 8. incorporate implementation feedback into the design as concrete edge cases expose missing constraints or evidence types.

@@ -104,11 +104,22 @@ Start with:
 - [`docs/check-specifications.md`](docs/check-specifications.md) — explicit v0.1 check contracts;
 - [`docs/fasta-index-integrity.md`](docs/fasta-index-integrity.md) — exact FASTA/`.fai` derived-artifact semantics;
 - [`docs/sequence-dictionary-integrity.md`](docs/sequence-dictionary-integrity.md) — FASTA/`.dict` structure, M5, alias, and provenance semantics;
+- [`docs/diagnostic-output.md`](docs/diagnostic-output.md) — provisional human/JSON output for the Milestone 1 identity and integrity slice;
 - [`docs/adr/`](docs/adr/) — architectural decisions.
 
 ## Project status
 
-The design and repository-tooling foundation is established. RefCompat now includes RefCompat-owned resource/sequence-identity types, a local refget/SeqCol FASTA identity adapter with GA4GH known-answer tests, exact FASTA ↔ `.fai` structural verification for uncompressed references, and FASTA ↔ SAM/Picard `.dict` integrity checks that keep structural, M5, alias, and provenance evidence distinct. Minimal diagnostic/reporting output is the next Milestone 1 target before broader format support.
+The design and repository-tooling foundation is established. RefCompat now includes RefCompat-owned resource/sequence-identity types, a local refget/SeqCol FASTA identity adapter with GA4GH known-answer tests, exact FASTA ↔ `.fai` structural verification for uncompressed references, FASTA ↔ SAM/Picard `.dict` integrity checks that keep structural, M5, alias, and provenance evidence distinct, and provisional human/JSON diagnostics for those Milestone 1 results. The remaining Milestone 1 model/fixture exit criteria should be closed before the generalized bundle reasoner begins.
+
+## Current CLI diagnostics
+
+```bash
+refcompat inspect-fasta reference.fa
+refcompat check-fai reference.fa reference.fa.fai
+refcompat check-dict reference.fa reference.dict
+```
+
+Add `--format json` to any command for provisional machine-readable output. These local diagnostics intentionally do not emit a whole-bundle compatibility verdict; see [`docs/diagnostic-output.md`](docs/diagnostic-output.md).
 
 ## Development
 

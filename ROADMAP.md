@@ -35,7 +35,7 @@ The roadmap intentionally avoids turning RefCompat into a universal genomics val
 - [x] Inspect FASTA into `SequenceCollectionSnapshot` without leaking upstream library types.
 - [x] Implement FASTA ↔ `.fai` verification.
 - [x] Implement FASTA ↔ `.dict` verification.
-- [ ] Add human-readable and minimal JSON diagnostic output for this slice.
+- [x] Add human-readable and minimal JSON diagnostic output for this slice.
 - [x] Cross-check initial FASTA identity against GA4GH/refget known-answer behavior.
 
 **Exit criteria:** identity, stale `.fai`, stale `.dict`, same-name/different-sequence, alias-only, and order-difference fixtures have deterministic tests and traceable evidence.

@@ -62,11 +62,11 @@ No concrete profile module is required until the core reasoning model is stable.
 
 ## `reporting/`
 
-Human-readable and machine-readable views over the same immutable report model. Presentation must not introduce conclusions absent from the reasoning model.
+Milestone 1 provides provisional human-readable and JSON diagnostics over the immutable identity and integrity result models in `reporting/diagnostics.py`. Presentation must not introduce conclusions absent from those models. Once the whole-bundle report model exists, reporting should converge on views over that shared immutable report rather than grow a parallel reasoning layer.
 
 ## CLI
 
-`refcompat.cli` is intentionally thin. The initial CLI uses the Python standard library `argparse` and delegates scientific work to the same package APIs used by other callers.
+`refcompat.cli` is intentionally thin. It uses the Python standard library `argparse` and delegates scientific work to the same package APIs used by other callers. The Milestone 1 surface exposes `inspect-fasta`, `check-fai`, and `check-dict` with human or provisional JSON output; stable CI verdict/exit-code policy remains a later interface decision.
 
 ## Directories intentionally not planned
 
