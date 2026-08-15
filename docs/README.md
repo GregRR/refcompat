@@ -15,3 +15,4 @@ The root [`DESIGN.md`](../DESIGN.md) is the normative project design baseline. F
 If a supporting document and `DESIGN.md` disagree, `DESIGN.md` wins until the discrepancy is resolved explicitly.
 
 - [`fasta-index-integrity.md`](fasta-index-integrity.md) — exact FASTA/`.fai` derived-artifact verification semantics.
+- [`sequence-dictionary-integrity.md`](sequence-dictionary-integrity.md) — exact FASTA/`.dict` structure plus M5, alias, and provenance evidence semantics.

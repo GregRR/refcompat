@@ -161,46 +161,74 @@ A proven mismatch in an explicitly evaluated FASTA/FAI pair is an in-scope hard 
 
 ### Purpose
 
-Determine whether a supplied sequence dictionary represents the supplied FASTA and characterize any biological-versus-artifact distinction.
+Determine whether a supplied sequence dictionary exactly represents the supplied FASTA anchor while keeping structural correspondence, sequence-content identity, declared aliases, and provenance metadata distinct.
 
 ### Observations
 
 For each `@SQ`, where present:
 
-- `SN`
-- `LN`
-- `M5`
-- `AN`
-- `AS`
-- `UR`
-- `SP`
-- `TP`
+- `SN`;
+- `LN`;
+- `M5`;
+- `AN`;
+- `AS`;
+- `UR`;
+- `SP`;
+- `TP`;
+- `AH`;
 - ordinal/order.
+
+The initial parser accepts an optional first `@HD` plus `@SQ` records and deliberately does not become a general SAM parser. SAM requires `SN` and `LN`; all primary `SN` and individual `AN` names across the dictionary must be distinct; `LN` must be in `[1, 2^31-1]`; and `@SQ` order defines reference ordering.
+
+### Expected dictionary
+
+Expected `SN`/`LN`/`M5` records are built from the already-computed complete FASTA `SequenceCollectionSnapshot`. The `.dict` check does not reread or rehash the FASTA.
+
+A FASTA sequence that lacks a usable local name, positive SAM-representable length, or M5 cannot form the authoritative expected dictionary for this check. In particular, SAM `LN` cannot represent a zero-length sequence; that is a computation limitation, not a provider incompatibility or biological contradiction.
 
 ### Evidence
 
-- M5 conflict: hard content contradiction where checksum semantics are applicable;
-- name/length conflict: hard structural contradiction;
-- name/length agreement without content checksum: strong structural agreement, not exact identity proof;
-- AS/UR/SP: provenance evidence.
+- conflicting `M5`: Tier-A content contradiction under SAM M5 semantics;
+- unique matching M5 under different primary names and with matching lengths: Tier-A content-identity support, but **not** exact companion-artifact satisfaction;
+- unique cross-name matching M5 with disagreeing lengths: retain an explicit M5/LN inconsistency rather than dropping the relationship or promoting it to clean identity support;
+- name/membership/order/length conflict: Tier-B structural contradiction;
+- exact name/length/order agreement with missing dictionary M5: structural support with unresolved content verification;
+- `AN`, `AS`, `UR`, `SP`, `TP`, and `AH`: preserved metadata/claims for later reasoning.
 
-### Findings
+A declared alias never overrides exact primary-name correspondence. Likewise, assembly/species/URI metadata cannot override an M5 contradiction.
 
-- `SEQUENCE_DICTIONARY_VERIFIED`
-- `DICTIONARY_SEQUENCE_MISSING`
-- `DICTIONARY_SEQUENCE_EXTRA`
-- `DICTIONARY_LENGTH_CONFLICT`
-- `DICTIONARY_M5_CONFLICT`
-- `DICTIONARY_ORDER_DIFFERENCE`
-- `STALE_SEQUENCE_DICTIONARY`
+### Structural differences
 
-### Order-only differences
+The evaluator localizes:
 
-A verified order-only difference is not automatically a biological sequence incompatibility. Core behavior may report `COMPATIBLE_WITH_CONDITIONS` for reference-coordinate semantics while consumer profiles can require exact dictionary order.
+- record-count differences;
+- missing sequences;
+- extra sequences;
+- order-only differences when sequence membership is otherwise identical;
+- length conflicts;
+- M5 conflicts.
 
-### Derived-artifact rule
+Missing/extra records do not also generate spurious order findings merely because record indices shift.
 
-Verified alias equivalence does not make a dictionary an exact companion of a differently represented FASTA. RefCompat may simultaneously report biological sequence equivalence and derived-artifact incompatibility.
+### Missing M5
+
+Missing `M5` is an evidence gap, not an incompatibility by itself. A dictionary can therefore be structurally verified while exact content correspondence remains unverified.
+
+### Cross-name M5 identity
+
+When an expected missing primary name and an observed extra primary name carry the same M5 and length, RefCompat may surface that content identity only when the digest is unique on both sides. Repeated identical sequence content is not force-matched across names.
+
+If a unique cross-name pair carries the same M5 but disagreeing `LN` values, RefCompat retains that M5/LN inconsistency explicitly. It does not silently drop the shared-digest relationship, does not promote the pair to an uncomplicated identity match, and does not infer which field or upstream artifact is wrong.
+
+Even an unambiguous cross-name M5 identity does not make the `.dict` an exact companion because the primary `SN` values still differ.
+
+### Provenance and stale-artifact rule
+
+The structural/content checker reports what differs and preserves metadata. It does not label the dictionary `stale` merely because it conflicts with the FASTA. `STALE_SEQUENCE_DICTIONARY` requires separate provenance evidence that the dictionary was derived from an earlier or different reference artifact.
+
+### Safety
+
+RefCompat does not automatically rename dictionary sequences, rewrite `@SQ` metadata, regenerate the dictionary, or modify the FASTA.
 
 ---
 

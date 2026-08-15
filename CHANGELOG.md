@@ -10,6 +10,7 @@ The project is currently pre-release and still establishing its design and repos
 - Add the local refget/SeqCol FASTA identity adapter and GA4GH known-answer tests.
 - Harden FASTA identity ingestion after independent review: reject empty/headerless, anonymous, and duplicate-name anchors; separate malformed-input, unsupported-usage, and provider-shape errors; constrain collection-level digests to complete snapshots; and add offline/determinism/error-boundary regression tests.
 - Add exact FASTA ↔ `.fai` structural verification for uncompressed references, including five-column FAI parsing, refget-backed expected geometry, localized count/name/order/length/offset/line-width differences, HTSlib known-answer coverage, conservative zero-length/compressed-reference handling, and wrapping/CRLF/determinism/error-boundary regression tests.
+- Add FASTA ↔ SAM/Picard `.dict` integrity verification, including narrow SAM-header parsing, exact name/order/length checks, Tier-A M5 conflicts and unambiguous cross-name identity evidence, explicit cross-name M5/LN inconsistency reporting, preserved alias/provenance metadata, missing-M5 evidence gaps, and GA4GH/refget known-answer coverage.
 
 ### Foundation
 

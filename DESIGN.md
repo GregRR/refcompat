@@ -629,7 +629,7 @@ No unresolved tooling choice blocks the first implementation slice. The remainin
 
 1. implement RefCompat-owned resource/identity/evidence types;
 2. implement `ReferenceIdentityProvider` and the local refget/SeqCol adapter;
-3. implement FASTA ↔ `.fai` and FASTA ↔ `.dict` checks (`.fai` complete; `.dict` next);
+3. implement FASTA ↔ `.fai` and FASTA ↔ `.dict` checks (complete);
 4. build the first synthetic known-answer fixtures;
 5. produce human + minimal machine-readable reports;
 6. implement the core requirements/capabilities reasoning slice;
@@ -656,4 +656,4 @@ Primary/standards references should be preferred in implementation documentation
 
 ## Design status
 
-The broad research, implementation-readiness design, and repository-tooling phases are complete. RefCompat now establishes RefCompat-owned resource/sequence-identity types, the local refget/SeqCol FASTA identity adapter, and exact FASTA ↔ `.fai` structural verification for uncompressed references. The next implementation target is SAM/Picard `.dict` verification, followed by the first minimal diagnostic/reporting slice. Additional broad corpus collection is not currently justified unless implementation exposes a new unresolved category, a profile requires targeted evidence, or a separate prevalence study becomes a project goal.
+The broad research, implementation-readiness design, and repository-tooling phases are complete. RefCompat now establishes RefCompat-owned resource/sequence-identity types, the local refget/SeqCol FASTA identity adapter, exact FASTA ↔ `.fai` structural verification for uncompressed references, and FASTA ↔ SAM/Picard `.dict` verification with separate structural, M5, alias, and provenance semantics. The next implementation target is the first minimal diagnostic/reporting slice. Additional broad corpus collection is not currently justified unless implementation exposes a new unresolved category, a profile requires targeted evidence, or a separate prevalence study becomes a project goal.

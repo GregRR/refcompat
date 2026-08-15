@@ -31,6 +31,18 @@ from refcompat.model.resources import (
     ResourceId,
     ResourceKind,
 )
+from refcompat.model.sequence_dictionary import (
+    ExpectedSequenceDictionary,
+    MoleculeTopology,
+    SequenceDictionaryContentIdentityMatch,
+    SequenceDictionaryCrossNameM5LengthInconsistency,
+    SequenceDictionaryData,
+    SequenceDictionaryDifference,
+    SequenceDictionaryDifferenceKind,
+    SequenceDictionaryIntegrityResult,
+    SequenceDictionaryRecord,
+    SequenceDictionarySnapshot,
+)
 
 __all__ = [
     "ArtifactDigest",
@@ -40,6 +52,7 @@ __all__ = [
     "ComputedFastaIndex",
     "EvidencePolarity",
     "EvidenceStrength",
+    "ExpectedSequenceDictionary",
     "FastaIndexData",
     "FastaIndexDifference",
     "FastaIndexDifferenceKind",
@@ -48,6 +61,7 @@ __all__ = [
     "FastaIndexSnapshot",
     "IdentityProviderInfo",
     "Md5Digest",
+    "MoleculeTopology",
     "RefgetSequenceId",
     "Resource",
     "ResourceId",
@@ -55,5 +69,13 @@ __all__ = [
     "SeqColAttributeDigest",
     "SeqColDigest",
     "SequenceCollectionSnapshot",
+    "SequenceDictionaryContentIdentityMatch",
+    "SequenceDictionaryCrossNameM5LengthInconsistency",
+    "SequenceDictionaryData",
+    "SequenceDictionaryDifference",
+    "SequenceDictionaryDifferenceKind",
+    "SequenceDictionaryIntegrityResult",
+    "SequenceDictionaryRecord",
+    "SequenceDictionarySnapshot",
     "SnapshotSequence",
 ]

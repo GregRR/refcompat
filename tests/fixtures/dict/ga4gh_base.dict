@@ -1,0 +1,4 @@
+@HD	VN:1.6
+@SQ	SN:chrX	LN:8	M5:5f63cfaa3ef61f88c9635fb9d18ec945	AN:X	AS:synthetic	SP:synthetic	UR:file:ga4gh_base.fa	TP:linear
+@SQ	SN:chr1	LN:4	M5:31fc6ca291a32fb9df82b85e5f077e31	AN:1	AS:synthetic	SP:synthetic	UR:file:ga4gh_base.fa	TP:linear
+@SQ	SN:chr2	LN:4	M5:92c6a56c9e9459d8a42b96f7884710bc	AN:2	AS:synthetic	SP:synthetic	UR:file:ga4gh_base.fa	TP:linear

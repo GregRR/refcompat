@@ -103,11 +103,12 @@ Start with:
 - [`docs/refget-seqcol-integration.md`](docs/refget-seqcol-integration.md) — standards/integration boundary;
 - [`docs/check-specifications.md`](docs/check-specifications.md) — explicit v0.1 check contracts;
 - [`docs/fasta-index-integrity.md`](docs/fasta-index-integrity.md) — exact FASTA/`.fai` derived-artifact semantics;
+- [`docs/sequence-dictionary-integrity.md`](docs/sequence-dictionary-integrity.md) — FASTA/`.dict` structure, M5, alias, and provenance semantics;
 - [`docs/adr/`](docs/adr/) — architectural decisions.
 
 ## Project status
 
-The design and repository-tooling foundation is established. RefCompat now includes RefCompat-owned resource/sequence-identity types, a local refget/SeqCol FASTA identity adapter with GA4GH known-answer tests, and exact FASTA ↔ `.fai` structural verification for uncompressed references. SAM/Picard `.dict` verification is the next derived-artifact target before broader format support.
+The design and repository-tooling foundation is established. RefCompat now includes RefCompat-owned resource/sequence-identity types, a local refget/SeqCol FASTA identity adapter with GA4GH known-answer tests, exact FASTA ↔ `.fai` structural verification for uncompressed references, and FASTA ↔ SAM/Picard `.dict` integrity checks that keep structural, M5, alias, and provenance evidence distinct. Minimal diagnostic/reporting output is the next Milestone 1 target before broader format support.
 
 ## Development
 

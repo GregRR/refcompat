@@ -46,13 +46,13 @@ Remote metadata/discovery is separate from deterministic local identity. A metad
 
 Format-specific extraction. Inspectors produce immutable observations and claims. They do not emit top-level compatibility verdicts or decide that a familiar-looking name is a verified alias.
 
-Inspectors are added one format at a time rather than pre-populating unused modules. The first derived-artifact inspector is `inspectors/fasta_index.py`, which parses supplied five-column FAI data and computes expected uncompressed FASTA geometry without deciding compatibility.
+Inspectors are added one format at a time rather than pre-populating unused modules. `inspectors/fasta_index.py` parses supplied five-column FAI data and computes expected uncompressed FASTA geometry. `inspectors/sequence_dictionary.py` parses narrow SAM/Picard `.dict` artifacts and derives expected `SN`/`LN`/`M5` records from the already-computed complete FASTA identity snapshot. Neither inspector decides a top-level compatibility verdict.
 
 ## `reasoning/`
 
 Builds scope-dependent resource contracts, evaluates requirements against capabilities, creates evidence-backed findings/conditions, and aggregates whole-bundle verdicts.
 
-The reasoning layer depends on RefCompat domain types, not format-parser internals. `reasoning/fasta_index.py` is the first narrow evaluator: it compares expected and observed FAI structure and emits a localized Tier-B integrity result without producing a top-level bundle verdict.
+The reasoning layer depends on RefCompat domain types, not format-parser internals. `reasoning/fasta_index.py` compares expected and observed FAI structure as Tier-B evidence. `reasoning/sequence_dictionary.py` compares exact dictionary structure while keeping Tier-A M5 evidence and missing-M5 uncertainty separate. Neither evaluator produces a top-level bundle verdict.
 
 ## `profiles/`
 
