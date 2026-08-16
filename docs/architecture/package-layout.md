@@ -23,7 +23,7 @@ Owns RefCompat's stable immutable domain vocabulary: resources, observations, cl
 
 Core domain objects use standard-library immutable dataclasses, enums, and typed value objects. Domain objects must not expose upstream `refget`, `gtars`, `pysam`, transport-validation, or CLI-framework types.
 
-`model/observations.py` owns the format-neutral `ResourceObservation`, `ObservationId`, `ObservationKind`, and `SourceLocation` primitives. `model/evaluation.py`, `model/contracts.py`, and `model/constraints.py` own the first Milestone 2 request/scope, typed requirement/capability contract, and question/result boundaries. The generalized evidence graph remains separate later Milestone 2 work.
+`model/observations.py` owns the format-neutral `ResourceObservation`, `ObservationId`, `ObservationKind`, and `SourceLocation` primitives. `model/evaluation.py`, `model/contracts.py`, and `model/constraints.py` own the first Milestone 2 request/scope, typed requirement/capability contract, and question/result boundaries. `model/evidence.py` now owns generalized qualitative evidence items and aggregates while leaving findings, conditions, and verdicts to later Milestone 2 work.
 
 ## `identity/`
 
@@ -54,7 +54,7 @@ Inspectors are added one format at a time rather than pre-populating unused modu
 
 Builds scope-dependent resource contracts, evaluates requirements against capabilities, creates evidence-backed findings/conditions, and aggregates whole-bundle verdicts.
 
-The reasoning layer depends on RefCompat domain types, not format-parser internals. `reasoning/fasta_index.py` compares expected and observed FAI structure as Tier-B evidence. `reasoning/sequence_dictionary.py` compares exact dictionary structure while keeping Tier-A M5 evidence and missing-M5 uncertainty separate. `reasoning/constraints.py` implements the first exact typed requirement/capability evaluator and keeps missing evidence unresolved unless explicit negative evidence is available. None of these evaluators produces a top-level bundle verdict.
+The reasoning layer depends on RefCompat domain types, not format-parser internals. `reasoning/fasta_index.py` compares expected and observed FAI structure as Tier-B evidence. `reasoning/sequence_dictionary.py` compares exact dictionary structure while keeping Tier-A M5 evidence and missing-M5 uncertainty separate. `reasoning/constraints.py` implements the first exact typed requirement/capability evaluator and keeps missing evidence unresolved unless explicit negative evidence is available. `reasoning/evidence.py` derives traceable qualitative evidence from evaluator-relevant capabilities and aggregates it without numeric scoring. None of these layers produces a top-level bundle verdict.
 
 ## `profiles/`
 

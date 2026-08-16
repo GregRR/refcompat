@@ -84,8 +84,8 @@ class ConstraintEvaluation:
 
     ``relevant_capability_ids`` identifies the capabilities that determined a
     satisfied or contradicted result. An unresolved evaluation may legitimately
-    have none. Evidence IDs are added in the next Milestone 2 slice rather than
-    fabricated before the generalized evidence object exists.
+    have none. Generalized evidence is derived separately so this result remains
+    the immutable truth evaluation rather than becoming an evidence container.
     """
 
     constraint_id: ConstraintId
@@ -109,6 +109,12 @@ class ConstraintEvaluation:
                 raise ValueError("satisfied constraint evaluation requires a relevant capability")
         elif self.satisfaction_mode is not None:
             raise ValueError("only satisfied constraint evaluations may have a satisfaction mode")
+        elif self.state is ConstraintState.UNSATISFIED and not self.relevant_capability_ids:
+            raise ValueError("unsatisfied constraint evaluation requires a relevant capability")
+        elif self.state is ConstraintState.NOT_APPLICABLE and self.relevant_capability_ids:
+            raise ValueError(
+                "not-applicable constraint evaluation cannot cite candidate capabilities"
+            )
 
 
 def constraint_rule_for_requirement(requirement: Requirement) -> ConstraintRule:

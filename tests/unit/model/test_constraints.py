@@ -153,3 +153,22 @@ def test_constraint_rejects_identity_scheme_mismatch() -> None:
             candidate_capabilities=(md5,),
             rule=ConstraintRule.SEQUENCE_IDENTITY,
         )
+
+
+def test_unsatisfied_evaluation_requires_relevant_capability() -> None:
+    with pytest.raises(ValueError, match=r"unsatisfied.*relevant capability"):
+        ConstraintEvaluation(
+            constraint_id=ConstraintId("constraint"),
+            requirement_id=RequirementId("req"),
+            state=ConstraintState.UNSATISFIED,
+        )
+
+
+def test_not_applicable_evaluation_cannot_cite_candidate_capabilities() -> None:
+    with pytest.raises(ValueError, match=r"not-applicable.*cannot cite"):
+        ConstraintEvaluation(
+            constraint_id=ConstraintId("constraint"),
+            requirement_id=RequirementId("req"),
+            state=ConstraintState.NOT_APPLICABLE,
+            relevant_capability_ids=(CapabilityId("cap"),),
+        )

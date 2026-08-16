@@ -13,6 +13,7 @@ from enum import StrEnum
 from typing import NewType
 
 from refcompat.model.identity import Md5Digest, RefgetSequenceId
+from refcompat.model.observations import ObservationId
 from refcompat.model.resources import ResourceId
 
 RequirementId = NewType("RequirementId", str)
@@ -112,10 +113,12 @@ class SequencePresenceCapability:
     resource_id: ResourceId
     sequence_name: str
     present: bool
+    source_observation_ids: tuple[ObservationId, ...] = ()
 
     def __post_init__(self) -> None:
         _validate_capability_header(self.id, self.resource_id)
         _validate_sequence_name(self.sequence_name)
+        _validate_source_observation_ids(self.source_observation_ids)
 
 
 @dataclass(frozen=True, slots=True)
@@ -126,10 +129,12 @@ class SequenceLengthCapability:
     resource_id: ResourceId
     sequence_name: str
     length: int
+    source_observation_ids: tuple[ObservationId, ...] = ()
 
     def __post_init__(self) -> None:
         _validate_capability_header(self.id, self.resource_id)
         _validate_sequence_name(self.sequence_name)
+        _validate_source_observation_ids(self.source_observation_ids)
         if self.length < 0:
             raise ValueError("sequence-length capability must not be negative")
 
@@ -142,10 +147,12 @@ class SequenceIdentityCapability:
     resource_id: ResourceId
     sequence_name: str
     identity: SequenceIdentityValue
+    source_observation_ids: tuple[ObservationId, ...] = ()
 
     def __post_init__(self) -> None:
         _validate_capability_header(self.id, self.resource_id)
         _validate_sequence_name(self.sequence_name)
+        _validate_source_observation_ids(self.source_observation_ids)
 
 
 @dataclass(frozen=True, slots=True)
@@ -155,10 +162,12 @@ class SequenceOrderCapability:
     id: CapabilityId
     resource_id: ResourceId
     sequence_names: tuple[str, ...]
+    source_observation_ids: tuple[ObservationId, ...] = ()
 
     def __post_init__(self) -> None:
         _validate_capability_header(self.id, self.resource_id)
         _validate_sequence_order(self.sequence_names, noun="capability")
+        _validate_source_observation_ids(self.source_observation_ids)
 
 
 type Requirement = (
@@ -230,3 +239,10 @@ def _validate_sequence_order(sequence_names: tuple[str, ...], *, noun: str) -> N
         raise ValueError(f"sequence-order {noun} names must not be empty")
     if len(set(sequence_names)) != len(sequence_names):
         raise ValueError(f"sequence-order {noun} names must be unique")
+
+
+def _validate_source_observation_ids(observation_ids: tuple[ObservationId, ...]) -> None:
+    if any(not observation_id for observation_id in observation_ids):
+        raise ValueError("capability source observation IDs must not be empty")
+    if len(set(observation_ids)) != len(observation_ids):
+        raise ValueError("capability source observation IDs must be unique")

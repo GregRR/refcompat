@@ -77,7 +77,7 @@ Examples:
 
 Observations should retain source location where practical: header field, record index, line/feature identifier, or other traceable origin.
 
-Milestone 1 implements a format-neutral `ResourceObservation` with caller-supplied `ObservationId`, typed `ObservationKind`, resource ID, primitive fact value, and optional `SourceLocation` components (`line_number`, `record_index`, `field`, `locator`). The ID-generation policy and generalized evidence graph remain deliberately deferred until the Milestone 2 report/reasoning layer has concrete requirements.
+Milestone 1 implements a format-neutral `ResourceObservation` with caller-supplied `ObservationId`, typed `ObservationKind`, resource ID, primitive fact value, and optional `SourceLocation` components (`line_number`, `record_index`, `field`, `locator`). Milestone 2 capabilities can now carry source observation IDs forward into generalized evidence; observation-ID generation itself remains producer-specific until concrete inspectors are wired into contract construction.
 
 ### Invariant
 
@@ -273,7 +273,13 @@ Mechanism belongs in a separate `SatisfactionMode`, for example:
 
 Do not encode mechanisms as proliferating states such as `SATISFIED_BY_ALIAS`.
 
-The first evaluator implements exact typed comparisons only. It returns `UNRESOLVED` when comparable evidence is absent or internally conflicting, and it does not infer a cross-name alias/binding merely from familiar names. Generalized evidence IDs and evidence aggregation are the next Milestone 2 layer.
+The first evaluator implements exact typed comparisons only. It returns `UNRESOLVED` when comparable evidence is absent or internally conflicting, and it does not infer a cross-name alias/binding merely from familiar names. The second Milestone 2 slice derives deterministic qualitative evidence items from evaluator-relevant capabilities and aggregates them without numeric scoring or bundle interpretation.
+
+## `Evidence` and `EvidenceAggregate`
+
+Generalized evidence relates one typed requirement to one evaluator-relevant capability. It records qualitative kind, method, strength, and support/contradiction polarity plus constraint/requirement/capability IDs and available source-observation traceability.
+
+The aggregate retains evidence items and unresolved/not-applicable constraint IDs. It exposes Tier-A contradictions explicitly but does not weight, average, score, or assign a bundle verdict. A constraint may remain unresolved while carrying both supporting and contradicting evidence when its candidate capabilities conflict.
 
 ## `CompatibilityFinding`
 

@@ -635,7 +635,7 @@ No unresolved tooling choice blocks the first implementation slice. The remainin
 4. build deterministic known-answer and corpus-derived Milestone 1 exit fixtures (complete);
 5. produce human + minimal machine-readable reports (complete);
 6. implement the core requirements/capabilities reasoning slice (complete);
-7. implement generalized evidence aggregation, reference context, and anchor-driven bundle reporting;
+7. implement generalized evidence aggregation (complete), then reference context and anchor-driven bundle reporting;
 8. add VCF, BAM/CRAM, and GTF/GFF inspectors one at a time;
 9. incorporate implementation feedback into the design as concrete edge cases expose missing constraints or evidence types.
 
@@ -659,4 +659,4 @@ Primary/standards references should be preferred in implementation documentation
 
 ## Design status
 
-The broad research, implementation-readiness, repository-tooling, and Milestone 1 identity/derived-artifact phases are complete. RefCompat now also implements the first Milestone 2 reasoning boundary: explicit anchor-driven evaluation requests/scope, typed sequence presence/length/identity/order requirements and capabilities, context-specific resource contracts, and separate exact compatibility constraints/evaluations. Missing candidate evidence remains unresolved unless an explicit capability proves a contradiction. The next implementation target is generalized evidence aggregation and the reference-context/bundle layer above these typed questions; findings, conditions, verdict aggregation, and conflict-core reporting remain later Milestone 2 work. Additional broad corpus collection is not currently justified unless implementation exposes a new unresolved category, a profile requires targeted evidence, or a separate prevalence study becomes a project goal.
+The broad research, implementation-readiness, repository-tooling, and Milestone 1 identity/derived-artifact phases are complete. RefCompat now also implements the first two Milestone 2 reasoning boundaries: explicit anchor-driven evaluation requests/scope, typed sequence presence/length/identity/order requirements and capabilities, separate exact compatibility constraints/evaluations, and generalized qualitative evidence aggregation with deterministic IDs and observation traceability. Missing candidate evidence remains unresolved unless an explicit capability proves a contradiction, and evidence is never converted into a numeric compatibility score. The next implementation target is structured findings/conditions and the reference-context/bundle layer above these typed questions; verdict aggregation and conflict-core reporting remain later Milestone 2 work. Additional broad corpus collection is not currently justified unless implementation exposes a new unresolved category, a profile requires targeted evidence, or a separate prevalence study becomes a project goal.

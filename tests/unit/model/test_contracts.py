@@ -22,6 +22,7 @@ from refcompat.model.contracts import (
     SequencePresenceRequirement,
 )
 from refcompat.model.identity import Md5Digest, RefgetSequenceId
+from refcompat.model.observations import ObservationId
 from refcompat.model.resources import ResourceId
 
 _RESOURCE = ResourceId("reference")
@@ -139,3 +140,26 @@ def test_resource_contract_rejects_foreign_members_and_duplicate_ids() -> None:
     )
     with pytest.raises(ValueError, match="capability IDs must be unique"):
         ResourceContract(resource_id=_RESOURCE, capabilities=(capability, duplicate))
+
+
+def test_capability_preserves_source_observation_trace() -> None:
+    capability = SequenceLengthCapability(
+        id=CapabilityId("cap-length-traced"),
+        resource_id=_RESOURCE,
+        sequence_name="chr1",
+        length=4,
+        source_observation_ids=(ObservationId("obs-length"),),
+    )
+
+    assert capability.source_observation_ids == (ObservationId("obs-length"),)
+
+
+def test_capability_rejects_duplicate_source_observation_ids() -> None:
+    with pytest.raises(ValueError, match="observation IDs must be unique"):
+        SequenceLengthCapability(
+            id=CapabilityId("cap-length-traced"),
+            resource_id=_RESOURCE,
+            sequence_name="chr1",
+            length=4,
+            source_observation_ids=(ObservationId("same"), ObservationId("same")),
+        )

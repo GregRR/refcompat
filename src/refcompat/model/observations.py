@@ -53,9 +53,9 @@ class ResourceObservation:
     """One immutable fact directly extracted from a supplied resource.
 
     ``kind`` is an inspector-owned fact label rather than a compatibility
-    conclusion. Milestone 1 intentionally leaves observation-ID generation to
-    the evaluation/report owner instead of freezing an ID scheme before the
-    generalized evidence graph exists.
+    conclusion. Observation-ID generation remains the responsibility of the
+    producing evaluation/report context; generalized evidence treats those IDs
+    as opaque traceability references rather than assigning biological meaning.
     """
 
     id: ObservationId

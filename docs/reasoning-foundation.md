@@ -1,8 +1,6 @@
 # Milestone 2 typed reasoning foundation
 
-**Status:** first Milestone 2 reasoning slice implemented; evidence aggregation,
-findings, conditions, bundle verdicts, and conflict-core reporting remain later
-Milestone 2 work.
+**Status:** first Milestone 2 typed-reasoning slice implemented; the second slice now adds qualitative evidence aggregation. Findings, conditions, reference-context/bundle reasoning, verdicts, and conflict-core reporting remain later Milestone 2 work.
 
 This slice introduces the typed question/evaluation boundary used by later
 bundle reasoning. It deliberately does not emit a whole-bundle compatibility
@@ -98,8 +96,8 @@ does not satisfy a refget requirement, or vice versa, merely because both are
 content identities.
 
 Cross-name identity/verified alias reasoning is deliberately deferred until
-`SequenceBinding` and generalized evidence exist. A same-content capability
-under another local name therefore remains unresolved in this slice rather
+`SequenceBinding` exists. A same-content capability under another local name
+therefore remains unresolved in this slice rather
 than silently manufacturing a name binding.
 
 If comparable candidate capabilities conflict with each other, the evaluator
@@ -107,10 +105,11 @@ returns `UNRESOLVED` rather than choosing one or averaging them.
 
 ## Deliberately not implemented yet
 
-This slice does **not** introduce:
+This typed-constraint slice itself does **not** introduce findings or bundle
+interpretation. The following generalized evidence layer is documented in
+`evidence-aggregation.md` and now provides evidence items/IDs plus qualitative
+aggregation. Still deferred are:
 
-- the generalized `Evidence` object or evidence-ID graph;
-- evidence aggregation;
 - `ReferenceContext` construction;
 - `SequenceBinding` / verified alias resolution;
 - provenance claim assessment;

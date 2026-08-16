@@ -106,11 +106,12 @@ Start with:
 - [`docs/sequence-dictionary-integrity.md`](docs/sequence-dictionary-integrity.md) — FASTA/`.dict` structure, M5, alias, and provenance semantics;
 - [`docs/diagnostic-output.md`](docs/diagnostic-output.md) — provisional human/JSON output for the Milestone 1 identity and integrity slice;
 - [`docs/reasoning-foundation.md`](docs/reasoning-foundation.md) — typed Milestone 2 request, contract, and constraint/evaluation boundary;
+- [`docs/evidence-aggregation.md`](docs/evidence-aggregation.md) — qualitative, traceable Milestone 2 evidence derivation and aggregation;
 - [`docs/adr/`](docs/adr/) — architectural decisions.
 
 ## Project status
 
-Milestone 1 is complete, and the first Milestone 2 reasoning slice is implemented. RefCompat now has explicit anchor-driven evaluation requests/scope, typed sequence presence/length/identity/order requirements and capabilities, context-specific resource contracts, and separate compatibility constraints/evaluations in addition to the established FASTA identity, `.fai`, `.dict`, and diagnostic foundations. Evidence aggregation, findings/conditions, whole-bundle verdicts, and conflict-core reporting remain the next Milestone 2 work.
+Milestone 1 is complete, and the first two Milestone 2 reasoning slices are implemented. RefCompat now has explicit anchor-driven evaluation requests/scope, typed sequence presence/length/identity/order requirements and capabilities, separate compatibility constraints/evaluations, and qualitative traceable evidence aggregation without numeric scoring. Structured findings/conditions, reference-context and whole-bundle reasoning, verdict aggregation, and conflict-core reporting remain the next Milestone 2 work.
 
 ## Current CLI diagnostics
 

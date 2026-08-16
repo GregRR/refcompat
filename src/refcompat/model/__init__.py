@@ -35,7 +35,15 @@ from refcompat.model.evaluation import (
     EvaluationScope,
     ProfileId,
 )
-from refcompat.model.evidence import EvidencePolarity, EvidenceStrength
+from refcompat.model.evidence import (
+    Evidence,
+    EvidenceAggregate,
+    EvidenceId,
+    EvidenceKind,
+    EvidenceMethod,
+    EvidencePolarity,
+    EvidenceStrength,
+)
 from refcompat.model.fasta_index import (
     ComputedFastaIndex,
     FastaIndexData,
@@ -98,6 +106,11 @@ __all__ = [
     "EvaluationPolicyId",
     "EvaluationRequest",
     "EvaluationScope",
+    "Evidence",
+    "EvidenceAggregate",
+    "EvidenceId",
+    "EvidenceKind",
+    "EvidenceMethod",
     "EvidencePolarity",
     "EvidenceStrength",
     "ExpectedSequenceDictionary",
