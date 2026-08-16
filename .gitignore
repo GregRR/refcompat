@@ -27,6 +27,7 @@ dist/
 .vscode/
 *.swp
 *.swo
+*~
 
 # Local runtime/cache data. Add project-specific runtime directories here
 # when they are introduced; do not commit generated reference caches.
