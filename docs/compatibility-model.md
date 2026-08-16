@@ -77,6 +77,8 @@ Examples:
 
 Observations should retain source location where practical: header field, record index, line/feature identifier, or other traceable origin.
 
+Milestone 1 implements a format-neutral `ResourceObservation` with caller-supplied `ObservationId`, typed `ObservationKind`, resource ID, primitive fact value, and optional `SourceLocation` components (`line_number`, `record_index`, `field`, `locator`). The ID-generation policy and generalized evidence graph remain deliberately deferred until the Milestone 2 report/reasoning layer has concrete requirements.
+
 ### Invariant
 
 An observation never says `MATCH`, `WRONG_BUILD`, `COMPATIBLE`, `ALIAS`, or similar interpreted conclusions.

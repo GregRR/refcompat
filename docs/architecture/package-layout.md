@@ -23,6 +23,8 @@ Owns RefCompat's stable immutable domain vocabulary: resources, observations, cl
 
 Core domain objects use standard-library immutable dataclasses, enums, and typed value objects. Domain objects must not expose upstream `refget`, `gtars`, `pysam`, transport-validation, or CLI-framework types.
 
+`model/observations.py` owns the format-neutral `ResourceObservation`, `ObservationId`, `ObservationKind`, and `SourceLocation` primitives. The generalized evidence graph remains separate Milestone 2 work.
+
 ## `identity/`
 
 Owns the sequence-identity port and adapters.

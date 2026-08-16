@@ -29,7 +29,7 @@ The roadmap intentionally avoids turning RefCompat into a universal genomics val
 
 **Goal:** prove the standards boundary and the first deterministic checks with small redistributable fixtures.
 
-- [ ] Implement stable RefCompat-owned domain types for resources, observations, sequence identity, and evidence.
+- [x] Implement stable RefCompat-owned domain types for resources, observations, sequence identity, and evidence.
 - [x] Implement `ReferenceIdentityProvider` protocol.
 - [x] Implement local GA4GH refget/SeqCol adapter.
 - [x] Inspect FASTA into `SequenceCollectionSnapshot` without leaking upstream library types.
@@ -38,7 +38,7 @@ The roadmap intentionally avoids turning RefCompat into a universal genomics val
 - [x] Add human-readable and minimal JSON diagnostic output for this slice.
 - [x] Cross-check initial FASTA identity against GA4GH/refget known-answer behavior.
 
-**Exit criteria:** identity, stale `.fai`, stale `.dict`, same-name/different-sequence, alias-only, and order-difference fixtures have deterministic tests and traceable evidence.
+**Exit criteria:** complete. Deterministic tests cover identity, same-name/different-sequence, alias-only, order-difference, and `.fai`/`.dict` artifacts that are stale by construction. The checks report only observable structural/content evidence; they do not infer staleness as a cause without provenance evidence.
 
 ## Milestone 2 — Reasoning foundation and bundle report
 

@@ -23,6 +23,8 @@ The FASTA/`.fai` integration fixture also pins the canonical HTSlib `faidx(5)` e
 
 Use small synthetic or clearly redistributable fixtures derived from the failure *patterns* in the 200-case corpus. Do not copy arbitrary users' genomic datasets into the repository.
 
+`fixtures/milestone1/` closes the first milestone with deterministic controls for same-name/different-sequence identity, alias-only dictionaries, order differences, and `.fai`/`.dict` artifacts that are stale by construction. Tests distinguish that construction history from the narrower structural/content evidence the checkers are justified in reporting.
+
 ### Negative controls
 
 Include cases where reference compatibility passes but the motivating workflow symptom has another cause. RefCompat must not invent a reference diagnosis merely because a workflow failed.

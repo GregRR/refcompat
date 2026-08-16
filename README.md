@@ -109,7 +109,7 @@ Start with:
 
 ## Project status
 
-The design and repository-tooling foundation is established. RefCompat now includes RefCompat-owned resource/sequence-identity types, a local refget/SeqCol FASTA identity adapter with GA4GH known-answer tests, exact FASTA ↔ `.fai` structural verification for uncompressed references, FASTA ↔ SAM/Picard `.dict` integrity checks that keep structural, M5, alias, and provenance evidence distinct, and provisional human/JSON diagnostics for those Milestone 1 results. The remaining Milestone 1 model/fixture exit criteria should be closed before the generalized bundle reasoner begins.
+Milestone 1 is complete. RefCompat now includes RefCompat-owned resource, observation, sequence-identity, and evidence vocabulary; a local refget/SeqCol FASTA identity adapter with GA4GH known-answer tests; exact FASTA ↔ `.fai` structural verification; FASTA ↔ SAM/Picard `.dict` integrity checks that keep structural, M5, alias, and provenance evidence distinct; provisional human/JSON diagnostics; and deterministic corpus-derived exit fixtures. The next implementation target is the Milestone 2 requirements/capabilities and whole-bundle reasoning foundation.
 
 ## Current CLI diagnostics
 

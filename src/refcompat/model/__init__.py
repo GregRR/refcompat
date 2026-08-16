@@ -23,6 +23,12 @@ from refcompat.model.identity import (
     SequenceCollectionSnapshot,
     SnapshotSequence,
 )
+from refcompat.model.observations import (
+    ObservationId,
+    ObservationKind,
+    ResourceObservation,
+    SourceLocation,
+)
 from refcompat.model.resources import (
     ArtifactDigest,
     ArtifactDigestAlgorithm,
@@ -62,10 +68,13 @@ __all__ = [
     "IdentityProviderInfo",
     "Md5Digest",
     "MoleculeTopology",
+    "ObservationId",
+    "ObservationKind",
     "RefgetSequenceId",
     "Resource",
     "ResourceId",
     "ResourceKind",
+    "ResourceObservation",
     "SeqColAttributeDigest",
     "SeqColDigest",
     "SequenceCollectionSnapshot",
@@ -78,4 +87,5 @@ __all__ = [
     "SequenceDictionaryRecord",
     "SequenceDictionarySnapshot",
     "SnapshotSequence",
+    "SourceLocation",
 ]

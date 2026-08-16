@@ -629,10 +629,10 @@ No unresolved tooling choice blocks the first implementation slice. The remainin
 
 ## 18. Next implementation sequence
 
-1. implement RefCompat-owned resource/identity/evidence types;
-2. implement `ReferenceIdentityProvider` and the local refget/SeqCol adapter;
+1. implement RefCompat-owned resource/observation/identity/evidence vocabulary (complete);
+2. implement `ReferenceIdentityProvider` and the local refget/SeqCol adapter (complete);
 3. implement FASTA ↔ `.fai` and FASTA ↔ `.dict` checks (complete);
-4. build the first synthetic known-answer fixtures;
+4. build deterministic known-answer and corpus-derived Milestone 1 exit fixtures (complete);
 5. produce human + minimal machine-readable reports (complete);
 6. implement the core requirements/capabilities reasoning slice;
 7. add VCF, BAM/CRAM, and GTF/GFF inspectors one at a time;
@@ -658,4 +658,4 @@ Primary/standards references should be preferred in implementation documentation
 
 ## Design status
 
-The broad research, implementation-readiness design, and repository-tooling phases are complete. RefCompat now establishes RefCompat-owned resource/sequence-identity types, the local refget/SeqCol FASTA identity adapter, exact FASTA ↔ `.fai` structural verification for uncompressed references, and FASTA ↔ SAM/Picard `.dict` verification with separate structural, M5, alias, and provenance semantics. The next implementation target is the first minimal diagnostic/reporting slice. Additional broad corpus collection is not currently justified unless implementation exposes a new unresolved category, a profile requires targeted evidence, or a separate prevalence study becomes a project goal.
+The broad research, implementation-readiness, repository-tooling, and Milestone 1 identity/derived-artifact phases are complete. RefCompat now establishes RefCompat-owned resource/observation/sequence-identity/evidence vocabulary, the local refget/SeqCol FASTA identity adapter, exact FASTA ↔ `.fai` verification, FASTA ↔ SAM/Picard `.dict` verification, provisional diagnostics, and deterministic exit fixtures for the key Milestone 1 evidence patterns. The next implementation target is the Milestone 2 requirements/capabilities and whole-bundle reasoning foundation. Additional broad corpus collection is not currently justified unless implementation exposes a new unresolved category, a profile requires targeted evidence, or a separate prevalence study becomes a project goal.

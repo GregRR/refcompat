@@ -12,6 +12,7 @@ The project is currently pre-release and still establishing its design and repos
 - Add exact FASTA ↔ `.fai` structural verification for uncompressed references, including five-column FAI parsing, refget-backed expected geometry, localized count/name/order/length/offset/line-width differences, HTSlib known-answer coverage, conservative zero-length/compressed-reference handling, and wrapping/CRLF/determinism/error-boundary regression tests.
 - Add FASTA ↔ SAM/Picard `.dict` integrity verification, including narrow SAM-header parsing, exact name/order/length checks, Tier-A M5 conflicts and unambiguous cross-name identity evidence, explicit cross-name M5/LN inconsistency reporting, preserved alias/provenance metadata, missing-M5 evidence gaps, and GA4GH/refget known-answer coverage.
 - Add provisional human-readable and explicit JSON diagnostics for FASTA identity, FASTA/`.fai`, and FASTA/`.dict` results, with CLI subcommands that preserve the boundary between local evidence and later whole-bundle compatibility verdicts.
+- Complete the Milestone 1 domain/fixture exit boundary with format-neutral resource observations and source locations plus deterministic corpus-derived identity, stale-by-construction `.fai`/`.dict`, alias-only, order-difference, and same-name/different-sequence fixtures.
 
 ### Foundation
 
