@@ -105,11 +105,12 @@ Start with:
 - [`docs/fasta-index-integrity.md`](docs/fasta-index-integrity.md) — exact FASTA/`.fai` derived-artifact semantics;
 - [`docs/sequence-dictionary-integrity.md`](docs/sequence-dictionary-integrity.md) — FASTA/`.dict` structure, M5, alias, and provenance semantics;
 - [`docs/diagnostic-output.md`](docs/diagnostic-output.md) — provisional human/JSON output for the Milestone 1 identity and integrity slice;
+- [`docs/reasoning-foundation.md`](docs/reasoning-foundation.md) — typed Milestone 2 request, contract, and constraint/evaluation boundary;
 - [`docs/adr/`](docs/adr/) — architectural decisions.
 
 ## Project status
 
-Milestone 1 is complete. RefCompat now includes RefCompat-owned resource, observation, sequence-identity, and evidence vocabulary; a local refget/SeqCol FASTA identity adapter with GA4GH known-answer tests; exact FASTA ↔ `.fai` structural verification; FASTA ↔ SAM/Picard `.dict` integrity checks that keep structural, M5, alias, and provenance evidence distinct; provisional human/JSON diagnostics; and deterministic corpus-derived exit fixtures. The next implementation target is the Milestone 2 requirements/capabilities and whole-bundle reasoning foundation.
+Milestone 1 is complete, and the first Milestone 2 reasoning slice is implemented. RefCompat now has explicit anchor-driven evaluation requests/scope, typed sequence presence/length/identity/order requirements and capabilities, context-specific resource contracts, and separate compatibility constraints/evaluations in addition to the established FASTA identity, `.fai`, `.dict`, and diagnostic foundations. Evidence aggregation, findings/conditions, whole-bundle verdicts, and conflict-core reporting remain the next Milestone 2 work.
 
 ## Current CLI diagnostics
 

@@ -17,3 +17,4 @@ If a supporting document and `DESIGN.md` disagree, `DESIGN.md` wins until the di
 - [`fasta-index-integrity.md`](fasta-index-integrity.md) — exact FASTA/`.fai` derived-artifact verification semantics.
 - [`sequence-dictionary-integrity.md`](sequence-dictionary-integrity.md) — exact FASTA/`.dict` structure plus M5, alias, and provenance evidence semantics.
 - [`diagnostic-output.md`](diagnostic-output.md) — provisional human and JSON diagnostics for Milestone 1 identity and integrity checks.
+- [`reasoning-foundation.md`](reasoning-foundation.md) — first Milestone 2 request/scope, typed contract, and constraint/evaluation boundary.

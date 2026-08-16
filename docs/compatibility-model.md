@@ -202,6 +202,8 @@ Resource relationships are factual; whether those relationships are sufficient i
 
 RefCompat must not change a SeqCol or sequence relationship to obtain a convenient verdict.
 
+The first Milestone 2 implementation requires a supplied FASTA anchor, validates that it remains in explicit resource scope, and permits an optional explicit FASTA-anchor sequence-name subset. Profile/policy identifiers are selectors only at this layer; they do not mutate facts or create requirements until contract construction.
+
 ## `ResourceContract`
 
 A resource contract is produced for a resource **in an evaluation context**. It is not a permanent intrinsic property of the file.
@@ -230,7 +232,7 @@ Examples of requirements:
 - derived artifact must correspond to exact source representation;
 - order must match when explicitly required.
 
-Requirements should record origin (`CORE_FORMAT`, `PROFILE`, `USER_POLICY`) and level (`MANDATORY`, `ADVISORY`).
+Requirements record origin (`CORE_FORMAT`, `PROFILE`, `USER_POLICY`) and level (`MANDATORY`, `ADVISORY`). The initial typed implementation covers sequence presence, exact length, content identity (refget or M5/MD5 without cross-algorithm comparison), and exact local sequence order. A missing capability is not proof of absence; an explicit negative sequence-presence capability is required to establish absence.
 
 ## Typed requirements and capabilities
 
@@ -270,6 +272,8 @@ Mechanism belongs in a separate `SatisfactionMode`, for example:
 - `VERIFIED_SUBSET`
 
 Do not encode mechanisms as proliferating states such as `SATISFIED_BY_ALIAS`.
+
+The first evaluator implements exact typed comparisons only. It returns `UNRESOLVED` when comparable evidence is absent or internally conflicting, and it does not infer a cross-name alias/binding merely from familiar names. Generalized evidence IDs and evidence aggregation are the next Milestone 2 layer.
 
 ## `CompatibilityFinding`
 

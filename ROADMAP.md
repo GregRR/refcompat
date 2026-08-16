@@ -44,14 +44,14 @@ The roadmap intentionally avoids turning RefCompat into a universal genomics val
 
 **Goal:** demonstrate that RefCompat is more than a collection of pairwise validators.
 
-- Implement evaluation requests and explicit scope.
-- Implement typed requirements and capabilities.
-- Implement compatibility constraints and evaluations.
-- Implement evidence aggregation without numeric compatibility scoring.
-- Implement structured findings and conditions.
-- Implement anchor-driven whole-bundle reasoning.
-- Implement `COMPATIBLE`, `COMPATIBLE_WITH_CONDITIONS`, `INCOMPATIBLE`, and `INDETERMINATE` aggregation.
-- Implement conflict-core reporting sufficient to identify the smallest useful conflicting resource/evidence set.
+- [x] Implement evaluation requests and explicit scope.
+- [x] Implement typed requirements and capabilities.
+- [x] Implement compatibility constraints and evaluations.
+- [ ] Implement evidence aggregation without numeric compatibility scoring.
+- [ ] Implement structured findings and conditions.
+- [ ] Implement anchor-driven whole-bundle reasoning.
+- [ ] Implement `COMPATIBLE`, `COMPATIBLE_WITH_CONDITIONS`, `INCOMPATIBLE`, and `INDETERMINATE` aggregation.
+- [ ] Implement conflict-core reporting sufficient to identify the smallest useful conflicting resource/evidence set.
 
 ## Milestone 3 — VCF
 

@@ -28,7 +28,7 @@ The second is much stronger evidence than the first.
 
 ## Evidence object
 
-Milestone 1 implements the stable qualitative `EvidenceStrength` and `EvidencePolarity` vocabulary used by the identity/derived-artifact results. The generalized evidence object and evidence-ID generation policy are Milestone 2 work so the project does not invent a graph/report contract before requirements, constraints, and claims exist.
+Milestone 1 implements the stable qualitative `EvidenceStrength` and `EvidencePolarity` vocabulary used by the identity/derived-artifact results. The first Milestone 2 slice now provides typed requirements, capabilities, constraints, and evaluations; the generalized evidence object and evidence-ID generation policy remain the next Milestone 2 work so they can be shaped by concrete typed questions rather than invented ahead of them.
 
 Conceptually, evidence should carry:
 

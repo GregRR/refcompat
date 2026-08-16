@@ -25,6 +25,8 @@ Use small synthetic or clearly redistributable fixtures derived from the failure
 
 `fixtures/milestone1/` closes the first milestone with deterministic controls for same-name/different-sequence identity, alias-only dictionaries, order differences, and `.fai`/`.dict` artifacts that are stale by construction. Tests distinguish that construction history from the narrower structural/content evidence the checkers are justified in reporting.
 
+Milestone 2 unit tests exercise request/scope invariants, typed requirement/capability contracts, constraint/evaluation separation, exact sequence presence/length/identity/order rules, explicit negative presence, and conservative `UNRESOLVED` behavior when candidate evidence is absent or internally conflicting.
+
 ### Negative controls
 
 Include cases where reference compatibility passes but the motivating workflow symptom has another cause. RefCompat must not invent a reference diagnosis merely because a workflow failed.
