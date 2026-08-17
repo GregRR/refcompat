@@ -107,11 +107,12 @@ Start with:
 - [`docs/diagnostic-output.md`](docs/diagnostic-output.md) — provisional human/JSON output for the Milestone 1 identity and integrity slice;
 - [`docs/reasoning-foundation.md`](docs/reasoning-foundation.md) — typed Milestone 2 request, contract, and constraint/evaluation boundary;
 - [`docs/evidence-aggregation.md`](docs/evidence-aggregation.md) — qualitative, traceable Milestone 2 evidence derivation and aggregation;
+- [`docs/findings-conditions.md`](docs/findings-conditions.md) — structured Milestone 2 issue/unresolved findings and explicit-scope conditions;
 - [`docs/adr/`](docs/adr/) — architectural decisions.
 
 ## Project status
 
-Milestone 1 is complete, and the first two Milestone 2 reasoning slices are implemented. RefCompat now has explicit anchor-driven evaluation requests/scope, typed sequence presence/length/identity/order requirements and capabilities, separate compatibility constraints/evaluations, and qualitative traceable evidence aggregation without numeric scoring. Structured findings/conditions, reference-context and whole-bundle reasoning, verdict aggregation, and conflict-core reporting remain the next Milestone 2 work.
+Milestone 1 is complete, and the first three Milestone 2 reasoning slices are implemented. RefCompat now has explicit anchor-driven evaluation requests/scope, typed sequence presence/length/identity/order requirements and capabilities, separate compatibility constraints/evaluations, qualitative traceable evidence aggregation without numeric scoring, and structured issue/unresolved findings plus explicit-scope conditions. Reference-context and whole-bundle reasoning, verdict aggregation, and conflict-core reporting remain the next Milestone 2 work.
 
 ## Current CLI diagnostics
 

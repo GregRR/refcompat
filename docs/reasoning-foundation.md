@@ -107,13 +107,14 @@ returns `UNRESOLVED` rather than choosing one or averaging them.
 
 This typed-constraint slice itself does **not** introduce findings or bundle
 interpretation. The following generalized evidence layer is documented in
-`evidence-aggregation.md` and now provides evidence items/IDs plus qualitative
-aggregation. Still deferred are:
+`evidence-aggregation.md` and provides evidence items/IDs plus qualitative
+aggregation. The next interpretation slice, documented in
+`findings-conditions.md`, provides structured conflict/unresolved findings and
+explicit-scope conditions. Still deferred are:
 
 - `ReferenceContext` construction;
 - `SequenceBinding` / verified alias resolution;
 - provenance claim assessment;
-- structured findings or conditions;
 - whole-bundle verdict aggregation;
 - conflict-core reporting;
 - stable `CompatibilityReport` serialization.

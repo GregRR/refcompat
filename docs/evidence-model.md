@@ -180,3 +180,5 @@ Finding / condition
 ```
 
 A report that cannot provide that trace should not claim a stronger conclusion than its model can justify.
+
+The third Milestone 2 slice now materializes the first structured `CompatibilityFinding` and `CompatibilityCondition` objects. Conflict findings cite concrete evidence IDs; unresolved findings may legitimately cite none when evidence is absent. Scope conditions are derived only from explicit `EvaluationRequest` resource/anchor-sequence scope and do not themselves assert a compatibility verdict.

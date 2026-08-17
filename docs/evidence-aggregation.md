@@ -1,8 +1,8 @@
 # Milestone 2 qualitative evidence aggregation
 
-**Status:** implemented as the second Milestone 2 reasoning slice. Structured
-findings/conditions, reference-context construction, whole-bundle verdicts, and
-conflict-core reporting remain later work.
+**Status:** implemented as the second Milestone 2 reasoning slice. Structured findings/conditions are now implemented in the next Milestone 2 slice.
+Reference-context construction, whole-bundle verdicts, and conflict-core reporting
+remain later work.
 
 This layer turns already-evaluated typed compatibility questions into explicit,
 traceable evidence relationships. It does **not** compute a numeric compatibility
@@ -130,8 +130,6 @@ This slice does not implement:
 - provenance claims or claim assessments;
 - `ReferenceContext`;
 - `SequenceBinding` or verified alias evidence;
-- structured `CompatibilityFinding` objects;
-- structured `CompatibilityCondition` objects;
 - mandatory/advisory aggregation policy;
 - whole-bundle verdicts;
 - conflict-core extraction;

@@ -283,7 +283,7 @@ The aggregate retains evidence items and unresolved/not-applicable constraint ID
 
 ## `CompatibilityFinding`
 
-A meaningful interpretation that may summarize many low-level evaluations.
+A meaningful interpretation that may summarize one or more low-level evaluations. The first implementation emits deterministic issue/unresolved findings for individual typed constraints while leaving satisfied constraints represented by their evaluations/evidence.
 
 Examples:
 
@@ -298,7 +298,7 @@ Examples:
 
 ## `CompatibilityCondition`
 
-Conditions are structured report objects, not merely prose.
+Conditions are structured report objects, not merely prose. The first implementation records explicit resource and FASTA-anchor sequence scope boundaries without claiming that compatibility has already been established inside those bounds.
 
 A condition identifies:
 

@@ -256,11 +256,11 @@ Relationship/support/contradiction derived from observations/claims, with explic
 
 ### 5.14 `CompatibilityFinding`
 
-Meaningful interpreted issue or verified relationship summarizing one or more evaluations.
+Meaningful interpreted issue or verified relationship summarizing one or more evaluations. The first implementation emits structured conflict and unresolved findings from typed constraint evaluations; higher-order verified relationships remain later work.
 
 ### 5.15 `CompatibilityCondition`
 
-Structured bounded statement describing what scope is compatible and what is excluded/unestablished. Conditions require explicit scope/profile semantics.
+Structured bounded statement for explicit evaluation scope. The first implementation records caller-selected resource and FASTA-anchor sequence boundaries without claiming that compatibility has already been established inside them. Later verdict aggregation may cite those conditions when a positive result is valid only within that explicit scope. Conditions require explicit scope/profile semantics.
 
 ### 5.16 `CompatibilityReport`
 
@@ -659,4 +659,4 @@ Primary/standards references should be preferred in implementation documentation
 
 ## Design status
 
-The broad research, implementation-readiness, repository-tooling, and Milestone 1 identity/derived-artifact phases are complete. RefCompat now also implements the first two Milestone 2 reasoning boundaries: explicit anchor-driven evaluation requests/scope, typed sequence presence/length/identity/order requirements and capabilities, separate exact compatibility constraints/evaluations, and generalized qualitative evidence aggregation with deterministic IDs and observation traceability. Missing candidate evidence remains unresolved unless an explicit capability proves a contradiction, and evidence is never converted into a numeric compatibility score. The next implementation target is structured findings/conditions and the reference-context/bundle layer above these typed questions; verdict aggregation and conflict-core reporting remain later Milestone 2 work. Additional broad corpus collection is not currently justified unless implementation exposes a new unresolved category, a profile requires targeted evidence, or a separate prevalence study becomes a project goal.
+The broad research, implementation-readiness, repository-tooling, and Milestone 1 identity/derived-artifact phases are complete. RefCompat now also implements the first three Milestone 2 reasoning boundaries: explicit anchor-driven evaluation requests/scope, typed sequence presence/length/identity/order requirements and capabilities, separate exact compatibility constraints/evaluations, generalized qualitative evidence aggregation with deterministic IDs and observation traceability, and structured conflict/unresolved findings plus explicit-scope conditions. Missing candidate evidence remains unresolved unless an explicit capability proves a contradiction, evidence is never converted into a numeric compatibility score, and conditions never infer scope exclusions that the caller did not state. The next implementation target is the anchor-driven reference-context/bundle layer; verdict aggregation and conflict-core reporting remain later Milestone 2 work. Additional broad corpus collection is not currently justified unless implementation exposes a new unresolved category, a profile requires targeted evidence, or a separate prevalence study becomes a project goal.
