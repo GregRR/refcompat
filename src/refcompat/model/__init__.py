@@ -3,6 +3,7 @@
 External library types must not leak into this layer.
 """
 
+from refcompat.model.bundle import BundleReasoningResult
 from refcompat.model.constraints import (
     CompatibilityConstraint,
     ConstraintEvaluation,
@@ -78,6 +79,12 @@ from refcompat.model.observations import (
     ResourceObservation,
     SourceLocation,
 )
+from refcompat.model.reference_context import (
+    ReferenceContext,
+    SequenceBinding,
+    SequenceBindingId,
+    SequenceBindingMethod,
+)
 from refcompat.model.resources import (
     ArtifactDigest,
     ArtifactDigestAlgorithm,
@@ -103,6 +110,7 @@ __all__ = [
     "ArtifactDigest",
     "ArtifactDigestAlgorithm",
     "ArtifactIdentity",
+    "BundleReasoningResult",
     "Capability",
     "CapabilityId",
     "CollectionCompleteness",
@@ -142,6 +150,7 @@ __all__ = [
     "ObservationId",
     "ObservationKind",
     "ProfileId",
+    "ReferenceContext",
     "RefgetSequenceId",
     "Requirement",
     "RequirementId",
@@ -155,6 +164,9 @@ __all__ = [
     "SatisfactionMode",
     "SeqColAttributeDigest",
     "SeqColDigest",
+    "SequenceBinding",
+    "SequenceBindingId",
+    "SequenceBindingMethod",
     "SequenceCollectionSnapshot",
     "SequenceDictionaryContentIdentityMatch",
     "SequenceDictionaryCrossNameM5LengthInconsistency",

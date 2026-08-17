@@ -28,7 +28,7 @@ The second is much stronger evidence than the first.
 
 ## Evidence object
 
-Milestone 1 implements the stable qualitative `EvidenceStrength` and `EvidencePolarity` vocabulary used by the identity/derived-artifact results. Milestone 2 now adds a generalized immutable `Evidence` object plus `EvidenceAggregate`. Evidence items carry deterministic opaque IDs, scientific kind, derivation method, qualitative strength and polarity, the constraint/requirement/capability IDs involved, and any source observation IDs already attached to the capability.
+Milestone 1 implements the stable qualitative `EvidenceStrength` and `EvidencePolarity` vocabulary used by the identity/derived-artifact results. Milestone 2 now adds a generalized immutable `Evidence` object plus `EvidenceAggregate`. Evidence items carry deterministic opaque IDs, scientific kind, derivation method, qualitative strength and polarity, the constraint/requirement/capability IDs involved, any source observation IDs already attached to the capability, and verified sequence-binding IDs when cross-name projection was required.
 
 The current generalized evidence object deliberately does not include an external-standard/tool reference field before a concrete producer needs one. That metadata can be added when standards-backed claim/evidence producers exist rather than as an unused placeholder.
 
@@ -39,9 +39,9 @@ Capabilities may carry zero or more source observation IDs. An empty tuple is a 
 
 `EvidenceAggregate` retains individual evidence rather than collapsing it into a score. It separately exposes supporting evidence, contradicting evidence, and Tier-A conclusive contradictions while retaining unresolved/not-applicable constraint IDs.
 
-An unresolved constraint may still carry evidence when candidate capabilities disagree. The aggregate preserves both sides of that disagreement rather than selecting a winner. Counts of weaker support do not cancel a Tier-A contradiction. Whole-bundle interpretation remains a later layer.
+An unresolved constraint may still carry evidence when candidate capabilities disagree. The aggregate preserves both sides of that disagreement rather than selecting a winner. Counts of weaker support do not cancel a Tier-A contradiction. Whole-bundle orchestration now preserves this aggregate unchanged; top-level verdict policy remains a later layer.
 
-Evidence IDs derived by the exact typed evaluator are deterministic opaque SHA-256-based identifiers over the constraint/requirement/capability relationship and its qualitative classification. They are not scientific digests and must not be parsed for semantic meaning.
+Evidence IDs derived by the typed evaluator are deterministic opaque SHA-256-based identifiers over the constraint/requirement/capability relationship, its qualitative classification, and any verified sequence-binding IDs used for projection. They are not scientific digests and must not be parsed for semantic meaning.
 
 ## Evidence hierarchy
 
@@ -181,4 +181,4 @@ Finding / condition
 
 A report that cannot provide that trace should not claim a stronger conclusion than its model can justify.
 
-The third Milestone 2 slice now materializes the first structured `CompatibilityFinding` and `CompatibilityCondition` objects. Conflict findings cite concrete evidence IDs; unresolved findings may legitimately cite none when evidence is absent. Scope conditions are derived only from explicit `EvaluationRequest` resource/anchor-sequence scope and do not themselves assert a compatibility verdict.
+The third Milestone 2 slice materializes the first structured `CompatibilityFinding` and `CompatibilityCondition` objects. Conflict findings cite concrete evidence IDs; unresolved findings may legitimately cite none when evidence is absent. Scope conditions are derived only from explicit `EvaluationRequest` resource/anchor-sequence scope and do not themselves assert a compatibility verdict. The fourth slice adds FASTA-anchored `SequenceBinding` traceability and bundle orchestration without changing that no-verdict boundary.

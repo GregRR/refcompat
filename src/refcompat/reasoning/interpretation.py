@@ -112,6 +112,12 @@ def _validate_request_scope(
             for capability in constraint.candidate_capabilities
         ):
             raise ValueError("constraint capability resource is outside evaluation scope")
+        if any(
+            binding.resource_id not in scoped_resource_ids
+            or binding.anchor_resource_id not in scoped_resource_ids
+            for binding in constraint.sequence_bindings
+        ):
+            raise ValueError("constraint sequence binding is outside evaluation scope")
 
 
 def _validate_interpretation_inputs(
@@ -156,6 +162,9 @@ def _validate_interpretation_inputs(
         capability_ids = {capability.id for capability in constraint.candidate_capabilities}
         if item.capability_id not in capability_ids:
             raise ValueError("evidence capability ID is absent from its constraint")
+        binding_ids = {binding.id for binding in constraint.sequence_bindings}
+        if not set(item.sequence_binding_ids).issubset(binding_ids):
+            raise ValueError("evidence sequence-binding ID is absent from its constraint")
 
     for constraint in constraints:
         evaluation = evaluations_by_id[constraint.id]

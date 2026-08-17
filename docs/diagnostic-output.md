@@ -74,8 +74,8 @@ machine-readable `CompatibilityReport` schema described in `DESIGN.md`.
 Field names should still change deliberately and with tests, but pre-1.0
 consumers must not treat this shape as the final report-schema contract.
 
-The stable schema/versioning decision remains deferred until the report model
-and whole-bundle reasoning are implemented.
+The stable schema/versioning decision remains deferred until the stable report
+model and top-level verdict aggregation are implemented.
 
 ## Process exit status
 

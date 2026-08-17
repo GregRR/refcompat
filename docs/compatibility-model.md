@@ -152,14 +152,9 @@ Absence from a sparse VCF or GTF must never be interpreted as absence from the u
 
 A reasoner-produced candidate or established reference context for the evaluation. It is not the same as a per-resource snapshot.
 
-For v0.1 the explicitly selected FASTA anchor defines the candidate reference context. Other resources are evaluated against it; resources do not vote on the reference identity.
+For v0.1 the explicitly selected FASTA anchor defines the reference context from a complete `SequenceCollectionSnapshot`. Explicit anchor-sequence scope filters that context while preserving FASTA order. The reasoner derives anchor presence, length, identity, and order capabilities from the selected sequences. Other resources are evaluated against those anchor capabilities; resources do not vote on reference identity.
 
-Candidate status values may include:
-
-- `VERIFIED`
-- `PARTIALLY_VERIFIED`
-- `OBSERVED`
-- `UNRESOLVED`
+A future context-status layer may still distinguish states such as `VERIFIED`, `PARTIALLY_VERIFIED`, `OBSERVED`, and `UNRESOLVED`. Those status ideas are retained for later policy/reporting work rather than being embedded prematurely in the current `ReferenceContext` object.
 
 ## `SequenceBinding`
 
@@ -172,7 +167,7 @@ FASTA local name chr1 -> SQ.ABC...
 GTF local name 1     -> SQ.ABC...
 ```
 
-A verified alias relationship may then be derived from common identity. The architecture should prefer the question “what sequence does this name denote?” over a global string-replacement table.
+A verified alias relationship may then be derived from common identity. The first implementation requires comparable content identity to resolve one local name to exactly one selected anchor sequence. Duplicate anchor sequences with the same content identity remain ambiguous rather than being broken by string resemblance. Conflicting local identity facts likewise remain unbound. The architecture prefers the question “what sequence does this name denote?” over a global string-replacement table.
 
 ## `CoordinateContext`
 
@@ -273,7 +268,7 @@ Mechanism belongs in a separate `SatisfactionMode`, for example:
 
 Do not encode mechanisms as proliferating states such as `SATISFIED_BY_ALIAS`.
 
-The first evaluator implements exact typed comparisons only. It returns `UNRESOLVED` when comparable evidence is absent or internally conflicting, and it does not infer a cross-name alias/binding merely from familiar names. The second Milestone 2 slice derives deterministic qualitative evidence items from evaluator-relevant capabilities and aggregates them without numeric scoring or bundle interpretation.
+The evaluator supports exact typed comparisons plus projection through explicit verified `SequenceBinding` objects. It returns `UNRESOLVED` when comparable evidence is absent or internally conflicting and never infers a cross-name relationship from familiar names alone. Bound cross-name presence/length/order may use `VERIFIED_ALIAS`; identity remains `VERIFIED_SEQUENCE_IDENTITY`. Evidence records `VERIFIED_SEQUENCE_BINDING` and the binding IDs when a cross-name projection was required.
 
 ## `Evidence` and `EvidenceAggregate`
 
@@ -310,6 +305,12 @@ A condition identifies:
 ### Invariant: conditions require explicit scope
 
 RefCompat must not decide on its own that ALT, decoy, patch, mitochondrial, unplaced, or other sequences are irrelevant. Conditional compatibility follows an explicit evaluation scope or profile rule.
+
+## `BundleReasoningResult`
+
+The anchor-driven whole-bundle layer requires exactly one `ResourceContract` for every explicitly scoped resource, builds the FASTA `ReferenceContext`, derives unique content-backed `SequenceBinding` objects, constructs one anchor-driven constraint for every typed requirement, and then runs the existing evaluation, evidence, and interpretation layers.
+
+Peer-resource capabilities are consulted only to establish sequence bindings. Candidate capabilities for compatibility constraints come from the selected FASTA context, so peer resources cannot vote on or replace reference authority. `BundleReasoningResult` groups the request, contracts, reference context, bindings, constraints/evaluations, evidence, and interpretation without adding a top-level verdict.
 
 ## `CompatibilityReport`
 

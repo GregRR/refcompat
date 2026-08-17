@@ -12,6 +12,8 @@ from refcompat.model.constraints import (
     ConstraintId,
     ConstraintState,
     capability_is_comparable,
+    projected_sequence_name,
+    projected_sequence_order,
 )
 from refcompat.model.contracts import (
     Capability,
@@ -34,18 +36,15 @@ from refcompat.model.evidence import (
     EvidencePolarity,
     EvidenceStrength,
 )
+from refcompat.model.reference_context import SequenceBinding, SequenceBindingId
+from refcompat.model.resources import ResourceId
 
 
 def aggregate_constraint_evidence(
     constraints: tuple[CompatibilityConstraint, ...],
     evaluations: tuple[ConstraintEvaluation, ...],
 ) -> EvidenceAggregate:
-    """Aggregate traceable evidence without computing a score or bundle verdict.
-
-    Every constraint must have exactly one matching evaluation. Evidence is
-    derived only from capability IDs the evaluator marked relevant, preserving
-    ``UNRESOLVED`` when evidence is absent or internally conflicting.
-    """
+    """Aggregate traceable evidence without computing a score or bundle verdict."""
 
     constraint_ids = tuple(constraint.id for constraint in constraints)
     if len(set(constraint_ids)) != len(constraint_ids):
@@ -118,8 +117,12 @@ def _evidence_from_capability(
     requirement = constraint.requirement
     if not capability_is_comparable(requirement, capability):
         raise ValueError("evidence capability is not comparable to the requirement")
-    kind, strength, polarity = _classify_relationship(requirement, capability)
-    method = EvidenceMethod.EXACT_TYPED_CONSTRAINT
+
+    kind, strength, polarity, method, binding_ids = _classify_relationship(
+        constraint,
+        requirement,
+        capability,
+    )
     return Evidence(
         id=_make_evidence_id(
             constraint_id=str(constraint.id),
@@ -129,6 +132,7 @@ def _evidence_from_capability(
             method=method,
             strength=strength,
             polarity=polarity,
+            binding_ids=tuple(str(binding_id) for binding_id in binding_ids),
         ),
         kind=kind,
         method=method,
@@ -138,62 +142,125 @@ def _evidence_from_capability(
         requirement_id=requirement.id,
         capability_id=capability.id,
         source_observation_ids=capability.source_observation_ids,
+        sequence_binding_ids=binding_ids,
     )
 
 
 def _classify_relationship(
+    constraint: CompatibilityConstraint,
     requirement: Requirement,
     capability: Capability,
-) -> tuple[EvidenceKind, EvidenceStrength, EvidencePolarity]:
+) -> tuple[
+    EvidenceKind,
+    EvidenceStrength,
+    EvidencePolarity,
+    EvidenceMethod,
+    tuple[SequenceBindingId, ...],
+]:
     if isinstance(requirement, SequencePresenceRequirement):
         if not isinstance(capability, SequencePresenceCapability):
             raise ValueError("presence evidence requires a presence capability")
-        if capability.sequence_name != requirement.sequence_name:
-            raise ValueError("presence evidence capability is not relevant to the requirement")
+        binding = _named_binding(
+            constraint,
+            requirement.sequence_name,
+            capability.sequence_name,
+            capability.resource_id,
+        )
         return (
             EvidenceKind.SEQUENCE_PRESENCE,
             EvidenceStrength.TIER_B_DIRECT_STRUCTURAL,
             EvidencePolarity.SUPPORTS if capability.present else EvidencePolarity.CONTRADICTS,
+            _method(binding),
+            _binding_ids(binding),
         )
 
     if isinstance(requirement, SequenceLengthRequirement):
         if not isinstance(capability, SequenceLengthCapability):
             raise ValueError("length evidence requires a length capability")
-        if capability.sequence_name != requirement.sequence_name:
-            raise ValueError("length evidence capability is not relevant to the requirement")
+        binding = _named_binding(
+            constraint,
+            requirement.sequence_name,
+            capability.sequence_name,
+            capability.resource_id,
+        )
         return (
             EvidenceKind.SEQUENCE_LENGTH,
             EvidenceStrength.TIER_B_DIRECT_STRUCTURAL,
             EvidencePolarity.SUPPORTS
             if capability.length == requirement.length
             else EvidencePolarity.CONTRADICTS,
+            _method(binding),
+            _binding_ids(binding),
         )
 
     if isinstance(requirement, SequenceIdentityRequirement):
         if not isinstance(capability, SequenceIdentityCapability):
             raise ValueError("identity evidence requires an identity capability")
-        if capability.sequence_name != requirement.sequence_name:
-            raise ValueError("identity evidence capability is not relevant to the requirement")
+        binding = _named_binding(
+            constraint,
+            requirement.sequence_name,
+            capability.sequence_name,
+            capability.resource_id,
+        )
         return (
             EvidenceKind.SEQUENCE_IDENTITY,
             EvidenceStrength.TIER_A_CONCLUSIVE_CONTENT,
             EvidencePolarity.SUPPORTS
             if capability.identity == requirement.identity
             else EvidencePolarity.CONTRADICTS,
+            _method(binding),
+            _binding_ids(binding),
         )
 
     if isinstance(requirement, SequenceOrderRequirement):
         if not isinstance(capability, SequenceOrderCapability):
             raise ValueError("order evidence requires an order capability")
+        projected = projected_sequence_order(constraint, requirement, capability.resource_id)
+        if projected is None:
+            raise ValueError("order evidence capability is not relevant to the requirement")
+        expected_names, bindings = projected
+        binding_ids = tuple(binding.id for binding in bindings)
         return (
             EvidenceKind.SEQUENCE_ORDER,
             EvidenceStrength.TIER_B_DIRECT_STRUCTURAL,
             EvidencePolarity.SUPPORTS
-            if capability.sequence_names == requirement.sequence_names
+            if capability.sequence_names == expected_names
             else EvidencePolarity.CONTRADICTS,
+            EvidenceMethod.VERIFIED_SEQUENCE_BINDING
+            if binding_ids
+            else EvidenceMethod.EXACT_TYPED_CONSTRAINT,
+            binding_ids,
         )
 
     assert_never(requirement)
+
+
+def _named_binding(
+    constraint: CompatibilityConstraint,
+    local_name: str,
+    capability_name: str,
+    capability_resource_id: ResourceId,
+) -> SequenceBinding | None:
+    projected = projected_sequence_name(
+        constraint,
+        local_name,
+        capability_resource_id,
+    )
+    if projected is None or capability_name != projected[0]:
+        raise ValueError("evidence capability is not relevant to the requirement")
+    return projected[1]
+
+
+def _method(binding: SequenceBinding | None) -> EvidenceMethod:
+    if binding is not None and binding.anchor_sequence_name != binding.local_sequence_name:
+        return EvidenceMethod.VERIFIED_SEQUENCE_BINDING
+    return EvidenceMethod.EXACT_TYPED_CONSTRAINT
+
+
+def _binding_ids(binding: SequenceBinding | None) -> tuple[SequenceBindingId, ...]:
+    if binding is not None and binding.anchor_sequence_name != binding.local_sequence_name:
+        return (binding.id,)
+    return ()
 
 
 def _validate_evidence_matches_evaluation(
@@ -218,6 +285,7 @@ def _make_evidence_id(
     method: EvidenceMethod,
     strength: EvidenceStrength,
     polarity: EvidencePolarity,
+    binding_ids: tuple[str, ...] = (),
 ) -> EvidenceId:
     """Return an opaque deterministic ID for one derived evidence relationship."""
 
@@ -230,6 +298,7 @@ def _make_evidence_id(
             method.value,
             strength.value,
             polarity.value,
+            *sorted(binding_ids),
         ],
         ensure_ascii=True,
         separators=(",", ":"),

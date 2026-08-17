@@ -219,11 +219,13 @@ Per-resource description of the sequence collection information the resource act
 
 ### 5.7 `ReferenceContext`
 
-Reasoner-produced candidate/established shared reference context. In v0.1 the explicitly selected FASTA anchor establishes the candidate context.
+Reasoner-produced candidate/established shared reference context. In v0.1 the explicitly selected FASTA anchor establishes the context from a complete `SequenceCollectionSnapshot`, projected only into explicit request scope. Peer resources do not vote on reference identity.
 
 ### 5.8 `SequenceBinding`
 
-Evidence-backed mapping from a resource-local name to sequence identity. Alias relationships should be derived from bindings rather than implemented as blind string substitution.
+Evidence-backed mapping from a resource-local name to one anchor-local sequence. The first implementation derives a binding only from comparable content identity that resolves uniquely across the complete FASTA anchor snapshot; explicit sequence scope may hide a unique target but must never manufacture uniqueness by hiding duplicate-content alternatives. Conflicting local identities remain unbound. Alias relationships are derived from bindings rather than blind string substitution.
+
+Later hardening: if repeated binding derivation becomes performance-sensitive, consider caching or reusing full-snapshot anchor identity capabilities. Any such optimization must preserve complete-FASTA uniqueness and ambiguity semantics.
 
 ### 5.9 `CoordinateContext`
 
@@ -635,7 +637,7 @@ No unresolved tooling choice blocks the first implementation slice. The remainin
 4. build deterministic known-answer and corpus-derived Milestone 1 exit fixtures (complete);
 5. produce human + minimal machine-readable reports (complete);
 6. implement the core requirements/capabilities reasoning slice (complete);
-7. implement generalized evidence aggregation (complete), then reference context and anchor-driven bundle reporting;
+7. implement generalized evidence aggregation, structured interpretation, and FASTA-anchored reference-context/bundle reasoning (complete), then top-level verdict aggregation and conflict-core extraction;
 8. add VCF, BAM/CRAM, and GTF/GFF inspectors one at a time;
 9. incorporate implementation feedback into the design as concrete edge cases expose missing constraints or evidence types.
 
@@ -659,4 +661,4 @@ Primary/standards references should be preferred in implementation documentation
 
 ## Design status
 
-The broad research, implementation-readiness, repository-tooling, and Milestone 1 identity/derived-artifact phases are complete. RefCompat now also implements the first three Milestone 2 reasoning boundaries: explicit anchor-driven evaluation requests/scope, typed sequence presence/length/identity/order requirements and capabilities, separate exact compatibility constraints/evaluations, generalized qualitative evidence aggregation with deterministic IDs and observation traceability, and structured conflict/unresolved findings plus explicit-scope conditions. Missing candidate evidence remains unresolved unless an explicit capability proves a contradiction, evidence is never converted into a numeric compatibility score, and conditions never infer scope exclusions that the caller did not state. The next implementation target is the anchor-driven reference-context/bundle layer; verdict aggregation and conflict-core reporting remain later Milestone 2 work. Additional broad corpus collection is not currently justified unless implementation exposes a new unresolved category, a profile requires targeted evidence, or a separate prevalence study becomes a project goal.
+The broad research, implementation-readiness, repository-tooling, and Milestone 1 identity/derived-artifact phases are complete. RefCompat now also implements the first four Milestone 2 reasoning boundaries: explicit anchor-driven evaluation requests/scope; typed sequence presence/length/identity/order requirements and capabilities with separate constraint/evaluation objects; generalized qualitative evidence aggregation with deterministic IDs and observation traceability; structured conflict/unresolved findings plus explicit-scope conditions; and a complete-FASTA `ReferenceContext` with content-verified `SequenceBinding` plus whole-bundle orchestration. Missing candidate evidence remains unresolved unless an explicit capability proves a contradiction, ambiguous sequence identity never manufactures a binding, peer resources do not vote on reference identity, evidence is never converted into a numeric compatibility score, and conditions never infer scope exclusions that the caller did not state. The next implementation targets are top-level verdict aggregation and conflict-core reporting. Additional broad corpus collection is not currently justified unless implementation exposes a new unresolved category, a profile requires targeted evidence, or a separate prevalence study becomes a project goal.

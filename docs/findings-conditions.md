@@ -1,9 +1,6 @@
 # Milestone 2 structured findings and conditions
 
-**Status:** implemented as the third Milestone 2 reasoning slice. Anchor-driven
-`ReferenceContext`/`SequenceBinding`, whole-bundle verdict aggregation,
-conflict-core reporting, and stable `CompatibilityReport` serialization remain
-later work.
+**Status:** implemented as the third Milestone 2 reasoning slice. The following anchor-driven `ReferenceContext`/`SequenceBinding` and whole-bundle orchestration slice is also implemented; top-level verdict aggregation, conflict-core reporting, and stable `CompatibilityReport` serialization remain later work.
 
 This layer interprets already-evaluated constraints and qualitative evidence as
 structured findings, and records explicit request scope as structured
@@ -70,10 +67,7 @@ A condition does **not** say compatibility has already been established inside
 that scope. It says that any later positive compatibility claim must remain
 bounded by the scope the caller explicitly chose.
 
-The interpreter never guesses that ALT, decoy, patch, mitochondrial, unplaced,
-or any other sequence class is irrelevant. It also does not compare
-resource-local names to `anchor_sequence_names` before an evidence-backed
-`SequenceBinding` layer exists.
+The interpreter never guesses that ALT, decoy, patch, mitochondrial, unplaced, or any other sequence class is irrelevant. Sequence-name projection is performed only by the later evidence-backed `SequenceBinding` layer; the interpretation layer itself does not infer aliases or compare unrelated local namespaces.
 
 Constraints and capability resources accepted by this interpretation layer must
 belong to the explicit request resource scope. This prevents a scoped result
@@ -94,8 +88,6 @@ anchor-sequence-scope condition.
 
 This slice does not implement:
 
-- `ReferenceContext`;
-- `SequenceBinding` or verified alias relationships;
 - provenance claims or claim assessments;
 - higher-order multi-constraint scientific findings;
 - mandatory/advisory verdict aggregation;

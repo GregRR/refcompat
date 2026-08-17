@@ -16,6 +16,7 @@ The project is currently pre-release and still establishing its design and repos
 - Begin Milestone 2 with explicit evaluation requests/scope, typed sequence presence/length/identity/order requirements and capabilities, context-specific resource contracts, and separate exact constraint/evaluation objects that preserve unresolved evidence gaps without numeric scoring.
 - Add generalized qualitative evidence items and deterministic evidence IDs, propagate optional observation traceability through capabilities, and aggregate supporting/contradicting evidence without numeric voting or bundle verdicts.
 - Add structured compatibility findings for typed conflicts/unresolved questions and explicit resource/anchor-sequence scope conditions, retaining traceability without assigning a bundle verdict.
+- Add FASTA-anchored `ReferenceContext`, content-verified `SequenceBinding`, binding-aware constraint/evidence traceability, and deterministic whole-bundle orchestration that evaluates every scoped typed requirement against the selected anchor without peer-resource voting or a top-level verdict.
 
 ### Foundation
 

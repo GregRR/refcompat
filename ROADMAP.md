@@ -49,7 +49,7 @@ The roadmap intentionally avoids turning RefCompat into a universal genomics val
 - [x] Implement compatibility constraints and evaluations.
 - [x] Implement evidence aggregation without numeric compatibility scoring.
 - [x] Implement structured findings and conditions.
-- [ ] Implement anchor-driven whole-bundle reasoning.
+- [x] Implement anchor-driven whole-bundle reasoning.
 - [ ] Implement `COMPATIBLE`, `COMPATIBLE_WITH_CONDITIONS`, `INCOMPATIBLE`, and `INDETERMINATE` aggregation.
 - [ ] Implement conflict-core reporting sufficient to identify the smallest useful conflicting resource/evidence set.
 

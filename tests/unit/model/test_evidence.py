@@ -16,6 +16,7 @@ from refcompat.model.evidence import (
     EvidenceStrength,
 )
 from refcompat.model.observations import ObservationId
+from refcompat.model.reference_context import SequenceBindingId
 
 
 def _evidence(
@@ -114,3 +115,30 @@ def test_aggregate_rejects_duplicate_ids_or_conflicting_status_lists() -> None:
 
     with pytest.raises(ValueError, match="unresolved constraint IDs must not be empty"):
         EvidenceAggregate(unresolved_constraint_ids=(ConstraintId(""),))
+
+
+def test_evidence_method_and_binding_trace_must_agree() -> None:
+    with pytest.raises(ValueError, match="requires a binding ID"):
+        Evidence(
+            id=EvidenceId("bound"),
+            kind=EvidenceKind.SEQUENCE_LENGTH,
+            method=EvidenceMethod.VERIFIED_SEQUENCE_BINDING,
+            strength=EvidenceStrength.TIER_B_DIRECT_STRUCTURAL,
+            polarity=EvidencePolarity.SUPPORTS,
+            constraint_id=ConstraintId("constraint"),
+            requirement_id=RequirementId("requirement"),
+            capability_id=CapabilityId("capability"),
+        )
+
+    with pytest.raises(ValueError, match="cannot cite a sequence binding"):
+        Evidence(
+            id=EvidenceId("exact"),
+            kind=EvidenceKind.SEQUENCE_LENGTH,
+            method=EvidenceMethod.EXACT_TYPED_CONSTRAINT,
+            strength=EvidenceStrength.TIER_B_DIRECT_STRUCTURAL,
+            polarity=EvidencePolarity.SUPPORTS,
+            constraint_id=ConstraintId("constraint"),
+            requirement_id=RequirementId("requirement"),
+            capability_id=CapabilityId("capability"),
+            sequence_binding_ids=(SequenceBindingId("binding"),),
+        )

@@ -1,6 +1,6 @@
 # Milestone 2 typed reasoning foundation
 
-**Status:** first Milestone 2 typed-reasoning slice implemented; the second slice now adds qualitative evidence aggregation. Findings, conditions, reference-context/bundle reasoning, verdicts, and conflict-core reporting remain later Milestone 2 work.
+**Status:** implemented as the first Milestone 2 reasoning slice. The later evidence, findings/conditions, and FASTA-anchored reference-context/bundle slices are also implemented; top-level verdict aggregation and conflict-core reporting remain later Milestone 2 work.
 
 This slice introduces the typed question/evaluation boundary used by later
 bundle reasoning. It deliberately does not emit a whole-bundle compatibility
@@ -95,10 +95,7 @@ MD5 and refget identifiers are not cross-compared. A matching MD5 capability
 does not satisfy a refget requirement, or vice versa, merely because both are
 content identities.
 
-Cross-name identity/verified alias reasoning is deliberately deferred until
-`SequenceBinding` exists. A same-content capability under another local name
-therefore remains unresolved in this slice rather
-than silently manufacturing a name binding.
+Cross-name identity/verified alias reasoning is implemented only through the later `SequenceBinding` layer documented in `reference-context-bundle.md`. The base evaluator still manufactures no alias from string similarity; a same-content capability under another local name is usable only when an explicit verified binding is attached to the constraint.
 
 If comparable candidate capabilities conflict with each other, the evaluator
 returns `UNRESOLVED` rather than choosing one or averaging them.
@@ -112,10 +109,8 @@ aggregation. The next interpretation slice, documented in
 `findings-conditions.md`, provides structured conflict/unresolved findings and
 explicit-scope conditions. Still deferred are:
 
-- `ReferenceContext` construction;
-- `SequenceBinding` / verified alias resolution;
 - provenance claim assessment;
-- whole-bundle verdict aggregation;
+- top-level bundle verdict aggregation;
 - conflict-core reporting;
 - stable `CompatibilityReport` serialization.
 

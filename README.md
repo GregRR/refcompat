@@ -108,11 +108,12 @@ Start with:
 - [`docs/reasoning-foundation.md`](docs/reasoning-foundation.md) — typed Milestone 2 request, contract, and constraint/evaluation boundary;
 - [`docs/evidence-aggregation.md`](docs/evidence-aggregation.md) — qualitative, traceable Milestone 2 evidence derivation and aggregation;
 - [`docs/findings-conditions.md`](docs/findings-conditions.md) — structured Milestone 2 issue/unresolved findings and explicit-scope conditions;
+- [`docs/reference-context-bundle.md`](docs/reference-context-bundle.md) — FASTA-anchored reference context, verified sequence bindings, and whole-bundle orchestration;
 - [`docs/adr/`](docs/adr/) — architectural decisions.
 
 ## Project status
 
-Milestone 1 is complete, and the first three Milestone 2 reasoning slices are implemented. RefCompat now has explicit anchor-driven evaluation requests/scope, typed sequence presence/length/identity/order requirements and capabilities, separate compatibility constraints/evaluations, qualitative traceable evidence aggregation without numeric scoring, and structured issue/unresolved findings plus explicit-scope conditions. Reference-context and whole-bundle reasoning, verdict aggregation, and conflict-core reporting remain the next Milestone 2 work.
+Milestone 1 is complete, and the first four Milestone 2 reasoning slices are implemented. RefCompat now has explicit anchor-driven evaluation requests/scope, typed sequence presence/length/identity/order requirements and capabilities, separate compatibility constraints/evaluations, qualitative traceable evidence aggregation without numeric scoring, structured issue/unresolved findings plus explicit-scope conditions, and an explicit FASTA `ReferenceContext` with content-verified `SequenceBinding` plus whole-bundle orchestration. Top-level verdict aggregation and conflict-core reporting remain the next Milestone 2 work.
 
 ## Current CLI diagnostics
 

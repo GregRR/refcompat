@@ -30,9 +30,10 @@ from refcompat.model.contracts import (
     SequencePresenceRequirement,
 )
 from refcompat.model.evaluation import EvaluationRequest, EvaluationScope
-from refcompat.model.evidence import EvidenceAggregate, EvidencePolarity
+from refcompat.model.evidence import EvidenceAggregate, EvidenceMethod, EvidencePolarity
 from refcompat.model.identity import Md5Digest
 from refcompat.model.interpretation import ConditionKind, FindingKind
+from refcompat.model.reference_context import SequenceBindingId
 from refcompat.model.resources import ArtifactIdentity, Resource, ResourceId, ResourceKind
 from refcompat.reasoning.constraints import build_constraint, evaluate_constraint
 from refcompat.reasoning.evidence import aggregate_constraint_evidence
@@ -546,3 +547,21 @@ def test_interpretation_rejects_not_applicable_with_evidence() -> None:
 
     with pytest.raises(ValueError, match="not-applicable interpretation cannot carry evidence"):
         interpret_constraint_results(_request(), (constraint,), (evaluation,), wrong_aggregate)
+
+
+def test_interpretation_rejects_evidence_binding_absent_from_constraint() -> None:
+    present = SequencePresenceCapability(
+        id=CapabilityId("present"), resource_id=_REFERENCE, sequence_name="chrX", present=True
+    )
+    constraint = build_constraint(ConstraintId("presence"), _presence_requirement(), (present,))
+    evaluation, aggregate = _pipeline(constraint)
+    wrong_evidence = replace(
+        aggregate.evidence[0],
+        method=EvidenceMethod.VERIFIED_SEQUENCE_BINDING,
+        sequence_binding_ids=(SequenceBindingId("unknown"),),
+    )
+
+    with pytest.raises(ValueError, match="sequence-binding ID is absent from its constraint"):
+        interpret_constraint_results(
+            _request(), (constraint,), (evaluation,), EvidenceAggregate(evidence=(wrong_evidence,))
+        )

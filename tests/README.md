@@ -25,7 +25,9 @@ Use small synthetic or clearly redistributable fixtures derived from the failure
 
 `fixtures/milestone1/` closes the first milestone with deterministic controls for same-name/different-sequence identity, alias-only dictionaries, order differences, and `.fai`/`.dict` artifacts that are stale by construction. Tests distinguish that construction history from the narrower structural/content evidence the checkers are justified in reporting.
 
-Milestone 2 unit tests exercise request/scope invariants, typed requirement/capability contracts, constraint/evaluation separation, exact sequence presence/length/identity/order rules, explicit negative presence, conservative `UNRESOLVED` behavior, source-observation traceability, deterministic qualitative evidence IDs, aggregation that preserves Tier-A contradictions without numeric voting, structured conflict/unresolved findings, and scope conditions that arise only from explicit request bounds.
+Milestone 2 unit tests exercise request/scope invariants, typed requirement/capability contracts, constraint/evaluation separation, exact and verified-binding sequence presence/length/identity/order rules, explicit negative presence, conservative `UNRESOLVED` behavior, source-observation and sequence-binding traceability, deterministic qualitative evidence IDs, aggregation that preserves Tier-A contradictions without numeric voting, structured conflict/unresolved findings, explicit scope conditions, FASTA reference-context construction, ambiguous-binding rejection, and anchor-driven whole-bundle orchestration that prevents peer resources from voting on reference identity.
+
+Later regression hardening: add an explicit out-of-scope `SequenceIdentityRequirement` test parallel to the existing presence, length, and order scope tests so identity scope behavior remains pinned to `UNRESOLVED`.
 
 ### Negative controls
 

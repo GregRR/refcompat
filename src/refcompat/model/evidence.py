@@ -14,6 +14,7 @@ from typing import NewType
 from refcompat.model.constraints import ConstraintId
 from refcompat.model.contracts import CapabilityId, RequirementId
 from refcompat.model.observations import ObservationId
+from refcompat.model.reference_context import SequenceBindingId
 
 EvidenceId = NewType("EvidenceId", str)
 
@@ -47,6 +48,7 @@ class EvidenceMethod(StrEnum):
     """Documented method used to derive an evidence relationship."""
 
     EXACT_TYPED_CONSTRAINT = "exact_typed_constraint"
+    VERIFIED_SEQUENCE_BINDING = "verified_sequence_binding"
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,6 +71,7 @@ class Evidence:
     requirement_id: RequirementId
     capability_id: CapabilityId
     source_observation_ids: tuple[ObservationId, ...] = ()
+    sequence_binding_ids: tuple[SequenceBindingId, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.id:
@@ -83,6 +86,17 @@ class Evidence:
             raise ValueError("evidence source observation IDs must not be empty")
         if len(set(self.source_observation_ids)) != len(self.source_observation_ids):
             raise ValueError("evidence source observation IDs must be unique")
+        if any(not binding_id for binding_id in self.sequence_binding_ids):
+            raise ValueError("evidence sequence-binding IDs must not be empty")
+        if len(set(self.sequence_binding_ids)) != len(self.sequence_binding_ids):
+            raise ValueError("evidence sequence-binding IDs must be unique")
+        if (
+            self.method is EvidenceMethod.VERIFIED_SEQUENCE_BINDING
+            and not self.sequence_binding_ids
+        ):
+            raise ValueError("verified sequence-binding evidence requires a binding ID")
+        if self.method is EvidenceMethod.EXACT_TYPED_CONSTRAINT and self.sequence_binding_ids:
+            raise ValueError("exact typed-constraint evidence cannot cite a sequence binding")
 
 
 @dataclass(frozen=True, slots=True)

@@ -1,8 +1,6 @@
 # Milestone 2 qualitative evidence aggregation
 
-**Status:** implemented as the second Milestone 2 reasoning slice. Structured findings/conditions are now implemented in the next Milestone 2 slice.
-Reference-context construction, whole-bundle verdicts, and conflict-core reporting
-remain later work.
+**Status:** implemented as the second Milestone 2 reasoning slice. Structured findings/conditions and FASTA-anchored reference-context/bundle reasoning are now implemented in following slices. Top-level verdict aggregation and conflict-core reporting remain later work.
 
 This layer turns already-evaluated typed compatibility questions into explicit,
 traceable evidence relationships. It does **not** compute a numeric compatibility
@@ -31,9 +29,10 @@ the first Milestone 2 slice:
 - sequence identity;
 - sequence order.
 
-The only current generalized derivation method is
-`EXACT_TYPED_CONSTRAINT`. This is deliberately narrower than a generic rules
-language.
+The baseline derivation method is `EXACT_TYPED_CONSTRAINT`. The later
+reference-context/bundle slice also uses `VERIFIED_SEQUENCE_BINDING` when an
+explicit content-verified binding is required to project a resource-local name
+into the FASTA-anchor namespace. Neither method is a generic rules language.
 
 ## Source traceability
 
@@ -83,9 +82,10 @@ The current exact sequence evaluator maps evidence conservatively:
 A matching candidate supports its requirement. A directly comparable but
 nonmatching candidate contradicts it.
 
-Algorithm-incomparable identity capabilities and different local sequence names
-are filtered before they become evidence in this exact evaluator; they leave the
-constraint unresolved rather than manufacturing a false contradiction.
+Algorithm-incomparable identity capabilities are filtered before they become
+evidence. Different local sequence names remain unresolved unless the later
+reference-context layer attaches an explicit content-verified `SequenceBinding`;
+string resemblance alone never manufactures a comparison or contradiction.
 
 ## Aggregation without voting
 
@@ -128,12 +128,12 @@ of the evidence derived from their cited capabilities.
 This slice does not implement:
 
 - provenance claims or claim assessments;
-- `ReferenceContext`;
-- `SequenceBinding` or verified alias evidence;
 - mandatory/advisory aggregation policy;
 - whole-bundle verdicts;
 - conflict-core extraction;
 - stable `CompatibilityReport` serialization.
 
-Those later layers consume this evidence rather than being smuggled into the
-aggregation step itself.
+The following reference-context/bundle slice now attaches verified
+sequence-binding IDs to evidence when cross-name projection is required.
+Verdict policy and the remaining later layers still consume this evidence
+rather than being smuggled into aggregation itself.

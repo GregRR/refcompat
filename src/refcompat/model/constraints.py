@@ -21,6 +21,8 @@ from refcompat.model.contracts import (
     SequencePresenceRequirement,
 )
 from refcompat.model.identity import Md5Digest, RefgetSequenceId
+from refcompat.model.reference_context import SequenceBinding
+from refcompat.model.resources import ResourceId
 
 ConstraintId = NewType("ConstraintId", str)
 
@@ -60,6 +62,7 @@ class CompatibilityConstraint:
     requirement: Requirement
     candidate_capabilities: tuple[Capability, ...]
     rule: ConstraintRule
+    sequence_bindings: tuple[SequenceBinding, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.id:
@@ -67,6 +70,23 @@ class CompatibilityConstraint:
         capability_ids = tuple(capability.id for capability in self.candidate_capabilities)
         if len(set(capability_ids)) != len(capability_ids):
             raise ValueError("constraint candidate capability IDs must be unique")
+
+        binding_ids = tuple(binding.id for binding in self.sequence_bindings)
+        if len(set(binding_ids)) != len(binding_ids):
+            raise ValueError("constraint sequence-binding IDs must be unique")
+        local_names = tuple(binding.local_sequence_name for binding in self.sequence_bindings)
+        if len(set(local_names)) != len(local_names):
+            raise ValueError("constraint sequence bindings must map each local name at most once")
+        if any(
+            binding.resource_id != self.requirement.resource_id
+            for binding in self.sequence_bindings
+        ):
+            raise ValueError("constraint sequence bindings must belong to the requirement resource")
+        if any(
+            not _binding_is_relevant_to_requirement(self.requirement, binding)
+            for binding in self.sequence_bindings
+        ):
+            raise ValueError("constraint sequence bindings must address the requirement names")
 
         expected_rule = constraint_rule_for_requirement(self.requirement)
         if self.rule is not expected_rule:
@@ -148,4 +168,68 @@ def capability_is_comparable(requirement: Requirement, capability: Capability) -
         assert_never(requirement.identity)
     if isinstance(requirement, SequenceOrderRequirement):
         return isinstance(capability, SequenceOrderCapability)
+    assert_never(requirement)
+
+
+def projected_sequence_name(
+    constraint: CompatibilityConstraint,
+    local_sequence_name: str,
+    candidate_resource_id: ResourceId,
+) -> tuple[str, SequenceBinding | None] | None:
+    """Project one requirement-local name into a candidate resource namespace.
+
+    A verified binding takes precedence over an identical string label. Without
+    a binding, the local name is projected exactly and no alias is inferred.
+    """
+
+    binding = next(
+        (
+            item
+            for item in constraint.sequence_bindings
+            if item.local_sequence_name == local_sequence_name
+        ),
+        None,
+    )
+    if binding is None:
+        return local_sequence_name, None
+    if binding.anchor_resource_id != candidate_resource_id:
+        return None
+    return binding.anchor_sequence_name, binding
+
+
+def projected_sequence_order(
+    constraint: CompatibilityConstraint,
+    requirement: SequenceOrderRequirement,
+    candidate_resource_id: ResourceId,
+) -> tuple[tuple[str, ...], tuple[SequenceBinding, ...]] | None:
+    """Project ordered requirement-local names into one candidate namespace."""
+
+    projected_names: list[str] = []
+    used_bindings: list[SequenceBinding] = []
+    for local_name in requirement.sequence_names:
+        projected = projected_sequence_name(constraint, local_name, candidate_resource_id)
+        if projected is None:
+            return None
+        projected_name, binding = projected
+        projected_names.append(projected_name)
+        if binding is not None and binding.anchor_sequence_name != binding.local_sequence_name:
+            used_bindings.append(binding)
+    return tuple(projected_names), tuple(used_bindings)
+
+
+def _binding_is_relevant_to_requirement(
+    requirement: Requirement,
+    binding: SequenceBinding,
+) -> bool:
+    if isinstance(
+        requirement,
+        (
+            SequencePresenceRequirement,
+            SequenceLengthRequirement,
+            SequenceIdentityRequirement,
+        ),
+    ):
+        return binding.local_sequence_name == requirement.sequence_name
+    if isinstance(requirement, SequenceOrderRequirement):
+        return binding.local_sequence_name in requirement.sequence_names
     assert_never(requirement)
