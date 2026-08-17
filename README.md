@@ -60,14 +60,14 @@ RefCompat is being designed around these principles:
 - conditions must come from explicit scope or profile rules, not from RefCompat guessing what the user considers irrelevant;
 - no silent scientific repair or semantic transformation.
 
-Planned top-level verdicts are:
+Implemented top-level verdicts are:
 
 - `COMPATIBLE`
 - `COMPATIBLE_WITH_CONDITIONS`
 - `INCOMPATIBLE`
 - `INDETERMINATE`
 
-Analysis status is separately represented as `COMPLETE`, `PARTIAL`, or `INVALID_INPUT`.
+Planned analysis status remains separate from compatibility verdicts: `COMPLETE`, `PARTIAL`, or `INVALID_INPUT`.
 
 ## Research basis
 
@@ -109,11 +109,12 @@ Start with:
 - [`docs/evidence-aggregation.md`](docs/evidence-aggregation.md) — qualitative, traceable Milestone 2 evidence derivation and aggregation;
 - [`docs/findings-conditions.md`](docs/findings-conditions.md) — structured Milestone 2 issue/unresolved findings and explicit-scope conditions;
 - [`docs/reference-context-bundle.md`](docs/reference-context-bundle.md) — FASTA-anchored reference context, verified sequence bindings, and whole-bundle orchestration;
+- [`docs/verdict-aggregation.md`](docs/verdict-aggregation.md) — categorical mandatory-constraint verdict aggregation without numeric scoring;
 - [`docs/adr/`](docs/adr/) — architectural decisions.
 
 ## Project status
 
-Milestone 1 is complete, and the first four Milestone 2 reasoning slices are implemented. RefCompat now has explicit anchor-driven evaluation requests/scope, typed sequence presence/length/identity/order requirements and capabilities, separate compatibility constraints/evaluations, qualitative traceable evidence aggregation without numeric scoring, structured issue/unresolved findings plus explicit-scope conditions, and an explicit FASTA `ReferenceContext` with content-verified `SequenceBinding` plus whole-bundle orchestration. Top-level verdict aggregation and conflict-core reporting remain the next Milestone 2 work.
+Milestone 1 is complete, and the first five Milestone 2 reasoning slices are implemented. RefCompat now has explicit anchor-driven evaluation requests/scope, typed sequence presence/length/identity/order requirements and capabilities, separate compatibility constraints/evaluations, qualitative traceable evidence aggregation without numeric scoring, structured issue/unresolved findings plus explicit-scope conditions, an explicit FASTA `ReferenceContext` with content-verified `SequenceBinding` plus whole-bundle orchestration, and categorical `COMPATIBLE` / `COMPATIBLE_WITH_CONDITIONS` / `INCOMPATIBLE` / `INDETERMINATE` aggregation over mandatory constraints. Conflict-core reporting is the remaining Milestone 2 reasoning target.
 
 ## Current CLI diagnostics
 

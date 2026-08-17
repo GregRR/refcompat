@@ -105,6 +105,7 @@ from refcompat.model.sequence_dictionary import (
     SequenceDictionaryRecord,
     SequenceDictionarySnapshot,
 )
+from refcompat.model.verdict import CompatibilityVerdict, VerdictAggregation
 
 __all__ = [
     "ArtifactDigest",
@@ -117,6 +118,7 @@ __all__ = [
     "CompatibilityCondition",
     "CompatibilityConstraint",
     "CompatibilityFinding",
+    "CompatibilityVerdict",
     "ComputedFastaIndex",
     "ConditionId",
     "ConditionKind",
@@ -187,4 +189,5 @@ __all__ = [
     "SequencePresenceRequirement",
     "SnapshotSequence",
     "SourceLocation",
+    "VerdictAggregation",
 ]

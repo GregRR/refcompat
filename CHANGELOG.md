@@ -6,6 +6,7 @@ The project is currently pre-release and still establishing its design and repos
 
 ## Unreleased
 
+- Add categorical whole-bundle verdict aggregation over mandatory constraints, with hard-conflict precedence, conservative indeterminate handling, advisory isolation, explicit-scope conditional compatibility, and traceable finding/condition IDs without numeric scoring.
 - Add RefCompat-owned resource and sequence-identity value types.
 - Add the local refget/SeqCol FASTA identity adapter and GA4GH known-answer tests.
 - Harden FASTA identity ingestion after independent review: reject empty/headerless, anonymous, and duplicate-name anchors; separate malformed-input, unsupported-usage, and provider-shape errors; constrain collection-level digests to complete snapshots; and add offline/determinism/error-boundary regression tests.

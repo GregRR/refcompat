@@ -338,6 +338,20 @@ At least one in-scope mandatory constraint is contradicted by sufficient evidenc
 
 No hard contradiction is established, but available evidence cannot establish at least one mandatory relationship.
 
+### 7.4.1 Implemented v0.1 aggregation precedence
+
+The Milestone 2 categorical aggregator applies mandatory constraints in this order:
+
+1. any `UNSATISFIED` mandatory constraint -> `INCOMPATIBLE`;
+2. otherwise any `UNRESOLVED` mandatory constraint -> `INDETERMINATE`;
+3. otherwise no applicable mandatory constraint -> `INDETERMINATE`;
+4. otherwise explicit conditions -> `COMPATIBLE_WITH_CONDITIONS`;
+5. otherwise -> `COMPATIBLE`.
+
+Advisory constraints remain visible in evaluations/findings but do not veto a positive verdict. `NOT_APPLICABLE` mandatory constraints are neutral when another mandatory relationship is actually satisfied; a bundle with no applicable mandatory relationship does not receive vacuous compatibility. Conditions qualify only an otherwise-positive conclusion and never upgrade an incompatible or indeterminate result. The aggregation retains mandatory constraint-state partitions plus finding/condition IDs for traceability and performs no numeric scoring or voting.
+
+Later hardening: if findings are extended to span multiple constraints, verdict-basis selection must distinguish which cited constraints are actually decisive rather than treating any constraint-ID intersection as sufficient.
+
 ### 7.5 Analysis status
 
 Separately:
@@ -661,4 +675,4 @@ Primary/standards references should be preferred in implementation documentation
 
 ## Design status
 
-The broad research, implementation-readiness, repository-tooling, and Milestone 1 identity/derived-artifact phases are complete. RefCompat now also implements the first four Milestone 2 reasoning boundaries: explicit anchor-driven evaluation requests/scope; typed sequence presence/length/identity/order requirements and capabilities with separate constraint/evaluation objects; generalized qualitative evidence aggregation with deterministic IDs and observation traceability; structured conflict/unresolved findings plus explicit-scope conditions; and a complete-FASTA `ReferenceContext` with content-verified `SequenceBinding` plus whole-bundle orchestration. Missing candidate evidence remains unresolved unless an explicit capability proves a contradiction, ambiguous sequence identity never manufactures a binding, peer resources do not vote on reference identity, evidence is never converted into a numeric compatibility score, and conditions never infer scope exclusions that the caller did not state. The next implementation targets are top-level verdict aggregation and conflict-core reporting. Additional broad corpus collection is not currently justified unless implementation exposes a new unresolved category, a profile requires targeted evidence, or a separate prevalence study becomes a project goal.
+The broad research, implementation-readiness, repository-tooling, and Milestone 1 identity/derived-artifact phases are complete. RefCompat now also implements the first five Milestone 2 reasoning boundaries: explicit anchor-driven evaluation requests/scope; typed sequence presence/length/identity/order requirements and capabilities with separate constraint/evaluation objects; generalized qualitative evidence aggregation with deterministic IDs and observation traceability; structured conflict/unresolved findings plus explicit-scope conditions; a complete-FASTA `ReferenceContext` with content-verified `SequenceBinding` plus whole-bundle orchestration; and categorical top-level verdict aggregation over mandatory constraints. Missing candidate evidence remains unresolved unless an explicit capability proves a contradiction, ambiguous sequence identity never manufactures a binding, peer resources do not vote on reference identity, advisory constraints do not veto mandatory compatibility, evidence is never converted into a numeric compatibility score, and conditions qualify only an otherwise-positive verdict within caller-stated scope. Conflict-core reporting is the remaining Milestone 2 reasoning target. Additional broad corpus collection is not currently justified unless implementation exposes a new unresolved category, a profile requires targeted evidence, or a separate prevalence study becomes a project goal.

@@ -1,6 +1,6 @@
 # Milestone 2 structured findings and conditions
 
-**Status:** implemented as the third Milestone 2 reasoning slice. The following anchor-driven `ReferenceContext`/`SequenceBinding` and whole-bundle orchestration slice is also implemented; top-level verdict aggregation, conflict-core reporting, and stable `CompatibilityReport` serialization remain later work.
+**Status:** implemented as the third Milestone 2 reasoning slice. The following anchor-driven `ReferenceContext`/`SequenceBinding`, whole-bundle orchestration, and categorical verdict-aggregation slices are also implemented; conflict-core reporting and stable `CompatibilityReport` serialization remain later work.
 
 This layer interprets already-evaluated constraints and qualitative evidence as
 structured findings, and records explicit request scope as structured

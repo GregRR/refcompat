@@ -1,6 +1,6 @@
 # Milestone 2 qualitative evidence aggregation
 
-**Status:** implemented as the second Milestone 2 reasoning slice. Structured findings/conditions and FASTA-anchored reference-context/bundle reasoning are now implemented in following slices. Top-level verdict aggregation and conflict-core reporting remain later work.
+**Status:** implemented as the second Milestone 2 reasoning slice. Structured findings/conditions, FASTA-anchored reference-context/bundle reasoning, and categorical verdict aggregation are now implemented in following slices. Conflict-core reporting remains later work.
 
 This layer turns already-evaluated typed compatibility questions into explicit,
 traceable evidence relationships. It does **not** compute a numeric compatibility

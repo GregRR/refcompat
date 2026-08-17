@@ -417,6 +417,13 @@ Conceptually, for each mandatory in-scope requirement:
 3. if adequate evidence satisfies it -> `SATISFIED`;
 4. if evidence is insufficient -> `UNRESOLVED`.
 
+The implemented Milestone 2 aggregator uses only mandatory requirements for the
+top-level verdict. Advisory results remain visible but non-vetoing. Mandatory
+`NOT_APPLICABLE` constraints are neutral when another mandatory relationship is
+satisfied; if no mandatory relationship is applicable at all, the result is
+`INDETERMINATE` rather than vacuously `COMPATIBLE`. Explicit conditions qualify
+only an otherwise-positive result.
+
 Top-level outcomes:
 
 ### `COMPATIBLE`

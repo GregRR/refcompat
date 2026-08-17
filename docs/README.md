@@ -21,3 +21,4 @@ If a supporting document and `DESIGN.md` disagree, `DESIGN.md` wins until the di
 - [`evidence-aggregation.md`](evidence-aggregation.md) — second Milestone 2 qualitative evidence and aggregation boundary.
 - [`findings-conditions.md`](findings-conditions.md) — third Milestone 2 structured findings and explicit-scope conditions boundary.
 - [`reference-context-bundle.md`](reference-context-bundle.md) — fourth Milestone 2 FASTA reference-context, verified-binding, and whole-bundle orchestration boundary.
+- [`verdict-aggregation.md`](verdict-aggregation.md) — fifth Milestone 2 categorical mandatory-constraint verdict aggregation boundary.

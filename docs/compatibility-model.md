@@ -39,9 +39,12 @@ Interpretation
     └── CompatibilityCondition
     |
     v
+Verdict aggregation
+    └── VerdictAggregation / CompatibilityVerdict
+    |
+    v
 CompatibilityReport
-    ├── AnalysisStatus
-    └── CompatibilityVerdict
+    └── AnalysisStatus
 ```
 
 Information becomes more interpreted as it moves downward. Lower layers may refer back to evidence from earlier layers; earlier layers must not smuggle later conclusions into observations.
@@ -305,6 +308,12 @@ A condition identifies:
 ### Invariant: conditions require explicit scope
 
 RefCompat must not decide on its own that ALT, decoy, patch, mitochondrial, unplaced, or other sequences are irrelevant. Conditional compatibility follows an explicit evaluation scope or profile rule.
+
+## `VerdictAggregation` and `CompatibilityVerdict`
+
+The fifth Milestone 2 slice aggregates already-evaluated mandatory constraints into one categorical verdict. Hard mandatory contradictions take precedence over unresolved states; unresolved mandatory relationships take precedence over positive outcomes; and explicit conditions qualify only an otherwise-positive result. Advisory constraints remain visible but do not veto. No applicable mandatory relationship yields `INDETERMINATE`, not vacuous compatibility.
+
+`VerdictAggregation` retains the mandatory constraint IDs partitioned by state, explicit condition IDs, and the finding IDs that cover decisive incompatible or unresolved mandatory constraints. It does not perform conflict-core minimization, analysis-status classification, scoring, voting, or stable report serialization.
 
 ## `BundleReasoningResult`
 

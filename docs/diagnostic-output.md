@@ -75,7 +75,8 @@ Field names should still change deliberately and with tests, but pre-1.0
 consumers must not treat this shape as the final report-schema contract.
 
 The stable schema/versioning decision remains deferred until the stable report
-model and top-level verdict aggregation are implemented.
+model is implemented. Top-level categorical verdict aggregation now exists as a
+separate reasoning layer and does not change this provisional CLI JSON shape.
 
 ## Process exit status
 
