@@ -51,7 +51,7 @@ The roadmap intentionally avoids turning RefCompat into a universal genomics val
 - [x] Implement structured findings and conditions.
 - [x] Implement anchor-driven whole-bundle reasoning.
 - [x] Implement `COMPATIBLE`, `COMPATIBLE_WITH_CONDITIONS`, `INCOMPATIBLE`, and `INDETERMINATE` aggregation.
-- [ ] Implement conflict-core reporting sufficient to identify the smallest useful conflicting resource/evidence set.
+- [x] Implement conflict-core reporting sufficient to identify the smallest useful conflicting resource/evidence set.
 
 ## Milestone 3 — VCF
 

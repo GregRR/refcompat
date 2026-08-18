@@ -4,6 +4,12 @@ External library types must not leak into this layer.
 """
 
 from refcompat.model.bundle import BundleReasoningResult
+from refcompat.model.conflict_core import (
+    ConflictCore,
+    ConflictCoreExtraction,
+    ConflictCoreId,
+    ConflictCoreKind,
+)
 from refcompat.model.constraints import (
     CompatibilityConstraint,
     ConstraintEvaluation,
@@ -122,6 +128,10 @@ __all__ = [
     "ComputedFastaIndex",
     "ConditionId",
     "ConditionKind",
+    "ConflictCore",
+    "ConflictCoreExtraction",
+    "ConflictCoreId",
+    "ConflictCoreKind",
     "ConstraintEvaluation",
     "ConstraintId",
     "ConstraintRule",

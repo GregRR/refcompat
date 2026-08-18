@@ -19,11 +19,11 @@ src/refcompat/
 
 ## `model/`
 
-Owns RefCompat's stable immutable domain vocabulary: resources, observations, claims, sequence-collection snapshots, contracts, constraints, evidence, findings, conditions, and verdicts.
+Owns RefCompat's stable immutable domain vocabulary: resources, observations, claims, sequence-collection snapshots, contracts, constraints, evidence, findings, conditions, verdicts, and conflict cores.
 
 Core domain objects use standard-library immutable dataclasses, enums, and typed value objects. Domain objects must not expose upstream `refget`, `gtars`, `pysam`, transport-validation, or CLI-framework types.
 
-`model/observations.py` owns the format-neutral `ResourceObservation`, `ObservationId`, `ObservationKind`, and `SourceLocation` primitives. `model/evaluation.py`, `model/contracts.py`, and `model/constraints.py` own the first Milestone 2 request/scope, typed requirement/capability contract, and question/result boundaries. `model/evidence.py` owns generalized qualitative evidence items and aggregates. `model/interpretation.py` owns structured findings and explicit-scope conditions. `model/reference_context.py` owns the FASTA-anchored `ReferenceContext` and evidence-backed `SequenceBinding`; `model/bundle.py` groups the whole-bundle reasoning result while leaving verdict policy to later Milestone 2 work.
+`model/observations.py` owns the format-neutral `ResourceObservation`, `ObservationId`, `ObservationKind`, and `SourceLocation` primitives. `model/evaluation.py`, `model/contracts.py`, and `model/constraints.py` own the first Milestone 2 request/scope, typed requirement/capability contract, and question/result boundaries. `model/evidence.py` owns generalized qualitative evidence items and aggregates. `model/interpretation.py` owns structured findings and explicit-scope conditions. `model/reference_context.py` owns the FASTA-anchored `ReferenceContext` and evidence-backed `SequenceBinding`; `model/bundle.py` groups the whole-bundle reasoning result. `model/verdict.py` owns categorical verdict aggregation output, and `model/conflict_core.py` owns compact decisive failure cores.
 
 ## `identity/`
 
@@ -52,9 +52,9 @@ Inspectors are added one format at a time rather than pre-populating unused modu
 
 ## `reasoning/`
 
-Builds scope-dependent resource contracts, evaluates requirements against capabilities, creates evidence-backed findings/conditions, orchestrates anchor-driven bundle reasoning, and aggregates categorical whole-bundle verdicts.
+Builds scope-dependent resource contracts, evaluates requirements against capabilities, creates evidence-backed findings/conditions, orchestrates anchor-driven bundle reasoning, aggregates categorical whole-bundle verdicts, and extracts compact decisive conflict cores.
 
-The reasoning layer depends on RefCompat domain types, not format-parser internals. `reasoning/fasta_index.py` compares expected and observed FAI structure as Tier-B evidence. `reasoning/sequence_dictionary.py` compares exact dictionary structure while keeping Tier-A M5 evidence and missing-M5 uncertainty separate. `reasoning/constraints.py` implements the first exact typed requirement/capability evaluator and keeps missing evidence unresolved unless explicit negative evidence is available. `reasoning/evidence.py` derives traceable qualitative evidence from evaluator-relevant capabilities and aggregates it without numeric scoring. `reasoning/interpretation.py` maps non-satisfied applicable constraints to structured findings and explicit request scope to conditions. `reasoning/reference_context.py` constructs the selected FASTA context and content-verified local-name bindings, while `reasoning/bundle.py` evaluates all scoped typed requirements against that anchor. `reasoning/verdict.py` then applies mandatory/advisory policy and categorical verdict precedence without scoring or voting.
+The reasoning layer depends on RefCompat domain types, not format-parser internals. `reasoning/fasta_index.py` compares expected and observed FAI structure as Tier-B evidence. `reasoning/sequence_dictionary.py` compares exact dictionary structure while keeping Tier-A M5 evidence and missing-M5 uncertainty separate. `reasoning/constraints.py` implements the first exact typed requirement/capability evaluator and keeps missing evidence unresolved unless explicit negative evidence is available. `reasoning/evidence.py` derives traceable qualitative evidence from evaluator-relevant capabilities and aggregates it without numeric scoring. `reasoning/interpretation.py` maps non-satisfied applicable constraints to structured findings and explicit request scope to conditions. `reasoning/reference_context.py` constructs the selected FASTA context and content-verified local-name bindings, while `reasoning/bundle.py` evaluates all scoped typed requirements against that anchor. `reasoning/verdict.py` then applies mandatory/advisory policy and categorical verdict precedence without scoring or voting. `reasoning/conflict_core.py` projects only the decisive verdict-basis findings into compact resource/evidence cores.
 
 ## `profiles/`
 

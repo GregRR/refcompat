@@ -6,6 +6,7 @@ The project is currently pre-release and still establishing its design and repos
 
 ## Unreleased
 
+- Add compact deterministic conflict-core extraction that reports only decisive mandatory constraint/finding/evidence/resource traces for incompatible or unresolved verdicts without scoring, voting, or arbitrary global-minimum selection.
 - Add categorical whole-bundle verdict aggregation over mandatory constraints, with hard-conflict precedence, conservative indeterminate handling, advisory isolation, explicit-scope conditional compatibility, and traceable finding/condition IDs without numeric scoring.
 - Add RefCompat-owned resource and sequence-identity value types.
 - Add the local refget/SeqCol FASTA identity adapter and GA4GH known-answer tests.

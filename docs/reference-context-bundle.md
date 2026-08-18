@@ -1,9 +1,6 @@
 # Milestone 2 anchor-driven reference context and bundle reasoning
 
-**Status:** implemented as the fourth Milestone 2 reasoning slice. The following
-categorical verdict-aggregation slice is also implemented; conflict-core
-extraction, analysis status, and stable `CompatibilityReport` serialization
-remain later work.
+**Status:** implemented as the fourth Milestone 2 reasoning slice. The following categorical verdict-aggregation and conflict-core slices are also implemented; analysis status and stable `CompatibilityReport` serialization remain later work.
 
 This slice establishes the bridge from per-resource contracts to one explicit
 FASTA-anchored bundle evaluation. It does not decide the bundle verdict.
@@ -116,7 +113,7 @@ no `verdict`, score, analysis status, or conflict core.
 
 This slice does **not** implement:
 
-- conflict-core extraction;
+- conflict-core extraction (implemented by a later Milestone 2 slice);
 - provenance claim assessment;
 - stable `CompatibilityReport` serialization;
 - CI exit-code policy;

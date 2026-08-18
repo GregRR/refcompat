@@ -114,7 +114,7 @@ Start with:
 
 ## Project status
 
-Milestone 1 is complete, and the first five Milestone 2 reasoning slices are implemented. RefCompat now has explicit anchor-driven evaluation requests/scope, typed sequence presence/length/identity/order requirements and capabilities, separate compatibility constraints/evaluations, qualitative traceable evidence aggregation without numeric scoring, structured issue/unresolved findings plus explicit-scope conditions, an explicit FASTA `ReferenceContext` with content-verified `SequenceBinding` plus whole-bundle orchestration, and categorical `COMPATIBLE` / `COMPATIBLE_WITH_CONDITIONS` / `INCOMPATIBLE` / `INDETERMINATE` aggregation over mandatory constraints. Conflict-core reporting is the remaining Milestone 2 reasoning target.
+Milestone 1 and the Milestone 2 reasoning foundation are complete. RefCompat now has explicit anchor-driven evaluation requests/scope, typed sequence presence/length/identity/order requirements and capabilities, separate compatibility constraints/evaluations, qualitative traceable evidence aggregation without numeric scoring, structured issue/unresolved findings plus explicit-scope conditions, an explicit FASTA `ReferenceContext` with content-verified `SequenceBinding` plus whole-bundle orchestration, categorical `COMPATIBLE` / `COMPATIBLE_WITH_CONDITIONS` / `INCOMPATIBLE` / `INDETERMINATE` aggregation over mandatory constraints, and compact decisive conflict-core extraction. Analysis status and stable `CompatibilityReport` serialization remain later work.
 
 ## Current CLI diagnostics
 

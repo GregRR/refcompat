@@ -444,7 +444,7 @@ No hard contradiction is shown, but at least one mandatory relationship cannot b
 
 ### Conflict core
 
-Reports should identify the smallest useful resource/evidence set causing the failure rather than presenting an undifferentiated wall of mismatches.
+Reports should identify the smallest useful resource/evidence set causing the failure rather than presenting an undifferentiated wall of mismatches. The implemented v0.1 extraction keeps one compact core per decisive finding: contradiction cores for mandatory `UNSATISFIED` constraints and unresolved cores for decisive mandatory `UNRESOLVED` constraints. Positive verdicts and an indeterminate result with no applicable mandatory basis have no conflict core. Multiple independent failures remain separate small cores rather than being merged or reduced to one arbitrary chosen failure.
 
 ---
 

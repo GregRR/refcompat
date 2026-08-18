@@ -315,6 +315,10 @@ The fifth Milestone 2 slice aggregates already-evaluated mandatory constraints i
 
 `VerdictAggregation` retains the mandatory constraint IDs partitioned by state, explicit condition IDs, and the finding IDs that cover decisive incompatible or unresolved mandatory constraints. It does not perform conflict-core minimization, analysis-status classification, scoring, voting, or stable report serialization.
 
+## `ConflictCore` and `ConflictCoreExtraction`
+
+The sixth Milestone 2 slice projects the already-decided non-positive verdict basis into compact decisive traces. Each `ConflictCore` retains only decisive constraint/requirement/finding/evidence IDs plus the minimum resource IDs implied by the requirement and cited evidence. `INCOMPATIBLE` produces contradiction cores; unresolved `INDETERMINATE` produces unresolved cores; positive verdicts and an indeterminate result with no applicable mandatory basis produce no cores. The layer does not re-evaluate scientific truth, count evidence, or choose one arbitrary global failure when several independent conflicts exist.
+
 ## `BundleReasoningResult`
 
 The anchor-driven whole-bundle layer requires exactly one `ResourceContract` for every explicitly scoped resource, builds the FASTA `ReferenceContext`, derives unique content-backed `SequenceBinding` objects, constructs one anchor-driven constraint for every typed requirement, and then runs the existing evaluation, evidence, and interpretation layers.

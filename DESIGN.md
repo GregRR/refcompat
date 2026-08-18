@@ -352,6 +352,12 @@ Advisory constraints remain visible in evaluations/findings but do not veto a po
 
 Later hardening: if findings are extended to span multiple constraints, verdict-basis selection must distinguish which cited constraints are actually decisive rather than treating any constraint-ID intersection as sufficient.
 
+### 7.4.2 Conflict-core extraction
+
+Conflict-core extraction projects only the decisive non-positive verdict basis into compact resource/evidence traces. `INCOMPATIBLE` yields contradiction cores for unsatisfied mandatory constraints; unresolved `INDETERMINATE` yields unresolved cores; positive verdicts and indeterminate results with no applicable mandatory basis yield none. Each current core corresponds to one decisive finding and retains only direct constraint, requirement, finding, evidence, and resource IDs. Multiple independent failures remain separate small cores rather than being merged into a mismatch wall or reduced to one arbitrary global minimum.
+
+The core layer does not re-evaluate scientific truth, score evidence, or duplicate transitive capability/observation/binding provenance already carried by `Evidence`. If future findings span multiple constraints, core projection and verdict-basis selection must be tightened together to retain only actually decisive trace.
+
 ### 7.5 Analysis status
 
 Separately:
@@ -651,7 +657,7 @@ No unresolved tooling choice blocks the first implementation slice. The remainin
 4. build deterministic known-answer and corpus-derived Milestone 1 exit fixtures (complete);
 5. produce human + minimal machine-readable reports (complete);
 6. implement the core requirements/capabilities reasoning slice (complete);
-7. implement generalized evidence aggregation, structured interpretation, and FASTA-anchored reference-context/bundle reasoning (complete), then top-level verdict aggregation and conflict-core extraction;
+7. implement generalized evidence aggregation, structured interpretation, FASTA-anchored reference-context/bundle reasoning, top-level verdict aggregation, and conflict-core extraction (complete);
 8. add VCF, BAM/CRAM, and GTF/GFF inspectors one at a time;
 9. incorporate implementation feedback into the design as concrete edge cases expose missing constraints or evidence types.
 
@@ -675,4 +681,4 @@ Primary/standards references should be preferred in implementation documentation
 
 ## Design status
 
-The broad research, implementation-readiness, repository-tooling, and Milestone 1 identity/derived-artifact phases are complete. RefCompat now also implements the first five Milestone 2 reasoning boundaries: explicit anchor-driven evaluation requests/scope; typed sequence presence/length/identity/order requirements and capabilities with separate constraint/evaluation objects; generalized qualitative evidence aggregation with deterministic IDs and observation traceability; structured conflict/unresolved findings plus explicit-scope conditions; a complete-FASTA `ReferenceContext` with content-verified `SequenceBinding` plus whole-bundle orchestration; and categorical top-level verdict aggregation over mandatory constraints. Missing candidate evidence remains unresolved unless an explicit capability proves a contradiction, ambiguous sequence identity never manufactures a binding, peer resources do not vote on reference identity, advisory constraints do not veto mandatory compatibility, evidence is never converted into a numeric compatibility score, and conditions qualify only an otherwise-positive verdict within caller-stated scope. Conflict-core reporting is the remaining Milestone 2 reasoning target. Additional broad corpus collection is not currently justified unless implementation exposes a new unresolved category, a profile requires targeted evidence, or a separate prevalence study becomes a project goal.
+The broad research, implementation-readiness, repository-tooling, Milestone 1 identity/derived-artifact work, and Milestone 2 reasoning foundation are complete. RefCompat now implements explicit anchor-driven evaluation scope; typed requirements/capabilities and constraint evaluations; qualitative evidence aggregation; structured findings/conditions; a complete-FASTA `ReferenceContext` with content-verified `SequenceBinding` and whole-bundle orchestration; categorical mandatory-constraint verdict aggregation; and compact decisive conflict-core extraction. Missing candidate evidence remains unresolved unless an explicit capability proves a contradiction, ambiguous sequence identity never manufactures a binding, peer resources do not vote on reference identity, advisory constraints do not veto mandatory compatibility, evidence is never converted into a numeric score, conditions qualify only otherwise-positive verdicts, and failure reporting excludes non-decisive mismatch noise. Analysis status and stable `CompatibilityReport` serialization remain later boundaries. Additional broad corpus collection is not currently justified unless implementation exposes a new unresolved category, a profile requires targeted evidence, or a separate prevalence study becomes a project goal.

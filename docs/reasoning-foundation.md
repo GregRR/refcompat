@@ -1,6 +1,6 @@
 # Milestone 2 typed reasoning foundation
 
-**Status:** implemented as the first Milestone 2 reasoning slice. The later evidence, findings/conditions, FASTA-anchored reference-context/bundle, and categorical verdict-aggregation slices are also implemented; conflict-core reporting remains later Milestone 2 work.
+**Status:** implemented as the first Milestone 2 reasoning slice. The later evidence, findings/conditions, FASTA-anchored bundle, categorical verdict, and conflict-core slices are also implemented.
 
 This slice introduces the typed question/evaluation boundary used by later
 bundle reasoning. It deliberately does not emit a whole-bundle compatibility
@@ -107,13 +107,11 @@ interpretation. The following generalized evidence layer is documented in
 `evidence-aggregation.md` and provides evidence items/IDs plus qualitative
 aggregation. The next interpretation slice, documented in
 `findings-conditions.md`, provides structured conflict/unresolved findings and
-explicit-scope conditions. Still deferred are:
+explicit-scope conditions. This exact evaluator still does not own:
 
 - provenance claim assessment;
 - top-level bundle verdict aggregation;
 - conflict-core reporting;
 - stable `CompatibilityReport` serialization.
 
-Those concepts need the typed requirement/capability/constraint boundary now
-in place, and are implemented in later Milestone 2 slices rather than being
-invented inside this exact evaluator.
+The verdict and conflict-core layers are now implemented in later Milestone 2 slices; provenance claim assessment and stable report serialization remain later boundaries. None of them is hidden inside this exact evaluator.
