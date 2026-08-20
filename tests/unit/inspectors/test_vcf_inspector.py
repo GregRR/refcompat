@@ -143,3 +143,94 @@ def test_inspect_vcf_context_rejects_invalid_provider_shape(
 
     with pytest.raises(VcfProviderIncompatibleError, match="CHROM"):
         inspect_vcf_context(_resource(path))
+
+
+def test_iter_vcf_ref_records_copies_fields_and_file_order(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from refcompat.inspectors.vcf import iter_vcf_ref_records
+
+    path = tmp_path / "variants.vcf"
+    path.write_text("placeholder\n", encoding="utf-8")
+    fake_module = _fake_module(
+        records=(
+            SimpleNamespace(contig="chr1", pos=10, ref="A"),
+            SimpleNamespace(contig="chr2", pos=20, ref="CG"),
+        )
+    )
+    monkeypatch.setattr("refcompat.inspectors.vcf.import_module", lambda _: fake_module)
+
+    records = tuple(iter_vcf_ref_records(_resource(path)))
+
+    assert [(item.ordinal, item.sequence_name, item.position, item.ref) for item in records] == [
+        (0, "chr1", 10, "A"),
+        (1, "chr2", 20, "CG"),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("record", "message"),
+    [
+        (SimpleNamespace(contig=1, pos=1, ref="A"), "CHROM"),
+        (SimpleNamespace(contig="chr1", pos="1", ref="A"), "POS"),
+        (SimpleNamespace(contig="chr1", pos=1, ref=1), "REF"),
+    ],
+)
+def test_iter_vcf_ref_records_rejects_invalid_provider_shape(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    record: SimpleNamespace,
+    message: str,
+) -> None:
+    from refcompat.inspectors.vcf import iter_vcf_ref_records
+
+    path = tmp_path / "variants.vcf"
+    path.write_text("placeholder\n", encoding="utf-8")
+    fake_module = _fake_module(records=(record,))
+    monkeypatch.setattr("refcompat.inspectors.vcf.import_module", lambda _: fake_module)
+
+    with pytest.raises(VcfProviderIncompatibleError, match=message):
+        tuple(iter_vcf_ref_records(_resource(path)))
+
+
+def test_iter_vcf_ref_records_rejects_invalid_ref_as_parse_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from refcompat.inspectors.vcf import iter_vcf_ref_records
+
+    path = tmp_path / "variants.vcf"
+    path.write_text("placeholder\n", encoding="utf-8")
+    fake_module = _fake_module(records=(SimpleNamespace(contig="chr1", pos=1, ref="R"),))
+    monkeypatch.setattr("refcompat.inspectors.vcf.import_module", lambda _: fake_module)
+
+    with pytest.raises(VcfParseError, match="invalid VCF REF record"):
+        tuple(iter_vcf_ref_records(_resource(path)))
+
+
+def test_iter_vcf_ref_records_closes_provider_after_exhaustive_iteration(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from refcompat.inspectors.vcf import iter_vcf_ref_records
+
+    path = tmp_path / "variants.vcf"
+    path.write_text("placeholder\n", encoding="utf-8")
+    closed = False
+
+    class FakeVariantFile:
+        is_bcf = False
+
+        def __init__(self, _: str) -> None:
+            pass
+
+        def __iter__(self) -> object:
+            return iter((SimpleNamespace(contig="chr1", pos=1, ref="A"),))
+
+        def close(self) -> None:
+            nonlocal closed
+            closed = True
+
+    fake_module = SimpleNamespace(__version__="0.24.0", VariantFile=FakeVariantFile)
+    monkeypatch.setattr("refcompat.inspectors.vcf.import_module", lambda _: fake_module)
+
+    assert len(tuple(iter_vcf_ref_records(_resource(path)))) == 1
+    assert closed

@@ -400,6 +400,8 @@ Reconcile alignment `@SQ` reference context with the anchor. Header-only inspect
 
 Use header/reference metadata plus **exhaustive** REF allele checking in authoritative v0.1 mode. A proven REF mismatch is a hard local conflict; mismatch rate aids interpretation rather than cancelling the conflict.
 
+The implemented direct-validation boundary streams every record, converts VCF one-based POS explicitly to a zero-based half-open FASTA REF span, preserves exact-name failures as `UNRESOLVED_SEQUENCE`, and retains every non-match record while counting successful matches. FASTA random access uses FAI geometry recomputed from the supplied FASTA in a temporary index rather than trusting an adjacent `.fai`. VCF 4.5 IUPAC reduction rules are applied before base comparison; telomere sentinel positions remain explicit `OUT_OF_BOUNDS` direct-comparison states rather than being mislabeled REF mismatches. Verified sequence-binding projection and mismatch-pattern/verdict interpretation remain later Milestone 3 work.
+
 ### RCHECK-060 — GTF/GFF3 ↔ FASTA
 
 Resolve in-scope seqids, verify coordinate bounds, inspect GFF3 sequence-region/provenance directives, quantify affected features, and conservatively handle circular-coordinate semantics. Do not become a gene-model validator.

@@ -6,6 +6,7 @@ The project is currently pre-release and still establishing its design and repos
 
 ## Unreleased
 
+- Add exhaustive direct VCF REF-to-FASTA validation with streaming record observations, exact-name unresolved states, coordinate-bounds outcomes, VCF 4.5 IUPAC handling, non-match traceability, and temporary computed FASTA indexing that cannot trust or rewrite an adjacent `.fai`.
 - Start Milestone 3 VCF support with a pysam-backed observation layer for VCF/VCF.gz fileformat, `##reference`, `##contig` metadata, and exhaustive CHROM-usage scanning without yet making REF compatibility conclusions.
 - Add compact deterministic conflict-core extraction that reports only decisive mandatory constraint/finding/evidence/resource traces for incompatible or unresolved verdicts without scoring, voting, or arbitrary global-minimum selection.
 - Add categorical whole-bundle verdict aggregation over mandatory constraints, with hard-conflict precedence, conservative indeterminate handling, advisory isolation, explicit-scope conditional compatibility, and traceable finding/condition IDs without numeric scoring.

@@ -17,13 +17,14 @@ from importlib import import_module
 from pathlib import Path
 from typing import Protocol, cast
 
-from refcompat.model.resources import Resource, ResourceKind
+from refcompat.model.resources import Resource, ResourceId, ResourceKind
 from refcompat.model.vcf import (
     VcfChromUsage,
     VcfContextSnapshot,
     VcfContigDeclaration,
     VcfHeaderData,
 )
+from refcompat.model.vcf_ref import VcfRefRecord
 
 
 class VcfInspectionError(Exception):
@@ -71,6 +72,8 @@ class _VariantHeader(Protocol):
 
 class _VariantRecord(Protocol):
     contig: object
+    pos: object
+    ref: object
 
 
 class _VariantFile(Protocol):
@@ -138,6 +141,48 @@ def inspect_vcf_context(resource: Resource) -> VcfContextSnapshot:
     )
 
 
+def iter_vcf_ref_records(resource: Resource) -> Iterator[VcfRefRecord]:
+    """Yield every VCF record's REF-relevant fields in file order.
+
+    The stream is exhaustive and sequential; no tabix/CSI index is required.
+    Parser errors can therefore arise during iteration as well as at open time.
+    """
+
+    if resource.kind is not ResourceKind.VCF:
+        raise UnsupportedVcfResourceError("VCF REF inspection requires a VCF resource")
+
+    path = resource.artifact.path
+    _require_readable(path)
+    pysam_module = _load_pysam()
+
+    try:
+        variant_file = pysam_module.VariantFile(str(path))
+    except OSError as exc:
+        try:
+            _require_readable(path)
+        except VcfUnreadableError as unreadable:
+            raise unreadable from exc
+        raise VcfParseError(f"cannot parse VCF: {path}") from exc
+    except (NotImplementedError, TypeError, ValueError) as exc:
+        raise VcfParseError(f"cannot parse VCF: {path}") from exc
+
+    try:
+        if not isinstance(variant_file.is_bcf, bool):
+            raise VcfProviderIncompatibleError(
+                f"pysam returned invalid variant format metadata: {path}"
+            )
+        if variant_file.is_bcf:
+            raise VcfParseError("BCF input is deferred; Milestone 3 accepts VCF/VCF.gz only")
+        for ordinal, record in enumerate(variant_file):
+            yield _vcf_ref_record(record, resource_id=resource.id, ordinal=ordinal, path=path)
+    except VcfInspectionError:
+        raise
+    except (NotImplementedError, OSError, TypeError, ValueError) as exc:
+        raise VcfParseError(f"cannot parse VCF records: {path}") from exc
+    finally:
+        variant_file.close()
+
+
 def _require_readable(path: Path) -> None:
     try:
         with path.open("rb"):
@@ -203,6 +248,24 @@ def _header_data(header: _VariantHeader, *, path: Path) -> VcfHeaderData:
         )
     except ValueError as exc:
         raise VcfParseError(f"invalid VCF reference metadata: {path}") from exc
+
+
+def _vcf_ref_record(
+    record: _VariantRecord, *, resource_id: ResourceId, ordinal: int, path: Path
+) -> VcfRefRecord:
+    contig = record.contig
+    position = record.pos
+    ref = record.ref
+    if not isinstance(contig, str) or not contig:
+        raise VcfProviderIncompatibleError(f"pysam returned an invalid VCF CHROM value: {path}")
+    if not isinstance(position, int) or isinstance(position, bool):
+        raise VcfProviderIncompatibleError(f"pysam returned an invalid VCF POS value: {path}")
+    if not isinstance(ref, str):
+        raise VcfProviderIncompatibleError(f"pysam returned an invalid VCF REF value: {path}")
+    try:
+        return VcfRefRecord(resource_id, ordinal, contig, position, ref)
+    except ValueError as exc:
+        raise VcfParseError(f"invalid VCF REF record at ordinal {ordinal}: {path}") from exc
 
 
 def _scan_chrom_usage(

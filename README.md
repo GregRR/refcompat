@@ -110,11 +110,12 @@ Start with:
 - [`docs/findings-conditions.md`](docs/findings-conditions.md) — structured Milestone 2 issue/unresolved findings and explicit-scope conditions;
 - [`docs/reference-context-bundle.md`](docs/reference-context-bundle.md) — FASTA-anchored reference context, verified sequence bindings, and whole-bundle orchestration;
 - [`docs/verdict-aggregation.md`](docs/verdict-aggregation.md) — categorical mandatory-constraint verdict aggregation without numeric scoring;
+- [`docs/vcf-ref-validation.md`](docs/vcf-ref-validation.md) — exhaustive direct VCF REF-to-FASTA validation semantics;
 - [`docs/adr/`](docs/adr/) — architectural decisions.
 
 ## Project status
 
-Milestone 1 and the Milestone 2 reasoning foundation are complete, and Milestone 3 VCF observation work has begun. RefCompat now has explicit anchor-driven evaluation requests/scope, typed sequence presence/length/identity/order requirements and capabilities, separate compatibility constraints/evaluations, qualitative traceable evidence aggregation without numeric scoring, structured issue/unresolved findings plus explicit-scope conditions, an explicit FASTA `ReferenceContext` with content-verified `SequenceBinding` plus whole-bundle orchestration, categorical `COMPATIBLE` / `COMPATIBLE_WITH_CONDITIONS` / `INCOMPATIBLE` / `INDETERMINATE` aggregation over mandatory constraints, and compact decisive conflict-core extraction. Analysis status and stable `CompatibilityReport` serialization remain later work.
+Milestone 1 and the Milestone 2 reasoning foundation are complete, and Milestone 3 now includes VCF context observation plus exhaustive direct REF-to-FASTA validation. RefCompat now has explicit anchor-driven evaluation requests/scope, typed sequence presence/length/identity/order requirements and capabilities, separate compatibility constraints/evaluations, qualitative traceable evidence aggregation without numeric scoring, structured issue/unresolved findings plus explicit-scope conditions, an explicit FASTA `ReferenceContext` with content-verified `SequenceBinding` plus whole-bundle orchestration, categorical `COMPATIBLE` / `COMPATIBLE_WITH_CONDITIONS` / `INCOMPATIBLE` / `INDETERMINATE` aggregation over mandatory constraints, and compact decisive conflict-core extraction. Analysis status and stable `CompatibilityReport` serialization remain later work.
 
 ## Current CLI diagnostics
 

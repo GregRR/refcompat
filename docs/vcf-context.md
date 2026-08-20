@@ -1,6 +1,6 @@
 # VCF reference-context observation
 
-**Status:** implemented as the first Milestone 3 VCF slice. Authoritative REF-to-FASTA validation and VCF-specific findings remain later Milestone 3 work.
+**Status:** implemented as the first Milestone 3 VCF slice. Exhaustive direct REF-to-FASTA validation is now implemented separately in [`vcf-ref-validation.md`](vcf-ref-validation.md); VCF contracts, mismatch-pattern findings, and verdict integration remain later work.
 
 ## Purpose
 
@@ -48,16 +48,12 @@ RefCompat observes the normalized VCF header representation exposed by `pysam`/H
 
 Accordingly, a contig absent from `VcfHeaderData.contigs` means that the declaration was not exposed by the parser, not necessarily that no such raw header line existed. If later provenance requirements need byte-faithful duplicate/malformed-header reporting, that will require a different or additional raw-header observation path. RefCompat reads the raw provider-visible `length` header attribute where available so an explicit `length=0` remains distinguishable from an omitted length.
 
-## Deliberately deferred
+## Boundary with later VCF reasoning
 
-This slice does not yet:
+This observation slice itself does not create VCF `ResourceContract` requirements, resolve aliases,
+classify mismatch patterns, emit VCF-specific findings/verdict policy, or mutate VCF data.
 
-- create VCF `ResourceContract` requirements;
-- resolve VCF sequence names against the FASTA anchor;
-- check coordinate bounds;
-- compare REF alleles with FASTA bases;
-- classify isolated/localized/systematic REF conflicts;
-- emit VCF-specific findings or verdict policy;
-- rewrite REF/ALT or otherwise repair a VCF.
-
-Those behaviors belong to subsequent RCHECK-050 Milestone 3 slices.
+Exact-name coordinate and exhaustive REF-to-FASTA comparison are implemented by the separate
+[`vcf-ref-validation.md`](vcf-ref-validation.md) boundary. Verified sequence binding, generalized
+contract/evidence integration, mismatch-pattern interpretation, and reporting remain subsequent
+RCHECK-050 Milestone 3 slices.

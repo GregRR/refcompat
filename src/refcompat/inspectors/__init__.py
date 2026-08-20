@@ -11,6 +11,14 @@ from refcompat.inspectors.fasta_index import (
     compute_expected_fasta_index,
     read_fasta_index,
 )
+from refcompat.inspectors.fasta_sequence import (
+    FastaSequenceAccessError,
+    FastaSequenceFetchError,
+    FastaSequenceProviderIncompatibleError,
+    PysamFastaSequenceReader,
+    UnsupportedFastaSequenceResourceError,
+    open_fasta_sequence_reader,
+)
 from refcompat.inspectors.sequence_dictionary import (
     SequenceDictionaryComputationError,
     SequenceDictionaryError,
@@ -27,6 +35,7 @@ from refcompat.inspectors.vcf import (
     VcfProviderIncompatibleError,
     VcfUnreadableError,
     inspect_vcf_context,
+    iter_vcf_ref_records,
 )
 
 __all__ = [
@@ -35,12 +44,17 @@ __all__ = [
     "FastaIndexParseError",
     "FastaIndexProviderIncompatibleError",
     "FastaIndexUnreadableError",
+    "FastaSequenceAccessError",
+    "FastaSequenceFetchError",
+    "FastaSequenceProviderIncompatibleError",
+    "PysamFastaSequenceReader",
     "SequenceDictionaryComputationError",
     "SequenceDictionaryError",
     "SequenceDictionaryParseError",
     "SequenceDictionaryUnreadableError",
     "UnsupportedFastaIndexRepresentationError",
     "UnsupportedFastaIndexResourceError",
+    "UnsupportedFastaSequenceResourceError",
     "UnsupportedSequenceDictionaryResourceError",
     "UnsupportedVcfResourceError",
     "VcfInspectionError",
@@ -50,6 +64,8 @@ __all__ = [
     "compute_expected_fasta_index",
     "expected_sequence_dictionary_from_snapshot",
     "inspect_vcf_context",
+    "iter_vcf_ref_records",
+    "open_fasta_sequence_reader",
     "read_fasta_index",
     "read_sequence_dictionary",
 ]

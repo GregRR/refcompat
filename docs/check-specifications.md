@@ -298,6 +298,10 @@ Inspect:
 
 ### RCHECK-050B — exhaustive REF ↔ FASTA validation
 
+**Implementation status:** exhaustive direct record classification is implemented for exact-name
+resolution against an uncompressed FASTA anchor. Verified-binding projection, mismatch-pattern
+classification, VCF contracts/findings, and bundle-verdict integration remain later Milestone 3 work.
+
 Authoritative v0.1 REF checking is **exhaustive**.
 
 Each record contributes requirements for:
@@ -313,7 +317,17 @@ Per-record outcomes include:
 - `OUT_OF_BOUNDS`
 - `UNRESOLVED_SEQUENCE`
 
-The report should aggregate counts and affected sequences while retaining traceability to conflicting records.
+The direct result aggregates counts and affected sequences while retaining every non-match record
+for traceability. Matching records are counted rather than retained individually.
+
+VCF POS is converted explicitly to a zero-based half-open FASTA interval using POS and `len(REF)`.
+VCF 4.5 telomere sentinel positions 0 and N+1 are represented as `OUT_OF_BOUNDS` in this direct
+comparison layer because no ordinary FASTA REF interval exists there; that state alone is not a
+claim that the VCF syntax is invalid. FASTA IUPAC ambiguity codes outside A/C/G/T/N are reduced to
+the alphabetically first represented concrete base as required for VCF REF representation.
+
+Authoritative base access computes temporary FAI geometry from the supplied FASTA itself and does
+not trust or modify an adjacent user-supplied `.fai`.
 
 ### Hard-conflict rule
 

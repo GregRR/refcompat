@@ -86,6 +86,18 @@ Milestone 1 implements a format-neutral `ResourceObservation` with caller-suppli
 
 An observation never says `MATCH`, `WRONG_BUILD`, `COMPATIBLE`, `ALIAS`, or similar interpreted conclusions.
 
+## `VcfRefValidationResult`
+
+Milestone 3 adds a separate direct-check result for exhaustive VCF REF-to-FASTA comparison. It is not
+a `ResourceObservation` because `MATCH`/`MISMATCH` require comparison with the explicit FASTA anchor,
+and it is not a bundle verdict because it describes only RCHECK-050B record evidence.
+
+The result stores aggregate and per-VCF-sequence counts for `MATCH`, `MISMATCH`, `OUT_OF_BOUNDS`,
+and `UNRESOLVED_SEQUENCE`. Matching records are counted rather than retained individually; every
+non-match retains its source VCF resource ID, file ordinal, CHROM, native one-based POS, REF, and
+the directly relevant anchor trace. A mismatch also retains the fetched FASTA bases. This keeps fully matching VCFs
+memory-efficient without sacrificing traceability of conflicts or unresolved records.
+
 ## `ProvenanceClaim`
 
 A statement about identity/origin whose truth is not assumed merely because it is present.

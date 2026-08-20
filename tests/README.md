@@ -49,3 +49,4 @@ See [`../docs/check-specifications.md`](../docs/check-specifications.md) for the
 - negative controls do not produce speculative reference findings.
 
 - Milestone 3 VCF/VCF.gz observation tests cover header claims, contig metadata, CHROM usage, bgzip input, sparse declarations, provider-boundary failures, and explicit BCF deferral.
+- Milestone 3 REF-validation tests cover source-resource cross-wiring guards, exhaustive record order, one-based POS conversion, multi-base REF spans, hard local mismatches beside many matches, unresolved exact-name cases, bounds/telomere outcomes, VCF IUPAC reduction, per-sequence aggregation, BGZF streaming without a variant index, and FASTA random access through a temporary recomputed FAI rather than an adjacent user index.

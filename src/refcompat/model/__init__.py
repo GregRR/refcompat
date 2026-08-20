@@ -117,6 +117,13 @@ from refcompat.model.vcf import (
     VcfContigDeclaration,
     VcfHeaderData,
 )
+from refcompat.model.vcf_ref import (
+    VcfRefCheckState,
+    VcfRefRecord,
+    VcfRefRecordCheck,
+    VcfRefSequenceSummary,
+    VcfRefValidationResult,
+)
 from refcompat.model.verdict import CompatibilityVerdict, VerdictAggregation
 
 __all__ = [
@@ -209,5 +216,10 @@ __all__ = [
     "VcfContextSnapshot",
     "VcfContigDeclaration",
     "VcfHeaderData",
+    "VcfRefCheckState",
+    "VcfRefRecord",
+    "VcfRefRecordCheck",
+    "VcfRefSequenceSummary",
+    "VcfRefValidationResult",
     "VerdictAggregation",
 ]
