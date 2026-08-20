@@ -283,6 +283,8 @@ Do not recommend blind `samtools reheader` or equivalent solely from familiar-lo
 
 ### RCHECK-050A — header/reference context
 
+**Implementation status:** VCF/VCF.gz header metadata and exhaustive CHROM-usage observation are implemented; compatibility interpretation remains in later RCHECK-050 slices.
+
 Inspect:
 
 - `##reference`;

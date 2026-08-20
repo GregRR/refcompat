@@ -20,6 +20,14 @@ from refcompat.inspectors.sequence_dictionary import (
     expected_sequence_dictionary_from_snapshot,
     read_sequence_dictionary,
 )
+from refcompat.inspectors.vcf import (
+    UnsupportedVcfResourceError,
+    VcfInspectionError,
+    VcfParseError,
+    VcfProviderIncompatibleError,
+    VcfUnreadableError,
+    inspect_vcf_context,
+)
 
 __all__ = [
     "FastaIndexComputationError",
@@ -34,8 +42,14 @@ __all__ = [
     "UnsupportedFastaIndexRepresentationError",
     "UnsupportedFastaIndexResourceError",
     "UnsupportedSequenceDictionaryResourceError",
+    "UnsupportedVcfResourceError",
+    "VcfInspectionError",
+    "VcfParseError",
+    "VcfProviderIncompatibleError",
+    "VcfUnreadableError",
     "compute_expected_fasta_index",
     "expected_sequence_dictionary_from_snapshot",
+    "inspect_vcf_context",
     "read_fasta_index",
     "read_sequence_dictionary",
 ]

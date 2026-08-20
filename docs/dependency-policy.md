@@ -25,11 +25,12 @@ Licenses and terms requiring explicit review include:
 
 Development/test-only dependencies and external command-line tools are evaluated according to how they are used rather than treated as equivalent to directly imported runtime libraries.
 
-## Initial runtime dependency set
+## Runtime dependency set
 
-The initial package declares one direct runtime dependency:
+The package currently declares two direct runtime dependencies:
 
 ```text
+pysam>=0.24,<0.25
 refget>=0.12,<0.13
 ```
 
@@ -37,7 +38,7 @@ The upper bound is intentional because `refget` is pre-1.0 and its Python API is
 
 Optional `refget` server/database extras are not part of RefCompat's dependency set.
 
-"One direct dependency" does not mean the installed environment has only one runtime package. `refget` 0.12 currently brings its own transitive stack, including `gtars` plus HTTP, CLI, YAML, and JSON-Schema-related packages. RefCompat does not import most of those packages directly, but they remain part of the installation footprint through `refget`. The committed lockfile is the authoritative dependency graph, and upstream dependency changes should be reviewed when the bounded `refget` line is updated.
+A small direct dependency set does not mean the installed environment has only those runtime packages. `refget` 0.12 currently brings its own transitive stack, including `gtars` plus HTTP, CLI, YAML, and JSON-Schema-related packages. RefCompat does not import most of those packages directly, but they remain part of the installation footprint through `refget`. The committed lockfile is the authoritative dependency graph, and upstream dependency changes should be reviewed when the bounded `refget` line is updated.
 
 ## Format parsing
 
@@ -45,7 +46,7 @@ Dependencies are added when the corresponding implementation milestone needs the
 
 - FASTA/reference identity uses the `refget` adapter.
 - `.fai` uses a narrow five-column reader; expected uncompressed FASTA geometry is computed through the existing public `refget.compute_fai` API, so no additional runtime dependency is introduced. `.dict` uses a narrow SAM-header reader for the `@SQ` fields required by its check; no additional runtime dependency is introduced.
-- BAM/CRAM/VCF is expected to use `pysam` when that milestone begins; it is not installed before code uses it.
+- VCF now uses `pysam>=0.24,<0.25` behind a narrow adapter boundary. The 0.24 line provides CPython 3.14 wheels and permissive MIT licensing. BAM/CRAM may reuse the same dependency when that milestone begins.
 - GTF/GFF3 begins with a narrow streaming parser for seqids, coordinates, required directives, and provenance fields. A larger annotation database/framework is not part of the initial scope.
 
 A deliberately narrow parser is preferred when it is sufficient, easier to audit, and avoids imposing unrelated semantics.

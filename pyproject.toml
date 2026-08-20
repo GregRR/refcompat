@@ -37,6 +37,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
+    "pysam>=0.24,<0.25",
     "refget>=0.12,<0.13",
 ]
 

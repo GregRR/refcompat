@@ -83,7 +83,7 @@ The initial implementation scope is intentionally narrow:
 - FASTA ↔ `.fai` integrity;
 - FASTA ↔ SAM/Picard-style `.dict` integrity;
 - FASTA ↔ BAM/CRAM reference-context checks;
-- VCF header/reference-context checks;
+- VCF header/reference-context checks (implemented);
 - exhaustive VCF REF ↔ FASTA verification;
 - GTF/GFF3 sequence-name and coordinate-bounds checks;
 - whole-bundle compatibility reasoning;
@@ -114,7 +114,7 @@ Start with:
 
 ## Project status
 
-Milestone 1 and the Milestone 2 reasoning foundation are complete. RefCompat now has explicit anchor-driven evaluation requests/scope, typed sequence presence/length/identity/order requirements and capabilities, separate compatibility constraints/evaluations, qualitative traceable evidence aggregation without numeric scoring, structured issue/unresolved findings plus explicit-scope conditions, an explicit FASTA `ReferenceContext` with content-verified `SequenceBinding` plus whole-bundle orchestration, categorical `COMPATIBLE` / `COMPATIBLE_WITH_CONDITIONS` / `INCOMPATIBLE` / `INDETERMINATE` aggregation over mandatory constraints, and compact decisive conflict-core extraction. Analysis status and stable `CompatibilityReport` serialization remain later work.
+Milestone 1 and the Milestone 2 reasoning foundation are complete, and Milestone 3 VCF observation work has begun. RefCompat now has explicit anchor-driven evaluation requests/scope, typed sequence presence/length/identity/order requirements and capabilities, separate compatibility constraints/evaluations, qualitative traceable evidence aggregation without numeric scoring, structured issue/unresolved findings plus explicit-scope conditions, an explicit FASTA `ReferenceContext` with content-verified `SequenceBinding` plus whole-bundle orchestration, categorical `COMPATIBLE` / `COMPATIBLE_WITH_CONDITIONS` / `INCOMPATIBLE` / `INDETERMINATE` aggregation over mandatory constraints, and compact decisive conflict-core extraction. Analysis status and stable `CompatibilityReport` serialization remain later work.
 
 ## Current CLI diagnostics
 

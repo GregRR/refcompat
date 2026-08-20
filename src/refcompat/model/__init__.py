@@ -111,6 +111,12 @@ from refcompat.model.sequence_dictionary import (
     SequenceDictionaryRecord,
     SequenceDictionarySnapshot,
 )
+from refcompat.model.vcf import (
+    VcfChromUsage,
+    VcfContextSnapshot,
+    VcfContigDeclaration,
+    VcfHeaderData,
+)
 from refcompat.model.verdict import CompatibilityVerdict, VerdictAggregation
 
 __all__ = [
@@ -199,5 +205,9 @@ __all__ = [
     "SequencePresenceRequirement",
     "SnapshotSequence",
     "SourceLocation",
+    "VcfChromUsage",
+    "VcfContextSnapshot",
+    "VcfContigDeclaration",
+    "VcfHeaderData",
     "VerdictAggregation",
 ]

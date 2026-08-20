@@ -57,12 +57,12 @@ The roadmap intentionally avoids turning RefCompat into a universal genomics val
 
 **Goal:** establish variant/reference compatibility using both metadata and direct base evidence.
 
-- Parse VCF/bgzipped VCF header reference information.
-- Inspect `##contig` metadata and actual `CHROM` usage.
-- Exhaustively verify REF alleles against FASTA in authoritative mode.
-- Distinguish isolated/localized/systematic REF conflict patterns without averaging hard conflicts away.
-- Preserve unresolved sequence-name cases as `INDETERMINATE` unless verified aliases exist.
-- Do not rewrite REF/ALT.
+- [x] Parse VCF/bgzipped VCF header reference information.
+- [x] Inspect `##contig` metadata and actual `CHROM` usage.
+- [ ] Exhaustively verify REF alleles against FASTA in authoritative mode.
+- [ ] Distinguish isolated/localized/systematic REF conflict patterns without averaging hard conflicts away.
+- [ ] Preserve unresolved sequence-name cases as `INDETERMINATE` unless verified aliases exist.
+- [x] Do not rewrite REF/ALT.
 
 ## Milestone 4 — BAM/CRAM
 

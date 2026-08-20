@@ -47,3 +47,5 @@ See [`../docs/check-specifications.md`](../docs/check-specifications.md) for the
 - local identity inspection performs no network access;
 - non-human/custom references do not depend on a human assembly registry;
 - negative controls do not produce speculative reference findings.
+
+- Milestone 3 VCF/VCF.gz observation tests cover header claims, contig metadata, CHROM usage, bgzip input, sparse declarations, provider-boundary failures, and explicit BCF deferral.
