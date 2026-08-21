@@ -46,7 +46,7 @@ Dependencies are added when the corresponding implementation milestone needs the
 
 - FASTA/reference identity uses the `refget` adapter.
 - `.fai` uses a narrow five-column reader; expected uncompressed FASTA geometry is computed through the existing public `refget.compute_fai` API, so no additional runtime dependency is introduced. `.dict` uses a narrow SAM-header reader for the `@SQ` fields required by its check; no additional runtime dependency is introduced.
-- VCF now uses `pysam>=0.24,<0.25` behind a narrow adapter boundary. The 0.24 line provides CPython 3.14 wheels and permissive MIT licensing. BAM/CRAM may reuse the same dependency when that milestone begins.
+- VCF now uses `pysam>=0.24,<0.25` behind a narrow adapter boundary. The 0.24 line supports Python >=3.8, provides CPython 3.10–3.14 wheels for RefCompat's tested range, and uses permissive MIT licensing. BAM/CRAM may reuse the same dependency when that milestone begins.
 - GTF/GFF3 begins with a narrow streaming parser for seqids, coordinates, required directives, and provenance fields. A larger annotation database/framework is not part of the initial scope.
 
 A deliberately narrow parser is preferred when it is sufficient, easier to audit, and avoids imposing unrelated semantics.

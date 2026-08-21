@@ -9,9 +9,9 @@ identity evidence establishes the relationship.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import StrEnum
 from typing import NewType
 
+from refcompat._compat import StrEnum
 from refcompat.model.contracts import Capability, CapabilityId, SequenceIdentityValue
 from refcompat.model.evaluation import EvaluationScope
 from refcompat.model.identity import (

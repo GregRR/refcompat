@@ -1,6 +1,6 @@
 # ADR 0011 — Python, packaging, and quality-tooling baseline
 
-**Status:** Accepted
+**Status:** Superseded by [ADR 0013](0013-python-310-compatibility-floor.md)
 
 ## Context
 

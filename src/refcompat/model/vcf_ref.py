@@ -8,8 +8,8 @@ unresolved records without converting the direct check into a bundle verdict.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import StrEnum
 
+from refcompat._compat import StrEnum
 from refcompat.model.resources import ResourceId
 
 

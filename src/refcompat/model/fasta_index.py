@@ -12,8 +12,8 @@ References:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import StrEnum
 
+from refcompat._compat import StrEnum
 from refcompat.model.evidence import EvidencePolarity, EvidenceStrength
 from refcompat.model.resources import ResourceId
 

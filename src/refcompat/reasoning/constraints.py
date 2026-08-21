@@ -7,8 +7,9 @@ presence capability proves absence. Sequence-name projection uses only explicit
 
 from __future__ import annotations
 
-from typing import assert_never
+from typing import TypeAlias, TypeVar
 
+from refcompat._compat import assert_never
 from refcompat.model.constraints import (
     CompatibilityConstraint,
     ConstraintEvaluation,
@@ -34,9 +35,11 @@ from refcompat.model.contracts import (
 )
 from refcompat.model.reference_context import SequenceBinding
 
-type _NamedSequenceCapability = (
+_NamedSequenceCapability: TypeAlias = (
     SequencePresenceCapability | SequenceLengthCapability | SequenceIdentityCapability
 )
+
+_NamedSequenceCapabilityT = TypeVar("_NamedSequenceCapabilityT", bound=_NamedSequenceCapability)
 
 
 def build_constraint(
@@ -173,12 +176,12 @@ def _evaluate_order(
     return _result(constraint, ConstraintState.UNSATISFIED, candidates=typed_candidates)
 
 
-def _named_candidates[T: _NamedSequenceCapability](
+def _named_candidates(
     constraint: CompatibilityConstraint,
     local_sequence_name: str,
-    capability_type: type[T],
-) -> tuple[tuple[T, ...], bool]:
-    candidates: list[T] = []
+    capability_type: type[_NamedSequenceCapabilityT],
+) -> tuple[tuple[_NamedSequenceCapabilityT, ...], bool]:
+    candidates: list[_NamedSequenceCapabilityT] = []
     used_alias = False
     for capability in constraint.candidate_capabilities:
         if not isinstance(capability, capability_type):

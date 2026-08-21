@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from enum import StrEnum
 
+from refcompat._compat import StrEnum
 from refcompat.model.resources import ResourceId
 
 _SHA512T24U_RE = re.compile(r"^[A-Za-z0-9_-]{32}$")

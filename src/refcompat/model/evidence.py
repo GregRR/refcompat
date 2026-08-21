@@ -8,9 +8,9 @@ weak evidence to cancel stronger contradictions.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import StrEnum
 from typing import NewType
 
+from refcompat._compat import StrEnum
 from refcompat.model.constraints import ConstraintId
 from refcompat.model.contracts import CapabilityId, RequirementId
 from refcompat.model.observations import ObservationId

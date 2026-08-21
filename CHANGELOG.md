@@ -6,6 +6,7 @@ The project is currently pre-release and still establishing its design and repos
 
 ## Unreleased
 
+- Broaden supported Python compatibility to >=3.10 while retaining Python 3.14.7 as the development pin; add CI coverage for 3.10 and 3.11 and replace 3.11/3.12-only enum, exhaustiveness, and type-alias syntax with RefCompat-owned/3.10-compatible equivalents.
 - Add exhaustive direct VCF REF-to-FASTA validation with streaming record observations, exact-name unresolved states, coordinate-bounds outcomes, VCF 4.5 IUPAC handling, non-match traceability, and temporary computed FASTA indexing that cannot trust or rewrite an adjacent `.fai`.
 - Start Milestone 3 VCF support with a pysam-backed observation layer for VCF/VCF.gz fileformat, `##reference`, `##contig` metadata, and exhaustive CHROM-usage scanning without yet making REF compatibility conclusions.
 - Add compact deterministic conflict-core extraction that reports only decisive mandatory constraint/finding/evidence/resource traces for incompatible or unresolved verdicts without scoring, voting, or arbitrary global-minimum selection.
@@ -25,7 +26,7 @@ The project is currently pre-release and still establishing its design and repos
 ### Foundation
 
 - Selected Apache-2.0 and added durable citation/provenance metadata.
-- Established Python >=3.12, `uv`/`uv_build`, pytest, Ruff, strict mypy, and a Python 3.12–3.14 CI matrix.
+- Established `uv`/`uv_build`, pytest, Ruff, strict mypy, and the Python compatibility policy; support is now Python >=3.10 with CI on 3.10–3.14.
 - Set the initial runtime dependency boundary to `refget>=0.12,<0.13`; later format dependencies are added only when implementation requires them.
 
 ### Design

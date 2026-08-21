@@ -619,9 +619,9 @@ See [`docs/dependency-policy.md`](docs/dependency-policy.md).
 
 The initial repository baseline is:
 
-- Python >=3.12;
+- Python >=3.10, with Python 3.11+ recommended for new environments;
 - repository development interpreter pinned to Python 3.14.7;
-- CI on Python 3.12, 3.13, and 3.14;
+- CI on Python 3.10, 3.11, 3.12, 3.13, and 3.14;
 - `uv` for environment management, locking, command execution, and builds;
 - `uv_build` as the pure-Python build backend;
 - committed `uv.lock`;
@@ -636,7 +636,7 @@ A stable JSON Schema is not frozen before the report model stabilizes. Schema/ve
 
 The source distribution explicitly excludes local/private research and maintainer-note directories as defense in depth in addition to `.gitignore`.
 
-See [`docs/development.md`](docs/development.md), ADR 0011, and ADR 0012.
+See [`docs/development.md`](docs/development.md), ADR 0012, and ADR 0013.
 
 ---
 

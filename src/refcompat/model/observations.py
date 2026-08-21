@@ -9,13 +9,13 @@ that later evidence and report layers can reference.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import NewType
+from typing import NewType, TypeAlias
 
 from refcompat.model.resources import ResourceId
 
 ObservationId = NewType("ObservationId", str)
 ObservationKind = NewType("ObservationKind", str)
-type ObservationValue = str | int | float | bool
+ObservationValue: TypeAlias = str | int | float | bool
 
 
 @dataclass(frozen=True, slots=True)

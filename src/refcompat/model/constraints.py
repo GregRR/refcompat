@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import StrEnum
-from typing import NewType, assert_never
+from typing import NewType
 
+from refcompat._compat import StrEnum, assert_never
 from refcompat.model.contracts import (
     Capability,
     CapabilityId,

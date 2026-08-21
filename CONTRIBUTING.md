@@ -39,7 +39,7 @@ Lossless normalization may be described when it is evidence-backed and reversibl
 
 ## Development workflow
 
-RefCompat uses `uv` and supports Python 3.12+. The repository development interpreter is pinned in `.python-version`.
+RefCompat uses `uv` and supports Python 3.10–3.14; Python 3.11+ is recommended for new environments. The repository development interpreter is pinned in `.python-version`.
 
 Before proposing a change, run:
 

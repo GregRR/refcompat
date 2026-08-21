@@ -15,7 +15,8 @@ ADRs record stable decisions that should not be silently changed during implemen
 | [0008](0008-conditions-require-explicit-scope.md) | Conditional compatibility requires explicit scope |
 | [0009](0009-fasta-anchor-for-v0-1-bundle-reasoning.md) | Use an explicit FASTA anchor for v0.1 bundle reasoning |
 | [0010](0010-apache-2-license.md) | License RefCompat under Apache-2.0 |
-| [0011](0011-python-packaging-and-quality-tooling.md) | Use Python >=3.12, uv, pytest, Ruff, and strict mypy |
+| [0011](0011-python-packaging-and-quality-tooling.md) | Superseded: original Python >=3.12 packaging/tooling baseline |
 | [0012](0012-minimal-runtime-dependencies-and-format-parsing.md) | Keep runtime dependencies minimal and add parsers by milestone |
+| [0013](0013-python-310-compatibility-floor.md) | Broaden package compatibility to Python >=3.10 while recommending 3.11+ for new environments |
 
 ADRs use the statuses `Proposed`, `Accepted`, `Superseded`, or `Rejected`. The initial records are `Accepted` design decisions; implementation may reveal a need to supersede them, but changes should be explicit and justified.

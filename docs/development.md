@@ -4,7 +4,7 @@ RefCompat uses `uv` for project environments, dependency locking, builds, and lo
 
 ## Python support
 
-The package supports Python 3.12 and newer. The repository's development interpreter is pinned in `.python-version`; CI exercises Python 3.12, 3.13, and 3.14.
+The package currently supports Python 3.10–3.14; Python 3.11+ is recommended for new environments. The repository's development interpreter remains pinned in `.python-version`; CI exercises Python 3.10, 3.11, 3.12, 3.13, and 3.14.
 
 ## Environment setup
 

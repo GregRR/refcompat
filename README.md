@@ -129,7 +129,7 @@ Add `--format json` to any command for provisional machine-readable output. Thes
 
 ## Development
 
-RefCompat supports Python 3.12 and newer and uses `uv` for project environments and dependency locking.
+RefCompat currently supports Python 3.10–3.14; Python 3.11+ is recommended for new environments and uses `uv` for project environments and dependency locking.
 
 ```bash
 uv sync --all-groups

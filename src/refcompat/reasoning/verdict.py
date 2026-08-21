@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from typing import assert_never
-
+from refcompat._compat import assert_never
 from refcompat.model.bundle import BundleReasoningResult
 from refcompat.model.constraints import ConstraintEvaluation, ConstraintId, ConstraintState
 from refcompat.model.contracts import RequirementLevel

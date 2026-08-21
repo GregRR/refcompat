@@ -21,7 +21,7 @@ The roadmap intentionally avoids turning RefCompat into a universal genomics val
 - [x] Define explicit v0.1 check specifications.
 - [x] Record initial architectural decisions.
 - [x] Select software license: Apache-2.0.
-- [x] Select supported Python version and compatibility policy: Python >=3.12; CI on 3.12–3.14.
+- [x] Select supported Python version and compatibility policy: Python >=3.10; CI on 3.10–3.14, with Python 3.11+ recommended for new environments.
 - [x] Finalize initial packaging/dependency approach: `uv`/`uv_build`, committed lockfile, minimal runtime dependencies.
 - [x] Configure `uv`, pytest, Ruff, strict mypy, packaging, and CI.
 

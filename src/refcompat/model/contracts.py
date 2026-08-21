@@ -9,16 +9,16 @@ because their values happen to share a primitive representation.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import StrEnum
-from typing import NewType
+from typing import NewType, TypeAlias
 
+from refcompat._compat import StrEnum
 from refcompat.model.identity import Md5Digest, RefgetSequenceId
 from refcompat.model.observations import ObservationId
 from refcompat.model.resources import ResourceId
 
 RequirementId = NewType("RequirementId", str)
 CapabilityId = NewType("CapabilityId", str)
-type SequenceIdentityValue = RefgetSequenceId | Md5Digest
+SequenceIdentityValue: TypeAlias = RefgetSequenceId | Md5Digest
 
 
 class RequirementOrigin(StrEnum):
@@ -170,13 +170,13 @@ class SequenceOrderCapability:
         _validate_source_observation_ids(self.source_observation_ids)
 
 
-type Requirement = (
+Requirement: TypeAlias = (
     SequencePresenceRequirement
     | SequenceLengthRequirement
     | SequenceIdentityRequirement
     | SequenceOrderRequirement
 )
-type Capability = (
+Capability: TypeAlias = (
     SequencePresenceCapability
     | SequenceLengthCapability
     | SequenceIdentityCapability

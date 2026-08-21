@@ -14,8 +14,8 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from enum import StrEnum
 
+from refcompat._compat import StrEnum
 from refcompat.model.evidence import EvidencePolarity, EvidenceStrength
 from refcompat.model.identity import Md5Digest
 from refcompat.model.resources import ResourceId

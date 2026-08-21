@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
-from typing import assert_never
 
+from refcompat._compat import assert_never
 from refcompat.model.bundle import BundleReasoningResult
 from refcompat.model.conflict_core import (
     ConflictCore,
