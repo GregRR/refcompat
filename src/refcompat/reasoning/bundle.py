@@ -10,6 +10,7 @@ from refcompat.model.bundle import BundleReasoningResult
 from refcompat.model.constraints import ConstraintId, capability_is_comparable
 from refcompat.model.contracts import (
     Capability,
+    ReferenceBaseRequirement,
     Requirement,
     ResourceContract,
     SequenceIdentityCapability,
@@ -114,6 +115,8 @@ def _bindings_for_requirement(
         return tuple(
             binding for binding in resource_bindings if binding.local_sequence_name in names
         )
+    if isinstance(requirement, ReferenceBaseRequirement):
+        return ()
     assert_never(requirement)
 
 
@@ -161,6 +164,8 @@ def _anchor_candidates(
             scoped_names = {sequence.local_name for sequence in context.sequences}
             if any(name not in scoped_names for name in projected_names):
                 continue
+        elif isinstance(requirement, ReferenceBaseRequirement):
+            continue
         else:
             assert_never(requirement)
         candidates.append(capability)
@@ -182,7 +187,7 @@ def _target_anchor_name(
     requirement: Requirement,
     bindings: tuple[SequenceBinding, ...],
 ) -> str | None:
-    if isinstance(requirement, SequenceOrderRequirement):
+    if isinstance(requirement, (SequenceOrderRequirement, ReferenceBaseRequirement)):
         return None
     if isinstance(
         requirement,

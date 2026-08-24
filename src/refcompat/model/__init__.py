@@ -21,6 +21,8 @@ from refcompat.model.constraints import (
 from refcompat.model.contracts import (
     Capability,
     CapabilityId,
+    ReferenceBaseRequirement,
+    ReferenceBaseValidationCapability,
     Requirement,
     RequirementId,
     RequirementLevel,
@@ -117,6 +119,7 @@ from refcompat.model.vcf import (
     VcfContigDeclaration,
     VcfHeaderData,
 )
+from refcompat.model.vcf_contract import VcfContractProjection
 from refcompat.model.vcf_ref import (
     VcfRefCheckState,
     VcfRefRecord,
@@ -175,6 +178,8 @@ __all__ = [
     "ObservationId",
     "ObservationKind",
     "ProfileId",
+    "ReferenceBaseRequirement",
+    "ReferenceBaseValidationCapability",
     "ReferenceContext",
     "RefgetSequenceId",
     "Requirement",
@@ -215,6 +220,7 @@ __all__ = [
     "VcfChromUsage",
     "VcfContextSnapshot",
     "VcfContigDeclaration",
+    "VcfContractProjection",
     "VcfHeaderData",
     "VcfRefCheckState",
     "VcfRefRecord",

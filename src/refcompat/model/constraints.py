@@ -9,6 +9,8 @@ from refcompat._compat import StrEnum, assert_never
 from refcompat.model.contracts import (
     Capability,
     CapabilityId,
+    ReferenceBaseRequirement,
+    ReferenceBaseValidationCapability,
     Requirement,
     RequirementId,
     SequenceIdentityCapability,
@@ -34,6 +36,7 @@ class ConstraintRule(StrEnum):
     SEQUENCE_LENGTH = "sequence_length"
     SEQUENCE_IDENTITY = "sequence_identity"
     SEQUENCE_ORDER = "sequence_order"
+    REFERENCE_BASES = "reference_bases"
 
 
 class ConstraintState(StrEnum):
@@ -52,6 +55,7 @@ class SatisfactionMode(StrEnum):
     VERIFIED_ALIAS = "verified_alias"
     VERIFIED_SEQUENCE_IDENTITY = "verified_sequence_identity"
     VERIFIED_SUBSET = "verified_subset"
+    EXHAUSTIVE_DIRECT = "exhaustive_direct"
 
 
 @dataclass(frozen=True, slots=True)
@@ -148,6 +152,8 @@ def constraint_rule_for_requirement(requirement: Requirement) -> ConstraintRule:
         return ConstraintRule.SEQUENCE_IDENTITY
     if isinstance(requirement, SequenceOrderRequirement):
         return ConstraintRule.SEQUENCE_ORDER
+    if isinstance(requirement, ReferenceBaseRequirement):
+        return ConstraintRule.REFERENCE_BASES
     assert_never(requirement)
 
 
@@ -168,6 +174,13 @@ def capability_is_comparable(requirement: Requirement, capability: Capability) -
         assert_never(requirement.identity)
     if isinstance(requirement, SequenceOrderRequirement):
         return isinstance(capability, SequenceOrderCapability)
+    if isinstance(requirement, ReferenceBaseRequirement):
+        return (
+            isinstance(capability, ReferenceBaseValidationCapability)
+            and capability.resource_id == requirement.anchor_resource_id
+            and capability.subject_resource_id == requirement.resource_id
+            and capability.checked_count == requirement.record_count
+        )
     assert_never(requirement)
 
 
@@ -232,4 +245,6 @@ def _binding_is_relevant_to_requirement(
         return binding.local_sequence_name == requirement.sequence_name
     if isinstance(requirement, SequenceOrderRequirement):
         return binding.local_sequence_name in requirement.sequence_names
+    if isinstance(requirement, ReferenceBaseRequirement):
+        return False
     assert_never(requirement)

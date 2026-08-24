@@ -299,8 +299,9 @@ Inspect:
 ### RCHECK-050B — exhaustive REF ↔ FASTA validation
 
 **Implementation status:** exhaustive direct record classification is implemented for exact-name
-resolution against an uncompressed FASTA anchor. Verified-binding projection, mismatch-pattern
-classification, VCF contracts/findings, and bundle-verdict integration remain later Milestone 3 work.
+resolution against an uncompressed FASTA anchor. Format-neutral contract/evidence projection is
+implemented in RCHECK-050C; verified-binding projection, mismatch-pattern classification, and
+bundle-verdict integration remain later Milestone 3 work.
 
 Authoritative v0.1 REF checking is **exhaustive**.
 
@@ -328,6 +329,40 @@ the alphabetically first represented concrete base as required for VCF REF repre
 
 Authoritative base access computes temporary FAI geometry from the supplied FASTA itself and does
 not trust or modify an adjacent user-supplied `.fai`.
+
+### RCHECK-050C — format-neutral contract/evidence projection
+
+**Implementation status:** implemented for actual CHROM usage and exhaustive direct REF results.
+Verified-binding revalidation, mismatch-pattern classification, and integration of pair-derived
+reference-base capabilities into whole-bundle verdict orchestration remain later Milestone 3 work.
+
+Projection rules:
+
+- each actually used `CHROM` name creates one mandatory `SequencePresenceRequirement`;
+- unused `##contig` declarations do not create presence requirements;
+- the complete VCF record set creates one mandatory `ReferenceBaseRequirement` that names the
+  selected FASTA anchor, not one requirement per record;
+- exhaustive REF checking creates one FASTA-anchor-owned
+  `ReferenceBaseValidationCapability` describing the VCF/FASTA pair;
+- any proven REF mismatch makes the generic reference-base constraint `UNSATISFIED` and emits
+  Tier-A conclusive contradiction evidence;
+- unresolved-name or out-of-bounds-only direct results remain `UNRESOLVED` and do not fabricate
+  support or contradiction evidence;
+- a non-empty all-match validation is `SATISFIED` with `EXHAUSTIVE_DIRECT`;
+- an empty VCF has a `NOT_APPLICABLE` reference-base requirement.
+
+The pair-derived capability is deliberately kept outside the VCF `ResourceContract`: it belongs
+to the selected FASTA anchor and is evidence produced by comparing the two resources. Generic
+comparability also requires that capability owner to match the anchor named by the requirement,
+so a capability from another FASTA is filtered out rather than allowed to satisfy the constraint. The
+existing generic `reason_bundle()` path does not yet ingest this supplemental pair-derived
+capability; `VcfContractProjection` carries the evaluated constraints/evidence directly until that
+orchestration boundary is designed. Peer resources still cannot vote against or replace the FASTA
+anchor.
+
+The original `VcfRefValidationResult` remains attached to the projection so later VCF-specific
+logic can distinguish isolated, localized, and systematic conflicts without weakening the generic
+hard-conflict rule or expanding large VCFs into per-record contract objects.
 
 ### Hard-conflict rule
 

@@ -24,4 +24,5 @@ If a supporting document and `DESIGN.md` disagree, `DESIGN.md` wins until the di
 - [`verdict-aggregation.md`](verdict-aggregation.md) — fifth Milestone 2 categorical mandatory-constraint verdict aggregation boundary.
 - [`vcf-context.md`](vcf-context.md) — Milestone 3 VCF header/reference-context observations and pysam boundary.
 - [`vcf-ref-validation.md`](vcf-ref-validation.md) — exhaustive Milestone 3 direct VCF REF-to-FASTA comparison boundary.
+- [`vcf-contract-projection.md`](vcf-contract-projection.md) — Milestone 3 bridge from VCF usage/REF results into format-neutral contracts and Tier-A evidence.
 - [`conflict-core.md`](conflict-core.md) — sixth Milestone 2 compact decisive conflict/evidence-core extraction boundary.

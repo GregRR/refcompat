@@ -23,6 +23,8 @@ from refcompat.model.constraints import (
 )
 from refcompat.model.contracts import (
     Capability,
+    ReferenceBaseRequirement,
+    ReferenceBaseValidationCapability,
     Requirement,
     SequenceIdentityCapability,
     SequenceIdentityRequirement,
@@ -77,6 +79,8 @@ def evaluate_constraint(constraint: CompatibilityConstraint) -> ConstraintEvalua
         return _evaluate_identity(constraint, requirement)
     if isinstance(requirement, SequenceOrderRequirement):
         return _evaluate_order(constraint, requirement)
+    if isinstance(requirement, ReferenceBaseRequirement):
+        return _evaluate_reference_bases(constraint, requirement)
     assert_never(requirement)
 
 
@@ -140,6 +144,55 @@ def _evaluate_identity(
         values=tuple(capability.identity for capability in candidates),
         satisfied_mode=SatisfactionMode.VERIFIED_SEQUENCE_IDENTITY,
     )
+
+
+def _evaluate_reference_bases(
+    constraint: CompatibilityConstraint,
+    requirement: ReferenceBaseRequirement,
+) -> ConstraintEvaluation:
+    candidates = tuple(
+        capability
+        for capability in constraint.candidate_capabilities
+        if isinstance(capability, ReferenceBaseValidationCapability)
+        and capability_is_comparable(requirement, capability)
+    )
+    if not candidates:
+        return _result(constraint, ConstraintState.UNRESOLVED)
+
+    by_state = {
+        state: tuple(
+            capability for capability in candidates if _reference_base_state(capability) is state
+        )
+        for state in ConstraintState
+    }
+    if by_state[ConstraintState.UNSATISFIED]:
+        return _result(
+            constraint,
+            ConstraintState.UNSATISFIED,
+            candidates=by_state[ConstraintState.UNSATISFIED],
+        )
+    if by_state[ConstraintState.UNRESOLVED]:
+        return _result(constraint, ConstraintState.UNRESOLVED)
+    if by_state[ConstraintState.SATISFIED]:
+        return _result(
+            constraint,
+            ConstraintState.SATISFIED,
+            mode=SatisfactionMode.EXHAUSTIVE_DIRECT,
+            candidates=by_state[ConstraintState.SATISFIED],
+        )
+    return _result(constraint, ConstraintState.NOT_APPLICABLE)
+
+
+def _reference_base_state(
+    capability: ReferenceBaseValidationCapability,
+) -> ConstraintState:
+    if capability.checked_count == 0:
+        return ConstraintState.NOT_APPLICABLE
+    if capability.mismatch_count:
+        return ConstraintState.UNSATISFIED
+    if capability.unresolved_count:
+        return ConstraintState.UNRESOLVED
+    return ConstraintState.SATISFIED
 
 
 def _evaluate_order(

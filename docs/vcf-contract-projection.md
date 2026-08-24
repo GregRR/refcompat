@@ -1,0 +1,97 @@
+# VCF contract and evidence projection
+
+Milestone 3 projects already-observed VCF facts into RefCompat's format-neutral
+reasoning model without turning VCF-specific pattern interpretation into the
+core constraint layer.
+
+## Inputs
+
+`project_vcf_contract()` consumes:
+
+- a `VcfContextSnapshot` from the complete VCF record scan;
+- the exhaustive `VcfRefValidationResult` for that same VCF and FASTA;
+- the selected FASTA `ReferenceContext`.
+
+The three inputs are cross-checked for resource identity, record count, and
+per-sequence record coverage before any contract/evidence object is produced.
+Coverage comparison is by sequence name and count, not incidental tuple order;
+the VCF snapshot still determines the first-observed ordering of projected
+presence requirements.
+
+## Contract shape
+
+Actual `CHROM` usage becomes one mandatory `SequencePresenceRequirement` per
+used sequence name, in first-observed order. Header-only `##contig`
+declarations do not create presence requirements because an unused declaration
+is not evidence that the VCF actually requires that contig for its records.
+
+The complete VCF record set becomes one mandatory `ReferenceBaseRequirement`
+that explicitly names the selected FASTA anchor and carries its exhaustive record count. RefCompat deliberately does **not** create
+one requirement object per VCF record; the format-specific validation result
+already retains every non-match, and a large VCF must not require a
+million-object contract merely to state that all REF assertions must agree with
+the anchor.
+
+## Direct reference-base capability
+
+`ReferenceBaseValidationCapability` is anchor-owned and records:
+
+- the VCF resource whose assertions were checked;
+- total checked records;
+- matches;
+- mismatches;
+- unresolved direct comparisons.
+
+For this projection, unresolved direct comparisons combine the existing
+`OUT_OF_BOUNDS` and `UNRESOLVED_SEQUENCE` counts. Their distinct local causes
+remain preserved in `VcfRefValidationResult` for later VCF-specific
+interpretation.
+
+The capability is pair-derived evidence. It is kept separate from the VCF's
+`ResourceContract` because it is not an intrinsic capability asserted by the
+VCF itself. Generic comparability requires its `resource_id` to equal the
+`anchor_resource_id` named by the `ReferenceBaseRequirement`; a validation
+capability from another FASTA therefore cannot satisfy the requirement.
+
+## Generic constraint semantics
+
+The format-neutral reference-base constraint applies these rules:
+
+1. any exhaustive direct mismatch -> `UNSATISFIED`;
+2. otherwise any unresolved direct comparison -> `UNRESOLVED`;
+3. otherwise a non-empty all-match validation -> `SATISFIED` with
+   `EXHAUSTIVE_DIRECT` satisfaction mode;
+4. an empty record set -> `NOT_APPLICABLE`.
+
+A mismatch is Tier-A conclusive content evidence using
+`EXHAUSTIVE_REFERENCE_BASE_VALIDATION`. It cannot be averaged away by a larger
+number of matches or by another supporting direct-validation capability.
+Unresolved-only validation does not fabricate support or contradiction
+evidence.
+
+## Sequence-name boundary
+
+Presence requirements use the ordinary generic sequence-presence machinery.
+This slice performs no string alias guessing and does not reinterpret an
+`UNRESOLVED_SEQUENCE` REF result as a mismatch. Verified sequence-binding
+projection for VCF remains later Milestone 3 work.
+
+## Deliberate boundary
+
+This slice does not yet:
+
+- classify isolated, localized, or systematic REF-conflict patterns;
+- convert `OUT_OF_BOUNDS` into a VCF-specific compatibility policy;
+- assess `##reference`, declared `md5`, or unused `##contig` metadata as proof;
+- rewrite REF/ALT;
+- add stable report serialization;
+- inject the pair-derived reference-base capability into the existing generic
+  `reason_bundle()` orchestration;
+- change the existing categorical bundle-verdict policy.
+
+`VcfContractProjection` retains the generic contract, constraints,
+evaluations/evidence, and the original compact VCF validation result so later
+pattern interpretation can use local evidence without weakening the generic
+hard-conflict rule. Whole-bundle ingestion of this supplemental anchor-owned
+capability is intentionally deferred rather than teaching peer contracts to
+supply or vote on reference authority.

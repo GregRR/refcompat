@@ -27,12 +27,15 @@ the first Milestone 2 slice:
 - sequence presence;
 - sequence length;
 - sequence identity;
-- sequence order.
+- sequence order;
+- exhaustive reference-base consistency.
 
 The baseline derivation method is `EXACT_TYPED_CONSTRAINT`. The later
 reference-context/bundle slice also uses `VERIFIED_SEQUENCE_BINDING` when an
 explicit content-verified binding is required to project a resource-local name
-into the FASTA-anchor namespace. Neither method is a generic rules language.
+into the FASTA-anchor namespace. Milestone 3 additionally uses
+`EXHAUSTIVE_REFERENCE_BASE_VALIDATION` for an anchor-backed complete REF comparison. None of
+these methods is a generic rules language.
 
 ## Source traceability
 
@@ -77,7 +80,8 @@ The current exact sequence evaluator maps evidence conservatively:
 - exact same-scheme sequence identity (refget or M5/MD5) -> Tier A;
 - sequence presence -> Tier B;
 - exact sequence length -> Tier B;
-- exact sequence order -> Tier B.
+- exact sequence order -> Tier B;
+- exhaustive reference-base agreement/contradiction -> Tier A.
 
 A matching candidate supports its requirement. A directly comparable but
 nonmatching candidate contradicts it.

@@ -16,6 +16,8 @@ from refcompat.model.constraints import (
 from refcompat.model.contracts import (
     Capability,
     CapabilityId,
+    ReferenceBaseRequirement,
+    ReferenceBaseValidationCapability,
     Requirement,
     RequirementId,
     RequirementLevel,
@@ -168,6 +170,33 @@ def test_unsatisfied_typed_constraints_map_to_specific_finding_kinds(
     result = interpret_constraint_results(_request(), (constraint,), (evaluation,), aggregate)
 
     assert result.findings[0].kind is expected_kind
+
+
+def test_reference_base_contradiction_maps_to_specific_finding_kind() -> None:
+    requirement = ReferenceBaseRequirement(
+        id=RequirementId("req-reference-bases"),
+        resource_id=_CONSUMER,
+        anchor_resource_id=_REFERENCE,
+        origin=RequirementOrigin.CORE_FORMAT,
+        level=RequirementLevel.MANDATORY,
+        record_count=10,
+    )
+    capability = ReferenceBaseValidationCapability(
+        id=CapabilityId("reference-base-validation"),
+        resource_id=_REFERENCE,
+        subject_resource_id=_CONSUMER,
+        checked_count=10,
+        match_count=9,
+        mismatch_count=1,
+        unresolved_count=0,
+    )
+    constraint = build_constraint(ConstraintId("reference-bases"), requirement, (capability,))
+    evaluation, aggregate = _pipeline(constraint)
+
+    result = interpret_constraint_results(_request(), (constraint,), (evaluation,), aggregate)
+
+    assert result.findings[0].kind is FindingKind.REFERENCE_BASE_CONFLICT
+    assert result.findings[0].resource_ids == (_CONSUMER, _REFERENCE)
 
 
 def test_unresolved_missing_evidence_becomes_unresolved_finding_without_evidence() -> None:

@@ -242,7 +242,7 @@ Examples of requirements:
 - derived artifact must correspond to exact source representation;
 - order must match when explicitly required.
 
-Requirements record origin (`CORE_FORMAT`, `PROFILE`, `USER_POLICY`) and level (`MANDATORY`, `ADVISORY`). The initial typed implementation covers sequence presence, exact length, content identity (refget or M5/MD5 without cross-algorithm comparison), and exact local sequence order. A missing capability is not proof of absence; an explicit negative sequence-presence capability is required to establish absence.
+Requirements record origin (`CORE_FORMAT`, `PROFILE`, `USER_POLICY`) and level (`MANDATORY`, `ADVISORY`). The typed implementation covers sequence presence, exact length, content identity (refget or M5/MD5 without cross-algorithm comparison), exact local sequence order, and scalable exhaustive reference-base consistency requirements/capabilities. A missing capability is not proof of absence; an explicit negative sequence-presence capability is required to establish absence.
 
 ## Typed requirements and capabilities
 
@@ -262,6 +262,8 @@ SequenceOrderRequirement
 and corresponding capability types.
 
 Typed variants prevent comparisons between unrelated scientific constraints and make type checking useful.
+
+`ReferenceBaseRequirement` is resource-level, names the selected anchor resource explicitly, and carries the exhaustive checked-record count rather than expanding into one object per locus. `ReferenceBaseValidationCapability` is owned by that anchor, names the subject resource, and partitions the exhaustive check into match, mismatch, and unresolved counts. Generic comparability requires the capability owner to equal the requirement's named anchor, so pair-derived evidence from another FASTA cannot satisfy the requirement. Generic evaluation gives mismatch Tier-A precedence, leaves unresolved-only checks unresolved without fabricated evidence, and treats an empty record set as not applicable. Format-specific local mismatch/bounds/name details remain in the producing validation model.
 
 ## `CompatibilityConstraint` and `ConstraintEvaluation`
 

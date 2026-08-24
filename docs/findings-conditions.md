@@ -4,7 +4,9 @@
 
 This layer interprets already-evaluated constraints and qualitative evidence as
 structured findings, and records explicit request scope as structured
-conditions. It does **not** assign a bundle compatibility verdict.
+conditions. Milestone 3 extends the same interpreter with the generic
+`REFERENCE_BASE_CONFLICT` finding kind. It does **not** assign a bundle
+compatibility verdict.
 
 ## Findings
 
@@ -18,6 +20,7 @@ constraints:
 - exact length contradiction -> `SEQUENCE_LENGTH_CONFLICT`;
 - same-scheme content-identity contradiction -> `SEQUENCE_IDENTITY_CONFLICT`;
 - exact sequence-order contradiction -> `SEQUENCE_ORDER_CONFLICT`;
+- exhaustive reference-base contradiction -> `REFERENCE_BASE_CONFLICT`;
 - missing or internally conflicting evidence -> `UNRESOLVED_REQUIREMENT`.
 
 Satisfied constraints remain represented by their `ConstraintEvaluation` and

@@ -17,6 +17,8 @@ from refcompat.model.constraints import (
 )
 from refcompat.model.contracts import (
     Capability,
+    ReferenceBaseRequirement,
+    ReferenceBaseValidationCapability,
     Requirement,
     SequenceIdentityCapability,
     SequenceIdentityRequirement,
@@ -230,6 +232,23 @@ def _classify_relationship(
             if binding_ids
             else EvidenceMethod.EXACT_TYPED_CONSTRAINT,
             binding_ids,
+        )
+
+    if isinstance(requirement, ReferenceBaseRequirement):
+        if not isinstance(capability, ReferenceBaseValidationCapability):
+            raise ValueError("reference-base evidence requires a validation capability")
+        if capability.mismatch_count:
+            polarity = EvidencePolarity.CONTRADICTS
+        elif capability.unresolved_count == 0 and capability.checked_count > 0:
+            polarity = EvidencePolarity.SUPPORTS
+        else:
+            raise ValueError("unresolved reference-base validation cannot become evidence")
+        return (
+            EvidenceKind.REFERENCE_BASES,
+            EvidenceStrength.TIER_A_CONCLUSIVE_CONTENT,
+            polarity,
+            EvidenceMethod.EXHAUSTIVE_REFERENCE_BASE_VALIDATION,
+            (),
         )
 
     assert_never(requirement)

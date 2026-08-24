@@ -1,6 +1,6 @@
 # VCF reference-context observation
 
-**Status:** implemented as the first Milestone 3 VCF slice. Exhaustive direct REF-to-FASTA validation is now implemented separately in [`vcf-ref-validation.md`](vcf-ref-validation.md); VCF contracts, mismatch-pattern findings, and verdict integration remain later work.
+**Status:** implemented as the first Milestone 3 VCF slice. Exhaustive direct REF-to-FASTA validation is implemented separately in [`vcf-ref-validation.md`](vcf-ref-validation.md), and format-neutral contract/evidence projection is implemented in [`vcf-contract-projection.md`](vcf-contract-projection.md). Verified-binding revalidation, mismatch-pattern findings, and whole-bundle verdict integration remain later work.
 
 ## Purpose
 
@@ -54,6 +54,8 @@ This observation slice itself does not create VCF `ResourceContract` requirement
 classify mismatch patterns, emit VCF-specific findings/verdict policy, or mutate VCF data.
 
 Exact-name coordinate and exhaustive REF-to-FASTA comparison are implemented by the separate
-[`vcf-ref-validation.md`](vcf-ref-validation.md) boundary. Verified sequence binding, generalized
-contract/evidence integration, mismatch-pattern interpretation, and reporting remain subsequent
-RCHECK-050 Milestone 3 slices.
+[`vcf-ref-validation.md`](vcf-ref-validation.md) boundary. The subsequent
+[`vcf-contract-projection.md`](vcf-contract-projection.md) bridge converts actual CHROM usage and
+direct REF results into format-neutral requirements/evidence. Verified sequence binding,
+mismatch-pattern interpretation, whole-bundle ingestion of pair-derived evidence, and reporting
+remain later RCHECK-050 Milestone 3 slices.

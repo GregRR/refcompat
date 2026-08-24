@@ -170,17 +170,83 @@ class SequenceOrderCapability:
         _validate_source_observation_ids(self.source_observation_ids)
 
 
+@dataclass(frozen=True, slots=True)
+class ReferenceBaseRequirement:
+    """Require exhaustive reference-base assertions to agree with the anchor.
+
+    ``anchor_resource_id`` names the selected reference authority against
+    which the assertions must be checked. ``record_count`` identifies the
+    number of format records covered by the exhaustive direct validation that
+    must satisfy this requirement. The local per-record details remain in the
+    format-specific validation result rather than being expanded into one
+    contract object per record.
+    """
+
+    id: RequirementId
+    resource_id: ResourceId
+    anchor_resource_id: ResourceId
+    origin: RequirementOrigin
+    level: RequirementLevel
+    record_count: int
+
+    def __post_init__(self) -> None:
+        _validate_requirement_header(self.id, self.resource_id)
+        if not self.anchor_resource_id:
+            raise ValueError("reference-base requirement anchor resource ID must not be empty")
+        if self.record_count < 0:
+            raise ValueError("reference-base requirement record count must not be negative")
+
+
+@dataclass(frozen=True, slots=True)
+class ReferenceBaseValidationCapability:
+    """Exhaustive direct reference-base validation against one anchor.
+
+    The capability belongs to the anchor resource that supplied the compared
+    bases and names the resource whose reference-base assertions were checked.
+    ``unresolved_count`` covers records for which direct equality or
+    contradiction could not be established, such as unresolved sequence names
+    or non-addressable reference spans.
+    """
+
+    id: CapabilityId
+    resource_id: ResourceId
+    subject_resource_id: ResourceId
+    checked_count: int
+    match_count: int
+    mismatch_count: int
+    unresolved_count: int
+    source_observation_ids: tuple[ObservationId, ...] = ()
+
+    def __post_init__(self) -> None:
+        _validate_capability_header(self.id, self.resource_id)
+        if not self.subject_resource_id:
+            raise ValueError("reference-base capability subject resource ID must not be empty")
+        counts = (
+            self.checked_count,
+            self.match_count,
+            self.mismatch_count,
+            self.unresolved_count,
+        )
+        if any(count < 0 for count in counts):
+            raise ValueError("reference-base capability counts must not be negative")
+        if self.match_count + self.mismatch_count + self.unresolved_count != self.checked_count:
+            raise ValueError("reference-base capability outcomes must cover every checked record")
+        _validate_source_observation_ids(self.source_observation_ids)
+
+
 Requirement: TypeAlias = (
     SequencePresenceRequirement
     | SequenceLengthRequirement
     | SequenceIdentityRequirement
     | SequenceOrderRequirement
+    | ReferenceBaseRequirement
 )
 Capability: TypeAlias = (
     SequencePresenceCapability
     | SequenceLengthCapability
     | SequenceIdentityCapability
     | SequenceOrderCapability
+    | ReferenceBaseValidationCapability
 )
 
 

@@ -8,6 +8,7 @@ from refcompat.reasoning.fasta_index import evaluate_fasta_index_integrity
 from refcompat.reasoning.interpretation import interpret_constraint_results
 from refcompat.reasoning.reference_context import build_reference_context, derive_sequence_bindings
 from refcompat.reasoning.sequence_dictionary import evaluate_sequence_dictionary_integrity
+from refcompat.reasoning.vcf_contract import project_vcf_contract
 from refcompat.reasoning.vcf_ref import VcfRefEvaluationError, evaluate_vcf_ref_records
 from refcompat.reasoning.verdict import aggregate_bundle_verdict
 
@@ -25,5 +26,6 @@ __all__ = [
     "evaluate_vcf_ref_records",
     "extract_conflict_cores",
     "interpret_constraint_results",
+    "project_vcf_contract",
     "reason_bundle",
 ]

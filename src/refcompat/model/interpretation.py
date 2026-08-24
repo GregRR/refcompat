@@ -29,6 +29,7 @@ class FindingKind(StrEnum):
     SEQUENCE_LENGTH_CONFLICT = "sequence_length_conflict"
     SEQUENCE_IDENTITY_CONFLICT = "sequence_identity_conflict"
     SEQUENCE_ORDER_CONFLICT = "sequence_order_conflict"
+    REFERENCE_BASE_CONFLICT = "reference_base_conflict"
     UNRESOLVED_REQUIREMENT = "unresolved_requirement"
 
 

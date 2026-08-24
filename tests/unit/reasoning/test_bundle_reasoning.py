@@ -12,6 +12,7 @@ from refcompat.model import (
     EvaluationScope,
     EvidenceMethod,
     FindingKind,
+    ReferenceBaseRequirement,
     RefgetSequenceId,
     RequirementId,
     RequirementLevel,
@@ -358,3 +359,25 @@ def test_same_name_identity_binding_is_not_attached_when_projection_is_exact() -
     assert result.constraints[0].sequence_bindings == ()
     assert result.evaluations[0].satisfaction_mode is SatisfactionMode.EXACT
     assert result.evidence.evidence[0].method is EvidenceMethod.EXACT_TYPED_CONSTRAINT
+
+
+def test_bundle_leaves_pair_derived_reference_base_requirement_unresolved() -> None:
+    consumer = ResourceContract(
+        _CONSUMER,
+        requirements=(
+            ReferenceBaseRequirement(
+                RequirementId("reference-bases"),
+                _CONSUMER,
+                _REFERENCE,
+                _ORIGIN,
+                _LEVEL,
+                10,
+            ),
+        ),
+    )
+
+    result = reason_bundle(_request(), _snapshot(), (ResourceContract(_REFERENCE), consumer))
+
+    assert result.evaluations[0].state is ConstraintState.UNRESOLVED
+    assert result.constraints[0].candidate_capabilities == ()
+    assert result.interpretation.findings[0].kind is FindingKind.UNRESOLVED_REQUIREMENT

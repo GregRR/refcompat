@@ -1,11 +1,13 @@
 # Exhaustive VCF REF ↔ FASTA validation
 
-**Status:** implemented direct-evidence boundary for Milestone 3 RCHECK-050B.
+**Status:** implemented direct-evidence boundary for Milestone 3 RCHECK-050B. The subsequent
+format-neutral contract/evidence bridge is implemented in
+[`vcf-contract-projection.md`](vcf-contract-projection.md).
 
 This slice exhaustively compares every VCF record's `REF` allele with an
-explicitly supplied FASTA anchor. It is a direct record-level check, not yet a
-VCF `ResourceContract`, VCF-specific finding classifier, or bundle-verdict
-policy.
+explicitly supplied FASTA anchor. It remains the direct record-level source
+result; contract/evidence projection is a separate layer, and VCF-specific
+pattern classification plus bundle-verdict integration remain later policy.
 
 ## Inputs and traversal
 

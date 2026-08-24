@@ -24,13 +24,15 @@ mode and is not represented by weakening the anchor-driven request invariant.
 
 ## Typed requirements and capabilities
 
-The initial `ResourceContract` vocabulary supports four sequence-oriented
+The current `ResourceContract` vocabulary supports five sequence/reference-oriented
 scientific dimensions:
 
 - sequence presence;
 - exact sequence length;
 - content identity (`RefgetSequenceId` or SAM-style `Md5Digest`);
-- exact local sequence order.
+- exact local sequence order;
+- exhaustive resource-level reference-base consistency (`ReferenceBaseRequirement` /
+  `ReferenceBaseValidationCapability`, added by Milestone 3).
 
 Requirements additionally record:
 
@@ -84,12 +86,19 @@ Initial states are:
 A satisfied result records a separate `SatisfactionMode`; the state itself does
 not proliferate into values such as `SATISFIED_BY_ALIAS`.
 
-The first evaluator supports exact typed comparisons only:
+The original evaluator supports exact typed sequence comparisons for:
 
 - exact named presence;
 - exact length for the same local name;
 - exact identity value for the same local name and identity scheme;
 - exact sequence order.
+
+Milestone 3 extends the same typed evaluator with exhaustive resource-level
+`ReferenceBaseRequirement` evaluation. The requirement names its expected anchor resource, and only a direct validation capability owned by that anchor is comparable. A direct validation capability with any
+proven mismatch is `UNSATISFIED`; otherwise unresolved direct comparisons are
+`UNRESOLVED`, a non-empty all-match validation is `SATISFIED` with
+`EXHAUSTIVE_DIRECT`, and an empty record set is `NOT_APPLICABLE`. This extension
+still performs no scoring, voting, or format-specific mismatch-pattern policy.
 
 MD5 and refget identifiers are not cross-compared. A matching MD5 capability
 does not satisfy a refget requirement, or vice versa, merely because both are
