@@ -11,6 +11,7 @@ from refcompat.model.constraints import ConstraintId, capability_is_comparable
 from refcompat.model.contracts import (
     Capability,
     ReferenceBaseRequirement,
+    ReferenceBaseValidationCapability,
     Requirement,
     ResourceContract,
     SequenceIdentityCapability,
@@ -35,15 +36,19 @@ def reason_bundle(
     request: EvaluationRequest,
     anchor_snapshot: SequenceCollectionSnapshot,
     contracts: tuple[ResourceContract, ...],
+    *,
+    supplemental_capabilities: tuple[ReferenceBaseValidationCapability, ...] = (),
 ) -> BundleReasoningResult:
     """Evaluate every scoped typed requirement against the explicit FASTA anchor.
 
     Peer-resource capabilities participate only in evidence-backed sequence
-    binding construction. They never become competing reference candidates and
-    therefore cannot outvote or replace the selected anchor.
+    binding construction. Pair-derived exhaustive reference-base validation may
+    enter only through the explicit anchor-owned supplemental channel. Neither
+    path lets a peer outvote or replace the selected anchor.
     """
 
     ordered_contracts = _ordered_contracts(request, contracts)
+    _validate_supplemental_capabilities(request, ordered_contracts, supplemental_capabilities)
     context = build_reference_context(request, anchor_snapshot)
     bindings = derive_sequence_bindings(context, ordered_contracts)
 
@@ -51,7 +56,12 @@ def reason_bundle(
     for contract in ordered_contracts:
         for requirement in contract.requirements:
             relevant_bindings = _bindings_for_requirement(requirement, bindings)
-            candidates = _anchor_candidates(context, requirement, relevant_bindings)
+            candidates = _candidates_for_requirement(
+                context,
+                requirement,
+                relevant_bindings,
+                supplemental_capabilities,
+            )
             constraints.append(
                 build_constraint(
                     _make_constraint_id(
@@ -84,6 +94,7 @@ def reason_bundle(
         evaluations=evaluations,
         evidence=evidence,
         interpretation=interpretation,
+        supplemental_capabilities=supplemental_capabilities,
     )
 
 
@@ -134,11 +145,24 @@ def _ordered_contracts(
     return tuple(by_id[resource_id] for resource_id in request.scope.resource_ids)
 
 
-def _anchor_candidates(
+def _candidates_for_requirement(
     context: ReferenceContext,
     requirement: Requirement,
     bindings: tuple[SequenceBinding, ...],
+    supplemental_capabilities: tuple[ReferenceBaseValidationCapability, ...],
 ) -> tuple[Capability, ...]:
+    if isinstance(requirement, ReferenceBaseRequirement):
+        supplemental_candidates = tuple(
+            capability
+            for capability in supplemental_capabilities
+            if capability_is_comparable(requirement, capability)
+        )
+        if len(supplemental_candidates) > 1:
+            raise ValueError(
+                "reference-base requirement may use only one exhaustive supplemental capability"
+            )
+        return supplemental_candidates
+
     target_name = _target_anchor_name(requirement, bindings)
     candidates: list[Capability] = []
     for capability in context.anchor_capabilities:
@@ -164,12 +188,54 @@ def _anchor_candidates(
             scoped_names = {sequence.local_name for sequence in context.sequences}
             if any(name not in scoped_names for name in projected_names):
                 continue
-        elif isinstance(requirement, ReferenceBaseRequirement):
-            continue
         else:
             assert_never(requirement)
         candidates.append(capability)
     return tuple(candidates)
+
+
+def _validate_supplemental_capabilities(
+    request: EvaluationRequest,
+    contracts: tuple[ResourceContract, ...],
+    capabilities: tuple[ReferenceBaseValidationCapability, ...],
+) -> None:
+    if any(
+        not isinstance(capability, ReferenceBaseValidationCapability) for capability in capabilities
+    ):
+        raise TypeError("supplemental capabilities must be reference-base validations")
+
+    capability_ids = tuple(capability.id for capability in capabilities)
+    if len(set(capability_ids)) != len(capability_ids):
+        raise ValueError("supplemental capability IDs must be unique")
+    if any(capability.resource_id != request.anchor_resource_id for capability in capabilities):
+        raise ValueError("supplemental capabilities must belong to the selected FASTA anchor")
+    if any(
+        capability.subject_resource_id not in request.scope.resource_ids
+        for capability in capabilities
+    ):
+        raise ValueError("supplemental capabilities may describe only scoped resources")
+
+    requirements = tuple(
+        requirement
+        for contract in contracts
+        for requirement in contract.requirements
+        if isinstance(requirement, ReferenceBaseRequirement)
+    )
+    if any(
+        requirement.anchor_resource_id != request.anchor_resource_id for requirement in requirements
+    ):
+        raise ValueError("reference-base requirements must name the selected FASTA anchor")
+
+    for capability in capabilities:
+        matches = tuple(
+            requirement
+            for requirement in requirements
+            if capability_is_comparable(requirement, capability)
+        )
+        if not matches:
+            raise ValueError(
+                "supplemental reference-base capability must match a scoped requirement"
+            )
 
 
 def _target_anchor_order(

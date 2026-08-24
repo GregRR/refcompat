@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from refcompat.model.constraints import CompatibilityConstraint, ConstraintEvaluation
-from refcompat.model.contracts import ResourceContract
+from refcompat.model.contracts import ReferenceBaseValidationCapability, ResourceContract
 from refcompat.model.evaluation import EvaluationRequest
 from refcompat.model.evidence import EvidenceAggregate
 from refcompat.model.interpretation import InterpretationResult
@@ -29,6 +29,7 @@ class BundleReasoningResult:
     evaluations: tuple[ConstraintEvaluation, ...]
     evidence: EvidenceAggregate
     interpretation: InterpretationResult
+    supplemental_capabilities: tuple[ReferenceBaseValidationCapability, ...] = ()
 
     def __post_init__(self) -> None:
         if self.reference_context.anchor_resource_id != self.request.anchor_resource_id:
@@ -60,6 +61,33 @@ class BundleReasoningResult:
             raise ValueError("bundle evaluation constraint IDs must be unique")
         if set(constraint_ids) != set(evaluation_ids):
             raise ValueError("bundle reasoning requires exactly one evaluation per constraint")
+
+        supplemental_ids = tuple(capability.id for capability in self.supplemental_capabilities)
+        if len(set(supplemental_ids)) != len(supplemental_ids):
+            raise ValueError("bundle supplemental capability IDs must be unique")
+        if any(
+            capability.resource_id != self.request.anchor_resource_id
+            or capability.subject_resource_id not in self.request.scope.resource_ids
+            for capability in self.supplemental_capabilities
+        ):
+            raise ValueError(
+                "bundle supplemental capabilities must be anchor-owned "
+                "and describe scoped resources"
+            )
+
+        anchor_ids = {capability.id for capability in self.reference_context.anchor_capabilities}
+        if anchor_ids.intersection(supplemental_ids):
+            raise ValueError("bundle anchor and supplemental capability IDs must not overlap")
+        allowed_capability_ids = anchor_ids | set(supplemental_ids)
+        constraint_capability_ids = {
+            capability.id
+            for constraint in self.constraints
+            for capability in constraint.candidate_capabilities
+        }
+        if not constraint_capability_ids.issubset(allowed_capability_ids):
+            raise ValueError("bundle constraints may cite only anchor or supplemental capabilities")
+        if not set(supplemental_ids).issubset(constraint_capability_ids):
+            raise ValueError("bundle supplemental capabilities must be used by a constraint")
 
         evidence_constraint_ids = {item.constraint_id for item in self.evidence.evidence}
         if not evidence_constraint_ids.issubset(set(constraint_ids)):

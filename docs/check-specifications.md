@@ -333,8 +333,8 @@ not trust or modify an adjacent user-supplied `.fai`.
 ### RCHECK-050C — format-neutral contract/evidence projection
 
 **Implementation status:** implemented for actual CHROM usage and exhaustive direct REF results.
-Verified-binding revalidation, mismatch-pattern classification, and integration of pair-derived
-reference-base capabilities into whole-bundle verdict orchestration remain later Milestone 3 work.
+Verified-binding revalidation and mismatch-pattern classification remain later Milestone 3 work.
+Whole-bundle ingestion of pair-derived reference-base capabilities is implemented in RCHECK-050D.
 
 Projection rules:
 
@@ -354,15 +354,39 @@ Projection rules:
 The pair-derived capability is deliberately kept outside the VCF `ResourceContract`: it belongs
 to the selected FASTA anchor and is evidence produced by comparing the two resources. Generic
 comparability also requires that capability owner to match the anchor named by the requirement,
-so a capability from another FASTA is filtered out rather than allowed to satisfy the constraint. The
-existing generic `reason_bundle()` path does not yet ingest this supplemental pair-derived
-capability; `VcfContractProjection` carries the evaluated constraints/evidence directly until that
-orchestration boundary is designed. Peer resources still cannot vote against or replace the FASTA
-anchor.
+so a capability from another FASTA is filtered out rather than allowed to satisfy the constraint.
+Peer resources still cannot vote against or replace the FASTA anchor.
 
 The original `VcfRefValidationResult` remains attached to the projection so later VCF-specific
 logic can distinguish isolated, localized, and systematic conflicts without weakening the generic
 hard-conflict rule or expanding large VCFs into per-record contract objects.
+
+### RCHECK-050D — pair-derived whole-bundle orchestration
+
+**Implementation status:** implemented for supplemental exhaustive reference-base capabilities.
+Mismatch-pattern classification and verified-alias revalidation remain later Milestone 3 work.
+
+The generic `reason_bundle()` orchestrator accepts pair-derived
+`ReferenceBaseValidationCapability` values through an explicit supplemental-capability channel.
+They are not inserted into any peer resource contract and therefore cannot become competing
+reference authorities. The orchestrator requires each supplemental capability to:
+
+- belong to the selected FASTA anchor;
+- describe a resource inside the explicit evaluation scope;
+- match at least one in-scope `ReferenceBaseRequirement`;
+- have a unique capability ID; and
+- be the only exhaustive supplemental candidate for any one reference-base requirement.
+
+Every `ReferenceBaseRequirement` encountered by whole-bundle reasoning must itself name the
+request's selected FASTA anchor. A missing supplemental capability remains `UNRESOLVED`; an
+unused or cross-wired capability is rejected rather than silently ignored.
+
+`BundleReasoningResult` retains the supplemental capabilities separately from the per-resource
+contracts and independently verifies that constraints cite only ordinary anchor capabilities or
+explicitly supplied supplemental capabilities. The existing evidence, interpretation, verdict, and
+conflict-core layers then operate unchanged: all-match exhaustive validation can support a positive
+mandatory result, any proven mismatch remains a decisive hard contradiction, and incomplete
+validation remains unresolved without fabricated evidence.
 
 ### Hard-conflict rule
 

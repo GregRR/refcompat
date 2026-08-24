@@ -99,15 +99,15 @@ resource is not.
 The orchestrator:
 
 1. normalizes contracts into request-scope order;
-2. builds the FASTA `ReferenceContext`;
-3. derives unique evidence-backed sequence bindings;
-4. builds one anchor-driven constraint for every typed requirement;
-5. evaluates those constraints;
-6. aggregates qualitative evidence;
-7. produces structured findings and explicit-scope conditions.
+2. validates any explicitly supplied anchor-owned pair-derived supplemental capabilities;
+3. builds the FASTA `ReferenceContext`;
+4. derives unique evidence-backed sequence bindings;
+5. builds one anchor-driven constraint for every typed requirement;
+6. evaluates those constraints;
+7. aggregates qualitative evidence;
+8. produces structured findings and explicit-scope conditions.
 
-`BundleReasoningResult` groups those immutable layers for later policy. It has
-no `verdict`, score, analysis status, or conflict core.
+The supplemental channel was added in Milestone 3 for exhaustive direct reference-base validation; peer contracts still cannot supply or vote on reference authority. `BundleReasoningResult` groups those immutable layers for later policy. It has no `verdict`, score, analysis status, or conflict core.
 
 ## Deliberately not implemented yet
 

@@ -6,6 +6,8 @@ The project is currently pre-release and still establishing its design and repos
 
 ## Unreleased
 
+- Integrate anchor-owned pair-derived reference-base validation capabilities into generic whole-bundle reasoning while rejecting wrong-anchor, out-of-scope, duplicate, unused, or competing exhaustive supplemental evidence.
+
 - Project VCF CHROM usage and exhaustive REF validation into scalable format-neutral `ResourceContract` requirements, anchor-scoped generic reference-base constraints, and Tier-A direct evidence without introducing mismatch-pattern verdict policy.
 - Broaden supported Python compatibility to >=3.10 while retaining Python 3.14.7 as the development pin; add CI coverage for 3.10 and 3.11 and replace 3.11/3.12-only enum, exhaustiveness, and type-alias syntax with RefCompat-owned/3.10-compatible equivalents.
 - Add exhaustive direct VCF REF-to-FASTA validation with streaming record observations, exact-name unresolved states, coordinate-bounds outcomes, VCF 4.5 IUPAC handling, non-match traceability, and temporary computed FASTA indexing that cannot trust or rewrite an adjacent `.fai`.

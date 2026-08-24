@@ -106,6 +106,8 @@ content identities.
 
 Cross-name identity/verified alias reasoning is implemented only through the later `SequenceBinding` layer documented in `reference-context-bundle.md`. The base evaluator still manufactures no alias from string similarity; a same-content capability under another local name is usable only when an explicit verified binding is attached to the constraint.
 
+Pair-derived exhaustive reference-base capabilities remain outside resource contracts because they are produced by comparing a consumer against the selected FASTA. Whole-bundle orchestration accepts them through a separate supplemental-capability channel. That channel is anchor-scoped and rejects unused, out-of-scope, duplicate, or competing exhaustive validations instead of allowing peer contracts to supply reference authority.
+
 If comparable candidate capabilities conflict with each other, the evaluator
 returns `UNRESOLVED` rather than choosing one or averaging them.
 

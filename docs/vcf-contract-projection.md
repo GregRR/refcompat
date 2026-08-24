@@ -85,13 +85,12 @@ This slice does not yet:
 - assess `##reference`, declared `md5`, or unused `##contig` metadata as proof;
 - rewrite REF/ALT;
 - add stable report serialization;
-- inject the pair-derived reference-base capability into the existing generic
-  `reason_bundle()` orchestration;
 - change the existing categorical bundle-verdict policy.
 
 `VcfContractProjection` retains the generic contract, constraints,
 evaluations/evidence, and the original compact VCF validation result so later
 pattern interpretation can use local evidence without weakening the generic
-hard-conflict rule. Whole-bundle ingestion of this supplemental anchor-owned
-capability is intentionally deferred rather than teaching peer contracts to
-supply or vote on reference authority.
+hard-conflict rule. The anchor-owned pair-derived capability may now be passed
+explicitly to `reason_bundle()` as supplemental evidence; it is never moved
+into a peer contract or treated as peer-supplied reference authority. See
+`vcf-bundle-orchestration.md`.

@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import cast
 
 import pytest
 
@@ -11,8 +12,11 @@ from refcompat.model import (
     EvaluationRequest,
     EvaluationScope,
     EvidenceMethod,
+    EvidencePolarity,
+    EvidenceStrength,
     FindingKind,
     ReferenceBaseRequirement,
+    ReferenceBaseValidationCapability,
     RefgetSequenceId,
     RequirementId,
     RequirementLevel,
@@ -381,3 +385,195 @@ def test_bundle_leaves_pair_derived_reference_base_requirement_unresolved() -> N
     assert result.evaluations[0].state is ConstraintState.UNRESOLVED
     assert result.constraints[0].candidate_capabilities == ()
     assert result.interpretation.findings[0].kind is FindingKind.UNRESOLVED_REQUIREMENT
+
+
+def _reference_base_contract(*, count: int = 10) -> ResourceContract:
+    return ResourceContract(
+        _CONSUMER,
+        requirements=(
+            ReferenceBaseRequirement(
+                RequirementId("reference-bases"),
+                _CONSUMER,
+                _REFERENCE,
+                _ORIGIN,
+                _LEVEL,
+                count,
+            ),
+        ),
+    )
+
+
+def _reference_base_capability(
+    *,
+    capability_id: str = "direct-ref",
+    resource_id: ResourceId = _REFERENCE,
+    subject_resource_id: ResourceId = _CONSUMER,
+    checked_count: int = 10,
+    match_count: int = 10,
+    mismatch_count: int = 0,
+    unresolved_count: int = 0,
+) -> ReferenceBaseValidationCapability:
+    return ReferenceBaseValidationCapability(
+        CapabilityId(capability_id),
+        resource_id,
+        subject_resource_id,
+        checked_count,
+        match_count,
+        mismatch_count,
+        unresolved_count,
+    )
+
+
+def test_bundle_ingests_anchor_owned_reference_base_capability() -> None:
+    capability = _reference_base_capability()
+    result = reason_bundle(
+        _request(),
+        _snapshot(),
+        (ResourceContract(_REFERENCE), _reference_base_contract()),
+        supplemental_capabilities=(capability,),
+    )
+
+    assert result.supplemental_capabilities == (capability,)
+    assert result.constraints[0].candidate_capabilities == (capability,)
+    assert result.evaluations[0].state is ConstraintState.SATISFIED
+    assert result.evaluations[0].satisfaction_mode is SatisfactionMode.EXHAUSTIVE_DIRECT
+    assert len(result.evidence.supporting_evidence) == 1
+    assert (
+        result.evidence.supporting_evidence[0].method
+        is EvidenceMethod.EXHAUSTIVE_REFERENCE_BASE_VALIDATION
+    )
+    assert (
+        result.evidence.supporting_evidence[0].strength
+        is EvidenceStrength.TIER_A_CONCLUSIVE_CONTENT
+    )
+    assert result.evidence.supporting_evidence[0].polarity is EvidencePolarity.SUPPORTS
+
+
+def test_bundle_reference_base_mismatch_remains_hard_contradiction() -> None:
+    capability = _reference_base_capability(
+        match_count=999_999, mismatch_count=1, checked_count=1_000_000
+    )
+    result = reason_bundle(
+        _request(),
+        _snapshot(),
+        (ResourceContract(_REFERENCE), _reference_base_contract(count=1_000_000)),
+        supplemental_capabilities=(capability,),
+    )
+
+    assert result.evaluations[0].state is ConstraintState.UNSATISFIED
+    assert result.interpretation.findings[0].kind is FindingKind.REFERENCE_BASE_CONFLICT
+    assert len(result.evidence.conclusive_contradictions) == 1
+
+
+def test_bundle_reference_base_incomplete_validation_stays_unresolved_without_evidence() -> None:
+    capability = _reference_base_capability(match_count=9, unresolved_count=1)
+    result = reason_bundle(
+        _request(),
+        _snapshot(),
+        (ResourceContract(_REFERENCE), _reference_base_contract()),
+        supplemental_capabilities=(capability,),
+    )
+
+    assert result.evaluations[0].state is ConstraintState.UNRESOLVED
+    assert result.evidence.evidence == ()
+    assert result.interpretation.findings[0].kind is FindingKind.UNRESOLVED_REQUIREMENT
+
+
+def test_bundle_rejects_wrong_anchor_supplemental_capability() -> None:
+    wrong_anchor = _reference_base_capability(resource_id=ResourceId("peer-anchor"))
+    with pytest.raises(ValueError, match="selected FASTA anchor"):
+        reason_bundle(
+            _request(),
+            _snapshot(),
+            (ResourceContract(_REFERENCE), _reference_base_contract()),
+            supplemental_capabilities=(wrong_anchor,),
+        )
+
+
+def test_bundle_rejects_supplemental_capability_for_unscoped_subject() -> None:
+    unscoped = _reference_base_capability(subject_resource_id=ResourceId("outside"))
+    with pytest.raises(ValueError, match="only scoped resources"):
+        reason_bundle(
+            _request(),
+            _snapshot(),
+            (ResourceContract(_REFERENCE), _reference_base_contract()),
+            supplemental_capabilities=(unscoped,),
+        )
+
+
+def test_bundle_rejects_unused_supplemental_capability() -> None:
+    capability = _reference_base_capability()
+    with pytest.raises(ValueError, match="must match a scoped requirement"):
+        reason_bundle(
+            _request(),
+            _snapshot(),
+            (ResourceContract(_REFERENCE), ResourceContract(_CONSUMER)),
+            supplemental_capabilities=(capability,),
+        )
+
+
+def test_bundle_rejects_supplemental_capability_with_wrong_record_count() -> None:
+    capability = _reference_base_capability(checked_count=5, match_count=5)
+    with pytest.raises(ValueError, match="must match a scoped requirement"):
+        reason_bundle(
+            _request(),
+            _snapshot(),
+            (ResourceContract(_REFERENCE), _reference_base_contract()),
+            supplemental_capabilities=(capability,),
+        )
+
+
+def test_bundle_rejects_non_reference_base_supplemental_capability() -> None:
+    wrong_type = cast(
+        ReferenceBaseValidationCapability,
+        SequenceLengthCapability(CapabilityId("wrong-type"), _REFERENCE, "chr1", 10),
+    )
+    with pytest.raises(TypeError, match="must be reference-base validations"):
+        reason_bundle(
+            _request(),
+            _snapshot(),
+            (ResourceContract(_REFERENCE), _reference_base_contract()),
+            supplemental_capabilities=(wrong_type,),
+        )
+
+
+def test_bundle_rejects_duplicate_supplemental_capability_ids() -> None:
+    first = _reference_base_capability()
+    second = _reference_base_capability(match_count=9, unresolved_count=1)
+    with pytest.raises(ValueError, match="IDs must be unique"):
+        reason_bundle(
+            _request(),
+            _snapshot(),
+            (ResourceContract(_REFERENCE), _reference_base_contract()),
+            supplemental_capabilities=(first, second),
+        )
+
+
+def test_bundle_rejects_multiple_exhaustive_capabilities_for_one_requirement() -> None:
+    first = _reference_base_capability(capability_id="first")
+    second = _reference_base_capability(capability_id="second", match_count=9, unresolved_count=1)
+    with pytest.raises(ValueError, match="only one exhaustive supplemental capability"):
+        reason_bundle(
+            _request(),
+            _snapshot(),
+            (ResourceContract(_REFERENCE), _reference_base_contract()),
+            supplemental_capabilities=(first, second),
+        )
+
+
+def test_bundle_rejects_reference_base_requirement_for_different_anchor() -> None:
+    consumer = ResourceContract(
+        _CONSUMER,
+        requirements=(
+            ReferenceBaseRequirement(
+                RequirementId("reference-bases"),
+                _CONSUMER,
+                ResourceId("wrong-anchor"),
+                _ORIGIN,
+                _LEVEL,
+                10,
+            ),
+        ),
+    )
+    with pytest.raises(ValueError, match="must name the selected FASTA anchor"):
+        reason_bundle(_request(), _snapshot(), (ResourceContract(_REFERENCE), consumer))

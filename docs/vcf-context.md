@@ -56,6 +56,4 @@ classify mismatch patterns, emit VCF-specific findings/verdict policy, or mutate
 Exact-name coordinate and exhaustive REF-to-FASTA comparison are implemented by the separate
 [`vcf-ref-validation.md`](vcf-ref-validation.md) boundary. The subsequent
 [`vcf-contract-projection.md`](vcf-contract-projection.md) bridge converts actual CHROM usage and
-direct REF results into format-neutral requirements/evidence. Verified sequence binding,
-mismatch-pattern interpretation, whole-bundle ingestion of pair-derived evidence, and reporting
-remain later RCHECK-050 Milestone 3 slices.
+direct REF results into format-neutral requirements/evidence. Pair-derived exhaustive REF evidence can now be ingested by the generic whole-bundle reasoner through the separate [`vcf-bundle-orchestration.md`](vcf-bundle-orchestration.md) supplemental-capability boundary. Verified sequence binding, mismatch-pattern interpretation, and reporting remain later RCHECK-050 Milestone 3 slices.

@@ -337,7 +337,7 @@ The sixth Milestone 2 slice projects the already-decided non-positive verdict ba
 
 The anchor-driven whole-bundle layer requires exactly one `ResourceContract` for every explicitly scoped resource, builds the FASTA `ReferenceContext`, derives unique content-backed `SequenceBinding` objects, constructs one anchor-driven constraint for every typed requirement, and then runs the existing evaluation, evidence, and interpretation layers.
 
-Peer-resource capabilities are consulted only to establish sequence bindings. Candidate capabilities for compatibility constraints come from the selected FASTA context, so peer resources cannot vote on or replace reference authority. `BundleReasoningResult` groups the request, contracts, reference context, bindings, constraints/evaluations, evidence, and interpretation without adding a top-level verdict.
+Peer-resource capabilities are consulted only to establish sequence bindings. Ordinary candidate capabilities for compatibility constraints come from the selected FASTA context, so peer resources cannot vote on or replace reference authority. Milestone 3 additionally permits explicitly supplied, anchor-owned pair-derived `ReferenceBaseValidationCapability` values through a separate supplemental channel; those values must describe scoped resources and match in-scope reference-base requirements. `BundleReasoningResult` groups the request, contracts, reference context, bindings, supplemental capabilities, constraints/evaluations, evidence, and interpretation without adding a top-level verdict.
 
 ## `CompatibilityReport`
 

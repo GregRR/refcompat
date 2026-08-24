@@ -61,6 +61,7 @@ The roadmap intentionally avoids turning RefCompat into a universal genomics val
 - [x] Inspect `##contig` metadata and actual `CHROM` usage.
 - [x] Exhaustively verify REF alleles against FASTA in authoritative mode.
 - [x] Project actual CHROM usage and exhaustive REF results into format-neutral requirements and Tier-A evidence.
+- [x] Inject anchor-owned pair-derived REF validation into whole-bundle reasoning without peer voting.
 - [ ] Distinguish isolated/localized/systematic REF conflict patterns without averaging hard conflicts away.
 - [ ] Preserve unresolved sequence-name cases as `INDETERMINATE` unless verified aliases exist.
 - [x] Do not rewrite REF/ALT.

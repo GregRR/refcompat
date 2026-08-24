@@ -6,7 +6,11 @@ from pathlib import Path
 import pytest
 
 from refcompat.model.constraints import ConstraintId, ConstraintState
-from refcompat.model.contracts import ReferenceBaseRequirement, SequencePresenceRequirement
+from refcompat.model.contracts import (
+    ReferenceBaseRequirement,
+    ResourceContract,
+    SequencePresenceRequirement,
+)
 from refcompat.model.evaluation import EvaluationRequest, EvaluationScope
 from refcompat.model.evidence import EvidenceMethod
 from refcompat.model.identity import (
@@ -29,6 +33,7 @@ from refcompat.model.vcf_ref import (
     VcfRefSequenceSummary,
     VcfRefValidationResult,
 )
+from refcompat.reasoning import reason_bundle
 from refcompat.reasoning.reference_context import build_reference_context
 from refcompat.reasoning.vcf_contract import project_vcf_contract
 
@@ -341,3 +346,35 @@ def test_projection_rejects_vcf_outside_reference_context_scope() -> None:
 
     with pytest.raises(ValueError, match="inside the reference-context scope"):
         project_vcf_contract(snapshot, validation, out_of_scope_context)
+
+
+def test_projection_pair_capability_can_feed_whole_bundle_reasoning() -> None:
+    context = _context("chr1")
+    snapshot = _vcf_snapshot(("chr1", 2))
+    validation = _validation(
+        VcfRefSequenceSummary("chr1", 2, match_count=2),
+        matches=2,
+    )
+    projection = project_vcf_contract(snapshot, validation, context)
+    resources = (
+        Resource(_FASTA, ResourceKind.FASTA, ArtifactIdentity(path=Path("anchor.fa"))),
+        Resource(_VCF, ResourceKind.VCF, ArtifactIdentity(path=Path("variants.vcf"))),
+    )
+    request = EvaluationRequest(resources, _FASTA, context.scope)
+
+    bundle = reason_bundle(
+        request,
+        context.anchor_snapshot,
+        (ResourceContract(_FASTA), projection.contract),
+        supplemental_capabilities=(projection.reference_base_capability,),
+    )
+
+    assert tuple(item.state for item in bundle.evaluations) == (
+        ConstraintState.SATISFIED,
+        ConstraintState.SATISFIED,
+    )
+    assert bundle.supplemental_capabilities == (projection.reference_base_capability,)
+    assert any(
+        item.method is EvidenceMethod.EXHAUSTIVE_REFERENCE_BASE_VALIDATION
+        for item in bundle.evidence.supporting_evidence
+    )
