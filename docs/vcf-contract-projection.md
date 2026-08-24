@@ -1,7 +1,7 @@
 # VCF contract and evidence projection
 
 Milestone 3 projects already-observed VCF facts into RefCompat's format-neutral
-reasoning model without turning VCF-specific pattern interpretation into the
+reasoning model while keeping VCF-specific pattern interpretation outside the
 core constraint layer.
 
 ## Inputs
@@ -26,8 +26,9 @@ declarations do not create presence requirements because an unused declaration
 is not evidence that the VCF actually requires that contig for its records.
 
 The complete VCF record set becomes one mandatory `ReferenceBaseRequirement`
-that explicitly names the selected FASTA anchor and carries its exhaustive record count. RefCompat deliberately does **not** create
-one requirement object per VCF record; the format-specific validation result
+that explicitly names the selected FASTA anchor and carries its exhaustive
+record count. RefCompat deliberately does **not** create one requirement object
+per VCF record; the format-specific validation result
 already retains every non-match, and a large VCF must not require a
 million-object contract merely to state that all REF assertions must agree with
 the anchor.
@@ -80,7 +81,6 @@ projection for VCF remains later Milestone 3 work.
 
 This slice does not yet:
 
-- classify isolated, localized, or systematic REF-conflict patterns;
 - convert `OUT_OF_BOUNDS` into a VCF-specific compatibility policy;
 - assess `##reference`, declared `md5`, or unused `##contig` metadata as proof;
 - rewrite REF/ALT;
@@ -88,8 +88,8 @@ This slice does not yet:
 - change the existing categorical bundle-verdict policy.
 
 `VcfContractProjection` retains the generic contract, constraints,
-evaluations/evidence, and the original compact VCF validation result so later
-pattern interpretation can use local evidence without weakening the generic
+evaluations/evidence, the original compact VCF validation result, and its
+threshold-free `VcfRefConflictPatternSummary` without weakening the generic
 hard-conflict rule. The anchor-owned pair-derived capability may now be passed
 explicitly to `reason_bundle()` as supplemental evidence; it is never moved
 into a peer contract or treated as peer-supplied reference authority. See

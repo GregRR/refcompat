@@ -26,6 +26,7 @@ from refcompat.model.vcf_contract import VcfContractProjection
 from refcompat.model.vcf_ref import VcfRefValidationResult
 from refcompat.reasoning.constraints import build_constraint, evaluate_constraint
 from refcompat.reasoning.evidence import aggregate_constraint_evidence
+from refcompat.reasoning.vcf_ref_pattern import classify_vcf_ref_conflicts
 
 
 def project_vcf_contract(
@@ -95,6 +96,7 @@ def project_vcf_contract(
     constraint_tuple = tuple(constraints)
     evaluations = tuple(evaluate_constraint(constraint) for constraint in constraint_tuple)
     evidence = aggregate_constraint_evidence(constraint_tuple, evaluations)
+    conflict_pattern = classify_vcf_ref_conflicts(validation)
     return VcfContractProjection(
         vcf_resource_id=snapshot.resource_id,
         fasta_resource_id=validation.fasta_resource_id,
@@ -104,6 +106,7 @@ def project_vcf_contract(
         evaluations=evaluations,
         evidence=evidence,
         validation=validation,
+        conflict_pattern=conflict_pattern,
     )
 
 

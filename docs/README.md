@@ -26,4 +26,5 @@ If a supporting document and `DESIGN.md` disagree, `DESIGN.md` wins until the di
 - [`vcf-ref-validation.md`](vcf-ref-validation.md) — exhaustive Milestone 3 direct VCF REF-to-FASTA comparison boundary.
 - [`vcf-contract-projection.md`](vcf-contract-projection.md) — Milestone 3 bridge from VCF usage/REF results into format-neutral contracts and Tier-A evidence.
 - [`vcf-bundle-orchestration.md`](vcf-bundle-orchestration.md) — Milestone 3 ingestion of anchor-owned pair-derived REF evidence into whole-bundle reasoning.
+- [`vcf-ref-conflict-patterns.md`](vcf-ref-conflict-patterns.md) — threshold-free Milestone 3 interpretation of isolated, localized, distributed, systematic, and incomplete REF-conflict distributions.
 - [`conflict-core.md`](conflict-core.md) — sixth Milestone 2 compact decisive conflict/evidence-core extraction boundary.

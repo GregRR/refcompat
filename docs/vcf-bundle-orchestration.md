@@ -70,11 +70,18 @@ layers consume the resulting constraint state and evidence:
 
 There is no scoring, voting, mismatch-rate threshold, or majority rule.
 
+## VCF-specific pattern interpretation
+
+Isolated/localized/distributed/systematic REF-conflict distribution is now
+interpreted
+separately in [`vcf-ref-conflict-patterns.md`](vcf-ref-conflict-patterns.md).
+Those labels do not alter the generic bundle verdict or conflict-core path
+described here.
+
 ## Still deferred
 
-This orchestration slice does not yet:
+The VCF path does not yet:
 
-- classify isolated, localized, or systematic REF-conflict patterns;
 - reinterpret `OUT_OF_BOUNDS` as a VCF-specific policy conclusion;
 - infer sequence-name aliases from string similarity;
 - add a stable `CompatibilityReport` schema or new CLI command; or

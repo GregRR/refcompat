@@ -1,6 +1,6 @@
 # VCF reference-context observation
 
-**Status:** implemented as the first Milestone 3 VCF slice. Exhaustive direct REF-to-FASTA validation is implemented separately in [`vcf-ref-validation.md`](vcf-ref-validation.md), and format-neutral contract/evidence projection is implemented in [`vcf-contract-projection.md`](vcf-contract-projection.md). Verified-binding revalidation, mismatch-pattern findings, and whole-bundle verdict integration remain later work.
+**Status:** implemented as the first Milestone 3 VCF slice. Exhaustive direct REF-to-FASTA validation is implemented separately in [`vcf-ref-validation.md`](vcf-ref-validation.md), and format-neutral contract/evidence projection is implemented in [`vcf-contract-projection.md`](vcf-contract-projection.md). Verified-binding revalidation and stable report presentation remain later work; direct REF pattern interpretation and whole-bundle ingestion are now implemented in separate Milestone 3 slices.
 
 ## Purpose
 
@@ -56,4 +56,4 @@ classify mismatch patterns, emit VCF-specific findings/verdict policy, or mutate
 Exact-name coordinate and exhaustive REF-to-FASTA comparison are implemented by the separate
 [`vcf-ref-validation.md`](vcf-ref-validation.md) boundary. The subsequent
 [`vcf-contract-projection.md`](vcf-contract-projection.md) bridge converts actual CHROM usage and
-direct REF results into format-neutral requirements/evidence. Pair-derived exhaustive REF evidence can now be ingested by the generic whole-bundle reasoner through the separate [`vcf-bundle-orchestration.md`](vcf-bundle-orchestration.md) supplemental-capability boundary. Verified sequence binding, mismatch-pattern interpretation, and reporting remain later RCHECK-050 Milestone 3 slices.
+direct REF results into format-neutral requirements/evidence. Pair-derived exhaustive REF evidence can now be ingested by the generic whole-bundle reasoner through the separate [`vcf-bundle-orchestration.md`](vcf-bundle-orchestration.md) supplemental-capability boundary. Verified sequence binding and stable reporting remain later RCHECK-050 Milestone 3 slices; threshold-free mismatch-pattern interpretation is documented in [`vcf-ref-conflict-patterns.md`](vcf-ref-conflict-patterns.md).

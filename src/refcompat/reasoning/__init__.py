@@ -10,6 +10,7 @@ from refcompat.reasoning.reference_context import build_reference_context, deriv
 from refcompat.reasoning.sequence_dictionary import evaluate_sequence_dictionary_integrity
 from refcompat.reasoning.vcf_contract import project_vcf_contract
 from refcompat.reasoning.vcf_ref import VcfRefEvaluationError, evaluate_vcf_ref_records
+from refcompat.reasoning.vcf_ref_pattern import classify_vcf_ref_conflicts
 from refcompat.reasoning.verdict import aggregate_bundle_verdict
 
 __all__ = [
@@ -18,6 +19,7 @@ __all__ = [
     "aggregate_constraint_evidence",
     "build_constraint",
     "build_reference_context",
+    "classify_vcf_ref_conflicts",
     "derive_constraint_evidence",
     "derive_sequence_bindings",
     "evaluate_constraint",

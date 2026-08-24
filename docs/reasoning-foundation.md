@@ -97,8 +97,10 @@ Milestone 3 extends the same typed evaluator with exhaustive resource-level
 `ReferenceBaseRequirement` evaluation. The requirement names its expected anchor resource, and only a direct validation capability owned by that anchor is comparable. A direct validation capability with any
 proven mismatch is `UNSATISFIED`; otherwise unresolved direct comparisons are
 `UNRESOLVED`, a non-empty all-match validation is `SATISFIED` with
-`EXHAUSTIVE_DIRECT`, and an empty record set is `NOT_APPLICABLE`. This extension
-still performs no scoring, voting, or format-specific mismatch-pattern policy.
+`EXHAUSTIVE_DIRECT`, and an empty record set is `NOT_APPLICABLE`. This generic extension still performs no scoring, voting, or format-specific
+mismatch-pattern policy. VCF-specific threshold-free distribution
+interpretation is implemented in `reasoning/vcf_ref_pattern.py` and does not
+change these generic constraint states.
 
 MD5 and refget identifiers are not cross-compared. A matching MD5 capability
 does not satisfy a refget requirement, or vice versa, merely because both are

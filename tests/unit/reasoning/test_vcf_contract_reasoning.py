@@ -33,6 +33,7 @@ from refcompat.model.vcf_ref import (
     VcfRefSequenceSummary,
     VcfRefValidationResult,
 )
+from refcompat.model.vcf_ref_pattern import VcfRefConflictPattern
 from refcompat.reasoning import reason_bundle
 from refcompat.reasoning.reference_context import build_reference_context
 from refcompat.reasoning.vcf_contract import project_vcf_contract
@@ -140,6 +141,7 @@ def test_projection_keeps_one_local_mismatch_as_hard_generic_contradiction() -> 
     assert projection.evaluations[-1].state is ConstraintState.UNSATISFIED
     assert projection.reference_base_capability.mismatch_count == 1
     assert len(projection.evidence.conclusive_contradictions) == 1
+    assert projection.conflict_pattern.pattern is VcfRefConflictPattern.ISOLATED
 
 
 def test_projection_preserves_unresolved_sequence_without_guessing_alias() -> None:
@@ -183,6 +185,7 @@ def test_projection_hard_mismatch_precedes_other_unresolved_records() -> None:
     projection = project_vcf_contract(snapshot, validation, _context("chr1"))
     assert projection.evaluations[-1].state is ConstraintState.UNSATISFIED
     assert projection.evidence.has_conclusive_contradiction
+    assert projection.conflict_pattern.pattern is VcfRefConflictPattern.UNCLASSIFIED
 
 
 def test_projection_empty_vcf_has_not_applicable_base_requirement() -> None:
@@ -333,6 +336,7 @@ def test_projection_sequence_coverage_check_ignores_summary_order() -> None:
     )
     assert presence_names == ("chr1", "chr2")
     assert projection.evaluations[-1].state is ConstraintState.SATISFIED
+    assert projection.conflict_pattern.pattern is VcfRefConflictPattern.NONE
 
 
 def test_projection_rejects_vcf_outside_reference_context_scope() -> None:
@@ -346,6 +350,32 @@ def test_projection_rejects_vcf_outside_reference_context_scope() -> None:
 
     with pytest.raises(ValueError, match="inside the reference-context scope"):
         project_vcf_contract(snapshot, validation, out_of_scope_context)
+
+
+def test_projection_model_rejects_crosswired_conflict_pattern() -> None:
+    snapshot = _vcf_snapshot(("chr1", 1))
+    validation = _validation(VcfRefSequenceSummary("chr1", 1, match_count=1), matches=1)
+    projection = project_vcf_contract(snapshot, validation, _context("chr1"))
+    crosswired = replace(
+        projection.conflict_pattern,
+        vcf_resource_id=ResourceId("other"),
+    )
+
+    with pytest.raises(ValueError, match="conflict pattern must belong to the VCF"):
+        replace(projection, conflict_pattern=crosswired)
+
+
+def test_projection_model_rejects_crosswired_conflict_pattern_sequence_trace() -> None:
+    snapshot = _vcf_snapshot(("chr1", 1))
+    validation = _validation(VcfRefSequenceSummary("chr1", 1, match_count=1), matches=1)
+    projection = project_vcf_contract(snapshot, validation, _context("chr1"))
+    crosswired = replace(
+        projection.conflict_pattern,
+        compared_sequence_names=("chr2",),
+    )
+
+    with pytest.raises(ValueError, match="compared sequences must match validation"):
+        replace(projection, conflict_pattern=crosswired)
 
 
 def test_projection_pair_capability_can_feed_whole_bundle_reasoning() -> None:

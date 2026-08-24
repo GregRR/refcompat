@@ -263,7 +263,7 @@ and corresponding capability types.
 
 Typed variants prevent comparisons between unrelated scientific constraints and make type checking useful.
 
-`ReferenceBaseRequirement` is resource-level, names the selected anchor resource explicitly, and carries the exhaustive checked-record count rather than expanding into one object per locus. `ReferenceBaseValidationCapability` is owned by that anchor, names the subject resource, and partitions the exhaustive check into match, mismatch, and unresolved counts. Generic comparability requires the capability owner to equal the requirement's named anchor, so pair-derived evidence from another FASTA cannot satisfy the requirement. Generic evaluation gives mismatch Tier-A precedence, leaves unresolved-only checks unresolved without fabricated evidence, and treats an empty record set as not applicable. Format-specific local mismatch/bounds/name details remain in the producing validation model.
+`ReferenceBaseRequirement` is resource-level, names the selected anchor resource explicitly, and carries the exhaustive checked-record count rather than expanding into one object per locus. `ReferenceBaseValidationCapability` is owned by that anchor, names the subject resource, and partitions the exhaustive check into match, mismatch, and unresolved counts. Generic comparability requires the capability owner to equal the requirement's named anchor, so pair-derived evidence from another FASTA cannot satisfy the requirement. Generic evaluation gives mismatch Tier-A precedence, leaves unresolved-only checks unresolved without fabricated evidence, and treats an empty record set as not applicable. Format-specific local mismatch/bounds/name details remain in the producing validation model. VCF additionally exposes `VcfRefConflictPatternSummary` as descriptive format-specific interpretation; it is not a generic requirement, capability, finding, or verdict state.
 
 ## `CompatibilityConstraint` and `ConstraintEvaluation`
 
@@ -303,7 +303,7 @@ Examples:
 - `STALE_SEQUENCE_DICTIONARY`
 - `REFERENCE_DISTRIBUTION_SUPERSET`
 - `MISSING_REQUIRED_SEQUENCE`
-- `SYSTEMATIC_VCF_REF_CONFLICT`
+- `REFERENCE_BASE_CONFLICT`
 - `DECLARED_REFERENCE_CONTRADICTED`
 - `ANNOTATION_COORDINATE_OUT_OF_BOUNDS`
 - `NO_REFERENCE_INCOMPATIBILITY_DEMONSTRATED`

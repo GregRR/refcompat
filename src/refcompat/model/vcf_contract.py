@@ -13,6 +13,7 @@ from refcompat.model.contracts import ReferenceBaseValidationCapability, Resourc
 from refcompat.model.evidence import EvidenceAggregate
 from refcompat.model.resources import ResourceId
 from refcompat.model.vcf_ref import VcfRefValidationResult
+from refcompat.model.vcf_ref_pattern import VcfRefConflictPatternSummary
 
 
 @dataclass(frozen=True, slots=True)
@@ -22,8 +23,8 @@ class VcfContractProjection:
     The VCF contract contains only typed requirements. The anchor-owned direct
     reference-base capability remains separate because it is evidence derived
     from the VCF/FASTA pair, not an intrinsic capability of the VCF resource.
-    ``validation`` retains the compact format-specific local detail needed for
-    later mismatch-pattern interpretation.
+    ``validation`` retains the compact format-specific local detail, while
+    ``conflict_pattern`` records threshold-free VCF-specific interpretation.
     """
 
     vcf_resource_id: ResourceId
@@ -34,6 +35,7 @@ class VcfContractProjection:
     evaluations: tuple[ConstraintEvaluation, ...]
     evidence: EvidenceAggregate
     validation: VcfRefValidationResult
+    conflict_pattern: VcfRefConflictPatternSummary
 
     def __post_init__(self) -> None:
         if not self.vcf_resource_id or not self.fasta_resource_id:
@@ -48,6 +50,52 @@ class VcfContractProjection:
             raise ValueError("VCF contract projection validation must belong to the VCF")
         if self.validation.fasta_resource_id != self.fasta_resource_id:
             raise ValueError("VCF contract projection validation must use the FASTA anchor")
+        if self.conflict_pattern.vcf_resource_id != self.vcf_resource_id:
+            raise ValueError("VCF contract projection conflict pattern must belong to the VCF")
+        if self.conflict_pattern.fasta_resource_id != self.fasta_resource_id:
+            raise ValueError("VCF contract projection conflict pattern must use the FASTA anchor")
+        if self.conflict_pattern.record_count != self.validation.record_count:
+            raise ValueError(
+                "VCF contract projection conflict pattern must cover validation records"
+            )
+        if self.conflict_pattern.mismatch_count != self.validation.mismatch_count:
+            raise ValueError(
+                "VCF contract projection conflict pattern mismatch count must match validation"
+            )
+        expected_directly_compared = self.validation.match_count + self.validation.mismatch_count
+        if self.conflict_pattern.directly_compared_count != expected_directly_compared:
+            raise ValueError(
+                "VCF contract projection conflict pattern compared count must match validation"
+            )
+        expected_compared_names = tuple(
+            sorted(
+                summary.sequence_name
+                for summary in self.validation.sequence_summaries
+                if summary.match_count + summary.mismatch_count > 0
+            )
+        )
+        if self.conflict_pattern.compared_sequence_names != expected_compared_names:
+            raise ValueError(
+                "VCF contract projection conflict pattern compared sequences must match validation"
+            )
+        expected_affected_names = tuple(
+            sorted(
+                summary.sequence_name
+                for summary in self.validation.sequence_summaries
+                if summary.mismatch_count > 0
+            )
+        )
+        if self.conflict_pattern.affected_sequence_names != expected_affected_names:
+            raise ValueError(
+                "VCF contract projection conflict pattern affected sequences must match validation"
+            )
+        expected_pattern_unresolved = (
+            self.validation.out_of_bounds_count + self.validation.unresolved_sequence_count
+        )
+        if self.conflict_pattern.unresolved_count != expected_pattern_unresolved:
+            raise ValueError(
+                "VCF contract projection conflict pattern unresolved count must match validation"
+            )
 
         if self.reference_base_capability.checked_count != self.validation.record_count:
             raise ValueError("VCF contract projection capability must cover the validation records")

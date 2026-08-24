@@ -300,8 +300,9 @@ Inspect:
 
 **Implementation status:** exhaustive direct record classification is implemented for exact-name
 resolution against an uncompressed FASTA anchor. Format-neutral contract/evidence projection is
-implemented in RCHECK-050C; verified-binding projection, mismatch-pattern classification, and
-bundle-verdict integration remain later Milestone 3 work.
+implemented in RCHECK-050C; whole-bundle ingestion is implemented in RCHECK-050D; threshold-free
+conflict-pattern interpretation is implemented in RCHECK-050E; verified-binding revalidation remains
+later Milestone 3 work.
 
 Authoritative v0.1 REF checking is **exhaustive**.
 
@@ -333,8 +334,9 @@ not trust or modify an adjacent user-supplied `.fai`.
 ### RCHECK-050C — format-neutral contract/evidence projection
 
 **Implementation status:** implemented for actual CHROM usage and exhaustive direct REF results.
-Verified-binding revalidation and mismatch-pattern classification remain later Milestone 3 work.
-Whole-bundle ingestion of pair-derived reference-base capabilities is implemented in RCHECK-050D.
+Verified-binding revalidation remains later Milestone 3 work. Whole-bundle ingestion of
+pair-derived reference-base capabilities is implemented in RCHECK-050D, and threshold-free
+conflict-pattern interpretation is implemented in RCHECK-050E.
 
 Projection rules:
 
@@ -357,14 +359,15 @@ comparability also requires that capability owner to match the anchor named by t
 so a capability from another FASTA is filtered out rather than allowed to satisfy the constraint.
 Peer resources still cannot vote against or replace the FASTA anchor.
 
-The original `VcfRefValidationResult` remains attached to the projection so later VCF-specific
-logic can distinguish isolated, localized, and systematic conflicts without weakening the generic
+The original `VcfRefValidationResult` remains attached to the projection. RCHECK-050E derives a
+VCF-specific conflict-pattern summary from those local outcomes without weakening the generic
 hard-conflict rule or expanding large VCFs into per-record contract objects.
 
 ### RCHECK-050D — pair-derived whole-bundle orchestration
 
 **Implementation status:** implemented for supplemental exhaustive reference-base capabilities.
-Mismatch-pattern classification and verified-alias revalidation remain later Milestone 3 work.
+Threshold-free mismatch-pattern interpretation is implemented in RCHECK-050E; verified-alias
+revalidation remains later Milestone 3 work.
 
 The generic `reason_bundle()` orchestrator accepts pair-derived
 `ReferenceBaseValidationCapability` values through an explicit supplemental-capability channel.
@@ -388,15 +391,42 @@ conflict-core layers then operate unchanged: all-match exhaustive validation can
 mandatory result, any proven mismatch remains a decisive hard contradiction, and incomplete
 validation remains unresolved without fabricated evidence.
 
+### RCHECK-050E — REF conflict-pattern interpretation
+
+**Implementation status:** implemented for exhaustive exact-name direct validation. Verified-alias
+revalidation and stable report/CLI presentation remain later Milestone 3 work.
+
+`classify_vcf_ref_conflicts()` interprets the distribution of already-proven direct REF mismatches
+without changing the generic `ReferenceBaseRequirement` state or bundle verdict. It uses no
+mismatch-rate threshold and makes no causal inference.
+
+For a complete direct validation:
+
+- no mismatch -> `NONE`;
+- exactly one mismatch -> `ISOLATED`;
+- multiple mismatches confined to one sequence or a strict subset of the directly compared
+  sequence scope -> `LOCALIZED`;
+- multiple mismatches affecting every sequence in a directly compared multi-sequence scope,
+  while at least one record matches -> `DISTRIBUTED`;
+- every directly comparable record mismatches across a multi-sequence scope -> `SYSTEMATIC`.
+
+If any record is `UNRESOLVED_SEQUENCE` or `OUT_OF_BOUNDS`, the pattern is `UNCLASSIFIED` because
+RefCompat cannot claim to know the complete distribution. Any already-proven mismatch remains a
+hard contradiction; only the VCF-specific pattern label is withheld.
+
+`SYSTEMATIC` is a strong threshold-free claim that every directly comparable record mismatches
+across a multi-sequence scope. `DISTRIBUTED` covers broad cross-sequence conflict where some direct
+matches remain. Neither label infers a wrong assembly or other cause. The pattern summary retains
+directly compared/mismatch/unresolved counts plus deterministic compared and affected sequence-name
+sets for later reporting.
+
 ### Hard-conflict rule
 
 A proven REF mismatch is a hard local reference conflict. A small mismatch fraction does not mathematically cancel it. The distribution of mismatches may support interpretation such as isolated versus systematic conflict.
 
-Candidate findings:
-
-- `ISOLATED_VCF_REF_CONFLICT`
-- `LOCALIZED_VCF_REF_CONFLICT`
-- `SYSTEMATIC_VCF_REF_CONFLICT`
+VCF-specific descriptive pattern labels are `ISOLATED`, `LOCALIZED`, `DISTRIBUTED`, and
+`SYSTEMATIC` as defined
+in RCHECK-050E. They are not additional generic findings or verdict states.
 
 ### Safety
 
@@ -560,7 +590,7 @@ The first redistributable synthetic fixture suite should cover at least:
 15. exact VCF header+REF agreement;
 16. VCF contig-header mismatch;
 17. one VCF REF mismatch;
-18. systematic VCF REF mismatch;
+18. localized/distributed/systematic VCF REF mismatch patterns;
 19. GTF exact seqid match;
 20. GTF verified alias requirement;
 21. GTF missing sequence;

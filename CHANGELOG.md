@@ -6,6 +6,8 @@ The project is currently pre-release and still establishing its design and repos
 
 ## Unreleased
 
+- Add threshold-free VCF REF conflict-pattern interpretation that distinguishes isolated, localized, distributed, and systematic distributions only after complete direct comparison, while leaving incomplete patterns unclassified and preserving generic hard-conflict semantics.
+
 - Integrate anchor-owned pair-derived reference-base validation capabilities into generic whole-bundle reasoning while rejecting wrong-anchor, out-of-scope, duplicate, unused, or competing exhaustive supplemental evidence.
 
 - Project VCF CHROM usage and exhaustive REF validation into scalable format-neutral `ResourceContract` requirements, anchor-scoped generic reference-base constraints, and Tier-A direct evidence without introducing mismatch-pattern verdict policy.

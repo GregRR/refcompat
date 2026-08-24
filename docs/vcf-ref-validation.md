@@ -7,7 +7,9 @@ format-neutral contract/evidence bridge is implemented in
 This slice exhaustively compares every VCF record's `REF` allele with an
 explicitly supplied FASTA anchor. It remains the direct record-level source
 result; contract/evidence projection is a separate layer, and VCF-specific
-pattern classification plus bundle-verdict integration remain later policy.
+pattern classification is implemented separately in
+[`vcf-ref-conflict-patterns.md`](vcf-ref-conflict-patterns.md), while verified-alias
+revalidation and report presentation remain later work.
 
 ## Inputs and traversal
 
@@ -109,18 +111,17 @@ Mismatches retain the actual fetched FASTA bases needed to explain the local
 content contradiction.
 
 This is descriptive aggregation only. A tiny mismatch fraction never erases a
-known mismatch, and this slice does not classify the distribution as isolated,
-localized, or systematic.
+known mismatch. Threshold-free isolated/localized/distributed/systematic
+distribution
+interpretation is implemented separately in
+[`vcf-ref-conflict-patterns.md`](vcf-ref-conflict-patterns.md).
 
 ## Deliberately deferred
 
 This slice does not yet:
 
 - project verified `SequenceBinding` aliases into VCF REF checking;
-- convert direct VCF REF results into VCF `ResourceContract` requirements or
-  generalized `Evidence` objects;
-- classify isolated/localized/systematic mismatch patterns;
-- assign a VCF-specific finding or whole-bundle verdict;
+- add VCF-specific pattern-dependent finding or verdict policy;
 - apply evaluation-scope exclusions;
 - sample records;
 - rewrite, swap, normalize, delete, or repair REF/ALT alleles.
