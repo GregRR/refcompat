@@ -6,6 +6,8 @@ The project is currently pre-release and still establishing its design and repos
 
 ## Unreleased
 
+- Add bundled third-party notices for redistributed refget and HTSlib known-answer test fixtures and include those notices in built distributions.
+
 - Begin Milestone 4 with BAM/CRAM header observation for ordered `@SQ` reference metadata, `@HD` ordering claims, and `@PG` provenance, including extension-tag-tolerant parsing, BAM binary reference-dictionary fallback, and header-only CRAM inspection that does not require reference content.
 
 - Distinguish content-derived sequence identities from declared metadata claims, require explicit identity provenance, reject declared identities as candidate reference evidence, harden FASTA anchor identity invariants, and pin conservative VCF binding edge cases before BAM/CRAM M5 work.

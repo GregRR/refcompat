@@ -16,6 +16,7 @@ The project will:
 
 - include the standard Apache-2.0 `LICENSE` text;
 - include a `NOTICE` file for project provenance;
+- preserve required upstream notices for redistributed third-party material in `THIRD_PARTY_NOTICES.md`;
 - include `CITATION.cff` so scholarly citation is straightforward;
 - prefer permissively licensed runtime dependencies;
 - explicitly review dependencies with materially different redistribution or copyleft obligations before adoption.

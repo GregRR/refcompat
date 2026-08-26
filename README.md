@@ -149,7 +149,7 @@ See [`docs/development.md`](docs/development.md) for details.
 
 ## License
 
-RefCompat is licensed under the [Apache License 2.0](LICENSE). See [`NOTICE`](NOTICE) for project provenance.
+RefCompat is licensed under the [Apache License 2.0](LICENSE). See [`NOTICE`](NOTICE) for project provenance and [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) for redistributed test-fixture notices.
 
 ## Citation
 
