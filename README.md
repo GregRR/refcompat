@@ -1,7 +1,7 @@
 
 # RefCompat
 
-**RefCompat** is a planned open-source Python tool for determining whether heterogeneous genomic resources can share a coherent reference-coordinate context for a stated use case, and for explaining the evidence, conflicts, conditions, and unresolved questions behind that conclusion.
+**RefCompat** is an open-source Python tool for determining whether heterogeneous genomic resources can share a coherent reference-coordinate context for a stated use case, and for explaining the evidence, conflicts, conditions, and unresolved questions behind that conclusion.
 
 The project is currently in **early development** and should not yet be treated as production software.
 
@@ -124,10 +124,13 @@ Milestones 1–3 are complete. Milestone 4 has begun with BAM/CRAM header observ
 
 ## Current CLI diagnostics
 
+RefCompat has not yet published a stable package release. From a source checkout configured with `uv`, the current CLI diagnostics can be run directly with:
+
 ```bash
-refcompat inspect-fasta reference.fa
-refcompat check-fai reference.fa reference.fa.fai
-refcompat check-dict reference.fa reference.dict
+uv sync
+uv run refcompat inspect-fasta reference.fa
+uv run refcompat check-fai reference.fa reference.fa.fai
+uv run refcompat check-dict reference.fa reference.dict
 ```
 
 Add `--format json` to any command for provisional machine-readable output. These local diagnostics intentionally do not emit a whole-bundle compatibility verdict; see [`docs/diagnostic-output.md`](docs/diagnostic-output.md).

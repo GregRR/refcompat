@@ -8,13 +8,13 @@ RefCompat spans several genomics formats, but importing broad parser frameworks 
 
 ## Decision
 
-The initial direct runtime dependency set began with `refget>=0.12,<0.13`; Milestone 3 adds bounded `pysam>=0.24,<0.25` for VCF parsing. This minimizes dependencies declared by RefCompat itself; it does not imply that the full installed environment is small, because `refget` has its own transitive runtime dependencies.
+The initial direct runtime dependency set began with `refget>=0.12,<0.13`; Milestone 3 added bounded `pysam>=0.24,<0.25` for VCF parsing, and Milestone 4 reuses that dependency for BAM/CRAM header observation. This minimizes dependencies declared by RefCompat itself; it does not imply that the full installed environment is small, because `refget` has its own transitive runtime dependencies.
 
 Additional format dependencies are introduced only when a milestone needs them directly:
 
 - FASTA identity and SeqCol semantics use the RefCompat-owned adapter over `refget`.
 - `.fai` and SAM/Picard-style `.dict` checks begin with narrow readers tailored to the fields RefCompat evaluates.
-- VCF uses `pysam>=0.24,<0.25` behind a narrow adapter boundary after dependency review; BAM/CRAM may reuse it when that milestone begins.
+- VCF and BAM/CRAM header observation use `pysam>=0.24,<0.25` behind narrow adapter boundaries after dependency review.
 - GTF/GFF3 begins with a narrow streaming parser for the tabular fields and directives required by RefCompat's reference-coordinate checks. A larger annotation database/framework is not required for the initial scope.
 - Core domain objects use standard-library immutable dataclasses, enums, and typed value objects. Pydantic is not a core domain dependency.
 - The CLI uses the standard library `argparse` initially.

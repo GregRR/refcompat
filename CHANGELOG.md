@@ -1,8 +1,8 @@
 # Changelog
 
-All notable project changes will be documented in this file once implementation begins.
+All notable project changes are documented in this file.
 
-The project is currently pre-release and still establishing its design and repository foundation.
+The project is currently pre-release; entries under `Unreleased` describe ongoing development toward the first substantial release.
 
 ## Unreleased
 

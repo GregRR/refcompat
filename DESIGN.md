@@ -607,15 +607,16 @@ Target properties include:
 
 RefCompat is licensed under Apache-2.0. Runtime dependencies should preferentially use permissive licenses such as Apache-2.0, MIT, BSD-2-Clause, or BSD-3-Clause. Dependencies with copyleft, source-available, noncommercial, or custom/restrictive terms require explicit review before adoption.
 
-The initial direct runtime dependency set is deliberately narrow:
+The current direct runtime dependency set is deliberately narrow:
 
 ```text
 refget>=0.12,<0.13
+pysam>=0.24,<0.25
 ```
 
 The upper bound protects the adapter boundary while the pre-1.0 `refget` Python API is evolving. `refget` itself brings transitive runtime dependencies; "narrow" here describes RefCompat's direct dependency surface, not the total installed package count. Optional refget server/database extras are not required.
 
-Format dependencies are introduced by milestone rather than preinstalled speculatively. `.fai` and `.dict` begin with narrow readers; VCF adopts bounded `pysam>=0.24,<0.25` behind an adapter boundary; BAM/CRAM may reuse it; GTF/GFF3 begins with a narrow streaming parser for the fields and directives RefCompat actually evaluates.
+Format dependencies are introduced by milestone rather than preinstalled speculatively. `.fai` and `.dict` begin with narrow readers; VCF and BAM/CRAM use bounded `pysam>=0.24,<0.25` behind narrow adapter boundaries; GTF/GFF3 begins with a narrow streaming parser for the fields and directives RefCompat actually evaluates.
 
 See [`docs/dependency-policy.md`](docs/dependency-policy.md).
 
