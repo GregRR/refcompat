@@ -1,6 +1,6 @@
 # VCF reference-context observation
 
-**Status:** implemented as the first Milestone 3 VCF slice. Exhaustive direct REF-to-FASTA validation is implemented separately in [`vcf-ref-validation.md`](vcf-ref-validation.md), and format-neutral contract/evidence projection is implemented in [`vcf-contract-projection.md`](vcf-contract-projection.md). Verified-binding revalidation and stable report presentation remain later work; direct REF pattern interpretation and whole-bundle ingestion are now implemented in separate Milestone 3 slices.
+**Status:** implemented as the first Milestone 3 VCF slice. Exhaustive direct REF-to-FASTA validation is implemented separately in [`vcf-ref-validation.md`](vcf-ref-validation.md), and format-neutral contract/evidence projection is implemented in [`vcf-contract-projection.md`](vcf-contract-projection.md). Verified-binding revalidation, direct REF pattern interpretation, and whole-bundle ingestion are now implemented in separate Milestone 3 slices; stable report presentation remains later work.
 
 ## Purpose
 
@@ -34,7 +34,7 @@ VcfContextSnapshot
 
 Convenience projections expose declared names, used names, used-but-undeclared names, and declared-but-unused names. These remain observations; no projection is itself a compatibility verdict.
 
-The `md5` value on a `##contig` line is intentionally stored as declared text rather than promoted directly to RefCompat's verified `Md5Digest` identity type. Later reasoning may assess that metadata against stronger content evidence.
+The `md5` value on a `##contig` line is intentionally stored as declared text rather than promoted directly to RefCompat's verified `Md5Digest` identity type. RCHECK-050F now retains syntactically valid MD5 declarations on used contigs as sequence-identity requirements and may additionally use a declaration for conservative cross-name binding when it uniquely identifies an eligible FASTA sequence. The declaration still does not prove REF compatibility by itself.
 
 ## Parser boundary
 
@@ -56,4 +56,4 @@ classify mismatch patterns, emit VCF-specific findings/verdict policy, or mutate
 Exact-name coordinate and exhaustive REF-to-FASTA comparison are implemented by the separate
 [`vcf-ref-validation.md`](vcf-ref-validation.md) boundary. The subsequent
 [`vcf-contract-projection.md`](vcf-contract-projection.md) bridge converts actual CHROM usage and
-direct REF results into format-neutral requirements/evidence. Pair-derived exhaustive REF evidence can now be ingested by the generic whole-bundle reasoner through the separate [`vcf-bundle-orchestration.md`](vcf-bundle-orchestration.md) supplemental-capability boundary. Verified sequence binding and stable reporting remain later RCHECK-050 Milestone 3 slices; threshold-free mismatch-pattern interpretation is documented in [`vcf-ref-conflict-patterns.md`](vcf-ref-conflict-patterns.md).
+direct REF results into format-neutral requirements/evidence. Pair-derived exhaustive REF evidence can now be ingested by the generic whole-bundle reasoner through the separate [`vcf-bundle-orchestration.md`](vcf-bundle-orchestration.md) supplemental-capability boundary. Verified sequence binding is documented in [`vcf-sequence-binding.md`](vcf-sequence-binding.md); stable reporting remains later work. Threshold-free mismatch-pattern interpretation is documented in [`vcf-ref-conflict-patterns.md`](vcf-ref-conflict-patterns.md).

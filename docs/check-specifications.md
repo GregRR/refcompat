@@ -301,8 +301,7 @@ Inspect:
 **Implementation status:** exhaustive direct record classification is implemented for exact-name
 resolution against an uncompressed FASTA anchor. Format-neutral contract/evidence projection is
 implemented in RCHECK-050C; whole-bundle ingestion is implemented in RCHECK-050D; threshold-free
-conflict-pattern interpretation is implemented in RCHECK-050E; verified-binding revalidation remains
-later Milestone 3 work.
+conflict-pattern interpretation is implemented in RCHECK-050E; verified-binding revalidation is implemented in RCHECK-050F.
 
 Authoritative v0.1 REF checking is **exhaustive**.
 
@@ -334,14 +333,17 @@ not trust or modify an adjacent user-supplied `.fai`.
 ### RCHECK-050C — format-neutral contract/evidence projection
 
 **Implementation status:** implemented for actual CHROM usage and exhaustive direct REF results.
-Verified-binding revalidation remains later Milestone 3 work. Whole-bundle ingestion of
+Verified-binding revalidation is implemented in RCHECK-050F. Whole-bundle ingestion of
 pair-derived reference-base capabilities is implemented in RCHECK-050D, and threshold-free
 conflict-pattern interpretation is implemented in RCHECK-050E.
 
 Projection rules:
 
 - each actually used `CHROM` name creates one mandatory `SequencePresenceRequirement`;
-- unused `##contig` declarations do not create presence requirements;
+- a syntactically valid `##contig` MD5 declaration for an actually used contig creates one
+  mandatory `SequenceIdentityRequirement`; a directly comparable MD5 conflict is Tier-A
+  contradiction evidence, while an unresolvable cross-name declaration remains unresolved;
+- unused `##contig` declarations do not create presence or identity requirements;
 - the complete VCF record set creates one mandatory `ReferenceBaseRequirement` that names the
   selected FASTA anchor, not one requirement per record;
 - exhaustive REF checking creates one FASTA-anchor-owned
@@ -367,7 +369,7 @@ hard-conflict rule or expanding large VCFs into per-record contract objects.
 
 **Implementation status:** implemented for supplemental exhaustive reference-base capabilities.
 Threshold-free mismatch-pattern interpretation is implemented in RCHECK-050E; verified-alias
-revalidation remains later Milestone 3 work.
+revalidation is implemented in RCHECK-050F.
 
 The generic `reason_bundle()` orchestrator accepts pair-derived
 `ReferenceBaseValidationCapability` values through an explicit supplemental-capability channel.
@@ -393,8 +395,7 @@ validation remains unresolved without fabricated evidence.
 
 ### RCHECK-050E — REF conflict-pattern interpretation
 
-**Implementation status:** implemented for exhaustive exact-name direct validation. Verified-alias
-revalidation and stable report/CLI presentation remain later Milestone 3 work.
+**Implementation status:** implemented for exhaustive direct validation, including RCHECK-050F verified-binding revalidation. Stable report/CLI presentation remains later Milestone 3 work.
 
 `classify_vcf_ref_conflicts()` interprets the distribution of already-proven direct REF mismatches
 without changing the generic `ReferenceBaseRequirement` state or bundle verdict. It uses no
@@ -419,6 +420,38 @@ across a multi-sequence scope. `DISTRIBUTED` covers broad cross-sequence conflic
 matches remain. Neither label infers a wrong assembly or other cause. The pattern summary retains
 directly compared/mismatch/unresolved counts plus deterministic compared and affected sequence-name
 sets for later reporting.
+
+### RCHECK-050F — verified sequence binding and REF revalidation
+
+**Implementation status:** implemented for used VCF contigs with usable `##contig` MD5 identity.
+
+VCF 4.5 defines the reserved `md5` contig attribute as the MD5 checksum of the referenced
+sequence. RefCompat may use that declaration to establish a cross-name `SequenceBinding` only
+when the digest is valid, every sequence in the complete FASTA anchor snapshot has MD5 identity
+available, the digest identifies exactly one sequence in that complete snapshot, the target remains
+inside explicit anchor scope, and any declared contig length agrees. Exact
+same-name identity does not create an unnecessary binding. Scope cannot manufacture uniqueness by
+hiding a duplicate-content anchor sequence.
+
+The declaration does not satisfy the aggregate reference-base requirement by itself. For every
+used contig with a syntactically valid MD5, the VCF contract also carries a mandatory
+`SequenceIdentityRequirement`. A directly comparable same-name MD5 conflict is therefore a
+Tier-A identity contradiction; an unbound cross-name declaration stays unresolved.
+Separately, an accepted MD5 may serve as binding evidence. `evaluate_vcf_ref_records()` can apply
+the explicit binding to FASTA lookup
+and then performs the same exhaustive coordinate/base comparison. A bound mismatch remains a hard
+`MISMATCH`; a missing bound target is rejected as cross-wiring. The validation retains deterministic
+IDs for bindings actually used.
+
+`project_vcf_contract()` independently derives the expected bindings and rejects a stale validation
+that did not use them. Bound presence requirements use the generic `VERIFIED_ALIAS` path, while
+declared-MD5 identity requirements use the generic `VERIFIED_SEQUENCE_IDENTITY`/Tier-A identity
+path. The VCF contract retains the accepted peer identity capability needed for generic
+whole-bundle `SequenceBinding` derivation; peer resources still do not supply candidate reference
+facts or vote on the FASTA anchor.
+
+No string alias guessing, MD5/refget cross-comparison, assembly-name inference, or data rewriting is
+introduced.
 
 ### Hard-conflict rule
 

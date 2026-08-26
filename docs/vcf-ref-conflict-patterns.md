@@ -80,8 +80,6 @@ pair or different aggregate counts from being silently attached.
 
 This slice does not yet:
 
-- revalidate `UNRESOLVED_SEQUENCE` records through verified `SequenceBinding`
-  aliases;
 - infer a cause from an isolated/localized/distributed/systematic pattern;
 - turn the pattern into a new generic compatibility finding or verdict rule;
 - reinterpret VCF telomere-sentinel `OUT_OF_BOUNDS` cases;

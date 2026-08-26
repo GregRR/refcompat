@@ -2,8 +2,9 @@
 
 The evaluator consumes RefCompat-owned VCF record observations and a tiny
 reference-sequence protocol. It never imports pysam or other format-parser
-objects. Exact-name resolution is intentionally the only name-resolution mode
-in this slice; verified SequenceBinding integration remains separate work.
+objects. Exact-name resolution remains the default. Explicit verified ``SequenceBinding``
+values may project local VCF names into the selected FASTA namespace without
+introducing string-based alias inference.
 """
 
 from __future__ import annotations
@@ -11,6 +12,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Protocol
 
+from refcompat.model.reference_context import SequenceBinding, SequenceBindingId
 from refcompat.model.resources import ResourceId
 from refcompat.model.vcf_ref import (
     VcfRefCheckState,
@@ -61,6 +63,7 @@ def evaluate_vcf_ref_records(
     fasta_resource_id: ResourceId,
     records: Iterable[VcfRefRecord],
     reference: ReferenceSequenceReader,
+    sequence_bindings: tuple[SequenceBinding, ...] = (),
 ) -> VcfRefValidationResult:
     """Exhaustively classify every supplied VCF record against the FASTA anchor.
 
@@ -69,7 +72,9 @@ def evaluate_vcf_ref_records(
     ``UNRESOLVED_SEQUENCE``; string resemblance is never treated as an alias.
     ``OUT_OF_BOUNDS`` means no ordinary FASTA interval can be compared and does
     not by itself assert that the VCF record is syntactically invalid (VCF 4.5
-    permits telomere sentinel POS values 0 and N+1).
+    permits telomere sentinel POS values 0 and N+1). Explicit ``SequenceBinding``
+    values take precedence over exact local labels; no string heuristic creates
+    or modifies a binding here.
     """
 
     if not vcf_resource_id:
@@ -79,6 +84,12 @@ def evaluate_vcf_ref_records(
     if reference.resource_id != fasta_resource_id:
         raise ValueError("reference reader must belong to the supplied FASTA resource")
 
+    bindings_by_name = _validate_sequence_bindings(
+        vcf_resource_id,
+        fasta_resource_id,
+        sequence_bindings,
+    )
+
     aggregate = {
         VcfRefCheckState.MATCH: 0,
         VcfRefCheckState.MISMATCH: 0,
@@ -87,6 +98,7 @@ def evaluate_vcf_ref_records(
     }
     sequence_counts: dict[str, dict[VcfRefCheckState, int]] = {}
     problem_records: list[VcfRefRecordCheck] = []
+    used_binding_id_set: set[SequenceBindingId] = set()
     record_count = 0
 
     for expected_ordinal, record in enumerate(records):
@@ -96,7 +108,10 @@ def evaluate_vcf_ref_records(
             raise VcfRefEvaluationError(
                 "VCF REF records must be exhaustive, contiguous, and zero-based in file order"
             )
-        check = _evaluate_record(record, reference)
+        binding = bindings_by_name.get(record.sequence_name)
+        if binding is not None:
+            used_binding_id_set.add(binding.id)
+        check = _evaluate_record(record, reference, binding=binding)
         record_count += 1
         aggregate[check.state] += 1
         by_state = sequence_counts.setdefault(
@@ -134,15 +149,25 @@ def evaluate_vcf_ref_records(
         unresolved_sequence_count=aggregate[VcfRefCheckState.UNRESOLVED_SEQUENCE],
         sequence_summaries=sequence_summaries,
         problem_records=tuple(problem_records),
+        sequence_binding_ids=tuple(sorted(used_binding_id_set, key=str)),
     )
 
 
 def _evaluate_record(
     record: VcfRefRecord,
     reference: ReferenceSequenceReader,
+    *,
+    binding: SequenceBinding | None,
 ) -> VcfRefRecordCheck:
-    sequence_length = reference.sequence_length(record.sequence_name)
+    anchor_sequence_name = (
+        binding.anchor_sequence_name if binding is not None else record.sequence_name
+    )
+    sequence_length = reference.sequence_length(anchor_sequence_name)
     if sequence_length is None:
+        if binding is not None:
+            raise VcfRefEvaluationError(
+                "verified VCF sequence-binding target is absent from the FASTA reader"
+            )
         return VcfRefRecordCheck(record, VcfRefCheckState.UNRESOLVED_SEQUENCE)
 
     start = record.position - 1
@@ -151,10 +176,10 @@ def _evaluate_record(
         return VcfRefRecordCheck(
             record,
             VcfRefCheckState.OUT_OF_BOUNDS,
-            anchor_sequence_name=record.sequence_name,
+            anchor_sequence_name=anchor_sequence_name,
         )
 
-    fasta_bases = reference.fetch(record.sequence_name, start, end)
+    fasta_bases = reference.fetch(anchor_sequence_name, start, end)
     if len(fasta_bases) != len(record.ref):
         raise VcfRefEvaluationError("reference reader returned a FASTA span of unexpected length")
     normalized_fasta = _normalize_fasta_for_vcf(fasta_bases, record=record)
@@ -162,14 +187,32 @@ def _evaluate_record(
         return VcfRefRecordCheck(
             record,
             VcfRefCheckState.MATCH,
-            anchor_sequence_name=record.sequence_name,
+            anchor_sequence_name=anchor_sequence_name,
         )
     return VcfRefRecordCheck(
         record,
         VcfRefCheckState.MISMATCH,
-        anchor_sequence_name=record.sequence_name,
+        anchor_sequence_name=anchor_sequence_name,
         fasta_bases=fasta_bases.upper(),
     )
+
+
+def _validate_sequence_bindings(
+    vcf_resource_id: ResourceId,
+    fasta_resource_id: ResourceId,
+    bindings: tuple[SequenceBinding, ...],
+) -> dict[str, SequenceBinding]:
+    ids = tuple(binding.id for binding in bindings)
+    if len(set(ids)) != len(ids):
+        raise ValueError("VCF REF sequence-binding IDs must be unique")
+    names = tuple(binding.local_sequence_name for binding in bindings)
+    if len(set(names)) != len(names):
+        raise ValueError("VCF REF sequence bindings must map each local name at most once")
+    if any(binding.resource_id != vcf_resource_id for binding in bindings):
+        raise ValueError("VCF REF sequence bindings must belong to the VCF resource")
+    if any(binding.anchor_resource_id != fasta_resource_id for binding in bindings):
+        raise ValueError("VCF REF sequence bindings must target the supplied FASTA anchor")
+    return {binding.local_sequence_name: binding for binding in bindings}
 
 
 def _normalize_fasta_for_vcf(bases: str, *, record: VcfRefRecord) -> str:

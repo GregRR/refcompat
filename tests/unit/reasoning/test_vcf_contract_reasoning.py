@@ -5,20 +5,26 @@ from pathlib import Path
 
 import pytest
 
-from refcompat.model.constraints import ConstraintId, ConstraintState
+from refcompat.model.constraints import (
+    ConstraintId,
+    ConstraintState,
+    SatisfactionMode,
+)
 from refcompat.model.contracts import (
     ReferenceBaseRequirement,
     ResourceContract,
+    SequenceIdentityRequirement,
     SequencePresenceRequirement,
 )
 from refcompat.model.evaluation import EvaluationRequest, EvaluationScope
 from refcompat.model.evidence import EvidenceMethod
 from refcompat.model.identity import (
     CollectionCompleteness,
+    Md5Digest,
     SequenceCollectionSnapshot,
     SnapshotSequence,
 )
-from refcompat.model.reference_context import ReferenceContext
+from refcompat.model.reference_context import ReferenceContext, SequenceBindingId
 from refcompat.model.resources import ArtifactIdentity, Resource, ResourceId, ResourceKind
 from refcompat.model.vcf import (
     VcfChromUsage,
@@ -34,9 +40,12 @@ from refcompat.model.vcf_ref import (
     VcfRefValidationResult,
 )
 from refcompat.model.vcf_ref_pattern import VcfRefConflictPattern
-from refcompat.reasoning import reason_bundle
+from refcompat.model.verdict import CompatibilityVerdict
+from refcompat.reasoning import aggregate_bundle_verdict, reason_bundle
 from refcompat.reasoning.reference_context import build_reference_context
+from refcompat.reasoning.vcf_binding import derive_vcf_sequence_bindings
 from refcompat.reasoning.vcf_contract import project_vcf_contract
+from refcompat.reasoning.vcf_ref import evaluate_vcf_ref_records
 
 _VCF = ResourceId("variants")
 _FASTA = ResourceId("fasta")
@@ -73,6 +82,7 @@ def _validation(
     unresolved: tuple[VcfRefRecordCheck, ...] = (),
     fasta_resource_id: ResourceId = _FASTA,
     vcf_resource_id: ResourceId = _VCF,
+    binding_ids: tuple[SequenceBindingId, ...] = (),
 ) -> VcfRefValidationResult:
     problems = (*mismatches, *out_of_bounds, *unresolved)
     return VcfRefValidationResult(
@@ -85,7 +95,36 @@ def _validation(
         unresolved_sequence_count=len(unresolved),
         sequence_summaries=summaries,
         problem_records=problems,
+        sequence_binding_ids=binding_ids,
     )
+
+
+_MD5_ACGT = Md5Digest("f1f8f4bf413b16ad135722aa4591043e")
+
+
+def _binding_context() -> ReferenceContext:
+    resources = (
+        Resource(_FASTA, ResourceKind.FASTA, ArtifactIdentity(path=Path("anchor.fa"))),
+        Resource(_VCF, ResourceKind.VCF, ArtifactIdentity(path=Path("variants.vcf"))),
+    )
+    request = EvaluationRequest(resources, _FASTA, EvaluationScope((_FASTA, _VCF)))
+    snapshot = SequenceCollectionSnapshot(
+        _FASTA,
+        CollectionCompleteness.COMPLETE,
+        sequences=(SnapshotSequence("chr1", 4, 0, md5=_MD5_ACGT),),
+    )
+    return build_reference_context(request, snapshot)
+
+
+class _Reference:
+    resource_id = _FASTA
+
+    def sequence_length(self, sequence_name: str) -> int | None:
+        return 4 if sequence_name == "chr1" else None
+
+    def fetch(self, sequence_name: str, start: int, end: int) -> str:
+        assert sequence_name == "chr1"
+        return "ACGT"[start:end]
 
 
 def test_projection_creates_used_sequence_presence_and_one_base_requirement() -> None:
@@ -407,4 +446,325 @@ def test_projection_pair_capability_can_feed_whole_bundle_reasoning() -> None:
     assert any(
         item.method is EvidenceMethod.EXHAUSTIVE_REFERENCE_BASE_VALIDATION
         for item in bundle.evidence.supporting_evidence
+    )
+
+
+def test_projection_rejects_stale_exact_name_validation_when_verified_alias_exists() -> None:
+    context = _binding_context()
+    snapshot = VcfContextSnapshot(
+        _VCF,
+        VcfHeaderData(
+            "VCFv4.5",
+            contigs=(VcfContigDeclaration("1", length=4, md5=_MD5_ACGT.value),),
+        ),
+        record_count=1,
+        chrom_usage=(VcfChromUsage("1", 1),),
+    )
+    unresolved = VcfRefRecordCheck(
+        VcfRefRecord(_VCF, 0, "1", 1, "A"),
+        VcfRefCheckState.UNRESOLVED_SEQUENCE,
+    )
+    stale = _validation(
+        VcfRefSequenceSummary("1", 1, unresolved_sequence_count=1),
+        matches=0,
+        unresolved=(unresolved,),
+    )
+
+    with pytest.raises(ValueError, match="must use exactly the verified sequence bindings"):
+        project_vcf_contract(snapshot, stale, context)
+
+
+def test_verified_alias_revalidation_projects_presence_and_direct_bases() -> None:
+    context = _binding_context()
+    snapshot = VcfContextSnapshot(
+        _VCF,
+        VcfHeaderData(
+            "VCFv4.5",
+            contigs=(VcfContigDeclaration("1", length=4, md5=_MD5_ACGT.value),),
+        ),
+        record_count=1,
+        chrom_usage=(VcfChromUsage("1", 1),),
+    )
+    bindings = derive_vcf_sequence_bindings(snapshot, context)
+    validation = evaluate_vcf_ref_records(
+        vcf_resource_id=_VCF,
+        fasta_resource_id=_FASTA,
+        records=(VcfRefRecord(_VCF, 0, "1", 1, "A"),),
+        reference=_Reference(),
+        sequence_bindings=bindings,
+    )
+
+    projection = project_vcf_contract(snapshot, validation, context)
+
+    assert projection.sequence_bindings == bindings
+    assert len(projection.contract.capabilities) == 1
+    assert projection.evaluations[0].state is ConstraintState.SATISFIED
+    assert projection.evaluations[0].satisfaction_mode is SatisfactionMode.VERIFIED_ALIAS
+    assert projection.evaluations[-1].state is ConstraintState.SATISFIED
+    assert any(
+        item.method is EvidenceMethod.VERIFIED_SEQUENCE_BINDING
+        for item in projection.evidence.supporting_evidence
+    )
+
+
+def test_verified_alias_projection_feeds_whole_bundle_without_peer_voting() -> None:
+    context = _binding_context()
+    snapshot = VcfContextSnapshot(
+        _VCF,
+        VcfHeaderData(
+            "VCFv4.5",
+            contigs=(VcfContigDeclaration("1", length=4, md5=_MD5_ACGT.value),),
+        ),
+        record_count=1,
+        chrom_usage=(VcfChromUsage("1", 1),),
+    )
+    bindings = derive_vcf_sequence_bindings(snapshot, context)
+    validation = evaluate_vcf_ref_records(
+        vcf_resource_id=_VCF,
+        fasta_resource_id=_FASTA,
+        records=(VcfRefRecord(_VCF, 0, "1", 1, "A"),),
+        reference=_Reference(),
+        sequence_bindings=bindings,
+    )
+    projection = project_vcf_contract(snapshot, validation, context)
+    resources = (
+        Resource(_FASTA, ResourceKind.FASTA, ArtifactIdentity(path=Path("anchor.fa"))),
+        Resource(_VCF, ResourceKind.VCF, ArtifactIdentity(path=Path("variants.vcf"))),
+    )
+    request = EvaluationRequest(resources, _FASTA, context.scope)
+
+    bundle = reason_bundle(
+        request,
+        context.anchor_snapshot,
+        (ResourceContract(_FASTA), projection.contract),
+        supplemental_capabilities=(projection.reference_base_capability,),
+    )
+
+    assert bundle.sequence_bindings == projection.sequence_bindings
+    assert tuple(item.state for item in bundle.evaluations) == (
+        ConstraintState.SATISFIED,
+        ConstraintState.SATISFIED,
+        ConstraintState.SATISFIED,
+    )
+    assert bundle.evaluations[0].satisfaction_mode is SatisfactionMode.VERIFIED_ALIAS
+    assert bundle.evaluations[1].satisfaction_mode is SatisfactionMode.VERIFIED_SEQUENCE_IDENTITY
+
+
+def test_used_valid_md5_creates_mandatory_identity_requirement() -> None:
+    context = _binding_context()
+    snapshot = VcfContextSnapshot(
+        _VCF,
+        VcfHeaderData(
+            "VCFv4.5",
+            contigs=(VcfContigDeclaration("chr1", length=4, md5=_MD5_ACGT.value),),
+        ),
+        record_count=1,
+        chrom_usage=(VcfChromUsage("chr1", 1),),
+    )
+    validation = _validation(
+        VcfRefSequenceSummary("chr1", 1, match_count=1),
+        matches=1,
+    )
+
+    projection = project_vcf_contract(snapshot, validation, context)
+
+    identity_requirements = tuple(
+        requirement
+        for requirement in projection.contract.requirements
+        if isinstance(requirement, SequenceIdentityRequirement)
+    )
+    assert len(identity_requirements) == 1
+    assert identity_requirements[0].sequence_name == "chr1"
+    assert identity_requirements[0].identity == _MD5_ACGT
+    assert projection.sequence_bindings == ()
+    assert tuple(item.state for item in projection.evaluations) == (
+        ConstraintState.SATISFIED,
+        ConstraintState.SATISFIED,
+        ConstraintState.SATISFIED,
+    )
+
+
+def test_unmatched_cross_name_md5_requirement_stays_unresolved() -> None:
+    context = _binding_context()
+    unmatched_md5 = Md5Digest("0" * 32)
+    snapshot = VcfContextSnapshot(
+        _VCF,
+        VcfHeaderData(
+            "VCFv4.5",
+            contigs=(VcfContigDeclaration("1", length=4, md5=unmatched_md5.value),),
+        ),
+        record_count=1,
+        chrom_usage=(VcfChromUsage("1", 1),),
+    )
+    unresolved = VcfRefRecordCheck(
+        VcfRefRecord(_VCF, 0, "1", 1, "A"),
+        VcfRefCheckState.UNRESOLVED_SEQUENCE,
+    )
+    validation = _validation(
+        VcfRefSequenceSummary("1", 1, unresolved_sequence_count=1),
+        matches=0,
+        unresolved=(unresolved,),
+    )
+
+    projection = project_vcf_contract(snapshot, validation, context)
+
+    assert projection.sequence_bindings == ()
+    assert tuple(item.state for item in projection.evaluations) == (
+        ConstraintState.UNRESOLVED,
+        ConstraintState.UNRESOLVED,
+        ConstraintState.UNRESOLVED,
+    )
+    assert projection.evidence.evidence == ()
+
+
+def test_conflicting_same_name_md5_blocks_false_compatible_bundle() -> None:
+    context = _binding_context()
+    conflicting_md5 = Md5Digest("0" * 32)
+    snapshot = VcfContextSnapshot(
+        _VCF,
+        VcfHeaderData(
+            "VCFv4.5",
+            contigs=(VcfContigDeclaration("chr1", length=4, md5=conflicting_md5.value),),
+        ),
+        record_count=1,
+        chrom_usage=(VcfChromUsage("chr1", 1),),
+    )
+    validation = _validation(
+        VcfRefSequenceSummary("chr1", 1, match_count=1),
+        matches=1,
+    )
+
+    projection = project_vcf_contract(snapshot, validation, context)
+
+    assert projection.sequence_bindings == ()
+    identity_evaluations = tuple(
+        evaluation
+        for constraint, evaluation in zip(
+            projection.constraints,
+            projection.evaluations,
+            strict=True,
+        )
+        if isinstance(constraint.requirement, SequenceIdentityRequirement)
+    )
+    assert len(identity_evaluations) == 1
+    assert identity_evaluations[0].state is ConstraintState.UNSATISFIED
+    assert projection.evidence.has_conclusive_contradiction
+
+    resources = (
+        Resource(_FASTA, ResourceKind.FASTA, ArtifactIdentity(path=Path("anchor.fa"))),
+        Resource(_VCF, ResourceKind.VCF, ArtifactIdentity(path=Path("variants.vcf"))),
+    )
+    request = EvaluationRequest(resources, _FASTA, context.scope)
+    bundle = reason_bundle(
+        request,
+        context.anchor_snapshot,
+        (ResourceContract(_FASTA), projection.contract),
+        supplemental_capabilities=(projection.reference_base_capability,),
+    )
+
+    assert tuple(item.state for item in bundle.evaluations) == (
+        ConstraintState.SATISFIED,
+        ConstraintState.UNSATISFIED,
+        ConstraintState.SATISFIED,
+    )
+    assert aggregate_bundle_verdict(bundle).verdict is CompatibilityVerdict.INCOMPATIBLE
+
+
+def test_verified_alias_revalidation_keeps_bound_ref_mismatch_hard() -> None:
+    context = _binding_context()
+    snapshot = VcfContextSnapshot(
+        _VCF,
+        VcfHeaderData(
+            "VCFv4.5",
+            contigs=(VcfContigDeclaration("1", length=4, md5=_MD5_ACGT.value),),
+        ),
+        record_count=1,
+        chrom_usage=(VcfChromUsage("1", 1),),
+    )
+    bindings = derive_vcf_sequence_bindings(snapshot, context)
+    validation = evaluate_vcf_ref_records(
+        vcf_resource_id=_VCF,
+        fasta_resource_id=_FASTA,
+        records=(VcfRefRecord(_VCF, 0, "1", 2, "T"),),
+        reference=_Reference(),
+        sequence_bindings=bindings,
+    )
+
+    projection = project_vcf_contract(snapshot, validation, context)
+
+    assert projection.evaluations[0].state is ConstraintState.SATISFIED
+    assert projection.evaluations[-1].state is ConstraintState.UNSATISFIED
+    assert projection.evidence.has_conclusive_contradiction
+    assert projection.validation.problem_records[0].anchor_sequence_name == "chr1"
+
+
+def test_projection_model_rejects_binding_citing_wrong_local_identity_capability() -> None:
+    context = _binding_context()
+    snapshot = VcfContextSnapshot(
+        _VCF,
+        VcfHeaderData(
+            "VCFv4.5",
+            contigs=(VcfContigDeclaration("1", length=4, md5=_MD5_ACGT.value),),
+        ),
+        record_count=1,
+        chrom_usage=(VcfChromUsage("1", 1),),
+    )
+    bindings = derive_vcf_sequence_bindings(snapshot, context)
+    validation = evaluate_vcf_ref_records(
+        vcf_resource_id=_VCF,
+        fasta_resource_id=_FASTA,
+        records=(VcfRefRecord(_VCF, 0, "1", 1, "A"),),
+        reference=_Reference(),
+        sequence_bindings=bindings,
+    )
+    projection = project_vcf_contract(snapshot, validation, context)
+    crosswired = replace(
+        projection.sequence_bindings[0],
+        local_sequence_name="other",
+    )
+
+    with pytest.raises(ValueError, match="local VCF identity capability"):
+        replace(projection, sequence_bindings=(crosswired,))
+
+
+def test_unverified_cross_name_case_stays_unresolved_through_bundle() -> None:
+    context = _binding_context()
+    snapshot = VcfContextSnapshot(
+        _VCF,
+        VcfHeaderData("VCFv4.5", contigs=(VcfContigDeclaration("1", length=4),)),
+        record_count=1,
+        chrom_usage=(VcfChromUsage("1", 1),),
+    )
+    unresolved = VcfRefRecordCheck(
+        VcfRefRecord(_VCF, 0, "1", 1, "A"),
+        VcfRefCheckState.UNRESOLVED_SEQUENCE,
+    )
+    validation = _validation(
+        VcfRefSequenceSummary("1", 1, unresolved_sequence_count=1),
+        matches=0,
+        unresolved=(unresolved,),
+    )
+    projection = project_vcf_contract(snapshot, validation, context)
+    resources = (
+        Resource(_FASTA, ResourceKind.FASTA, ArtifactIdentity(path=Path("anchor.fa"))),
+        Resource(_VCF, ResourceKind.VCF, ArtifactIdentity(path=Path("variants.vcf"))),
+    )
+    request = EvaluationRequest(resources, _FASTA, context.scope)
+
+    bundle = reason_bundle(
+        request,
+        context.anchor_snapshot,
+        (ResourceContract(_FASTA), projection.contract),
+        supplemental_capabilities=(projection.reference_base_capability,),
+    )
+
+    assert projection.sequence_bindings == ()
+    assert tuple(item.state for item in projection.evaluations) == (
+        ConstraintState.UNRESOLVED,
+        ConstraintState.UNRESOLVED,
+    )
+    assert bundle.sequence_bindings == ()
+    assert tuple(item.state for item in bundle.evaluations) == (
+        ConstraintState.UNRESOLVED,
+        ConstraintState.UNRESOLVED,
     )

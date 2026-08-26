@@ -83,6 +83,6 @@ described here.
 The VCF path does not yet:
 
 - reinterpret `OUT_OF_BOUNDS` as a VCF-specific policy conclusion;
-- infer sequence-name aliases from string similarity;
+- infer sequence-name aliases from string similarity (verified VCF bindings are instead derived separately from sequence identity);
 - add a stable `CompatibilityReport` schema or new CLI command; or
 - rewrite VCF REF/ALT data.

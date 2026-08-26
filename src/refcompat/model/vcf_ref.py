@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from refcompat._compat import StrEnum
+from refcompat.model.reference_context import SequenceBindingId
 from refcompat.model.resources import ResourceId
 
 
@@ -140,6 +141,7 @@ class VcfRefValidationResult:
     unresolved_sequence_count: int
     sequence_summaries: tuple[VcfRefSequenceSummary, ...] = ()
     problem_records: tuple[VcfRefRecordCheck, ...] = ()
+    sequence_binding_ids: tuple[SequenceBindingId, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.vcf_resource_id:
@@ -220,6 +222,14 @@ class VcfRefValidationResult:
             raise ValueError("VCF REF problem records must retain file order")
         if any(ordinal >= self.record_count for ordinal in ordinals):
             raise ValueError("VCF REF problem record ordinal exceeds record count")
+
+        if any(not binding_id for binding_id in self.sequence_binding_ids):
+            raise ValueError("VCF REF sequence-binding IDs must not be empty")
+        if len(set(self.sequence_binding_ids)) != len(self.sequence_binding_ids):
+            raise ValueError("VCF REF sequence-binding IDs must be unique")
+        if self.sequence_binding_ids != tuple(sorted(self.sequence_binding_ids, key=str)):
+            raise ValueError("VCF REF sequence-binding IDs must use deterministic order")
+
         summary_names = set(names)
         if any(check.record.sequence_name not in summary_names for check in self.problem_records):
             raise ValueError("VCF REF problem record must belong to a sequence summary")

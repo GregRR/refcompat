@@ -4,6 +4,13 @@ from __future__ import annotations
 
 import pytest
 
+from refcompat.model.contracts import CapabilityId
+from refcompat.model.identity import Md5Digest
+from refcompat.model.reference_context import (
+    SequenceBinding,
+    SequenceBindingId,
+    SequenceBindingMethod,
+)
 from refcompat.model.resources import ResourceId
 from refcompat.model.vcf_ref import VcfRefCheckState, VcfRefRecord, VcfRefValidationResult
 from refcompat.reasoning.vcf_ref import VcfRefEvaluationError, evaluate_vcf_ref_records
@@ -196,3 +203,113 @@ def test_reference_reader_must_belong_to_requested_fasta() -> None:
     reference.resource_id = ResourceId("other")
     with pytest.raises(ValueError, match="must belong"):
         _evaluate((), reference)
+
+
+def _binding(local_name: str = "1", anchor_name: str = "chr1") -> SequenceBinding:
+    return SequenceBinding(
+        id=SequenceBindingId(f"binding-{local_name}-{anchor_name}"),
+        resource_id=_VCF,
+        local_sequence_name=local_name,
+        anchor_resource_id=_FASTA,
+        anchor_sequence_name=anchor_name,
+        method=SequenceBindingMethod.VERIFIED_SEQUENCE_IDENTITY,
+        identity_values=(Md5Digest("f1f8f4bf413b16ad135722aa4591043e"),),
+        capability_ids=(CapabilityId("local"), CapabilityId("anchor")),
+    )
+
+
+def test_verified_binding_revalidates_cross_name_record() -> None:
+    binding = _binding()
+    result = evaluate_vcf_ref_records(
+        vcf_resource_id=_VCF,
+        fasta_resource_id=_FASTA,
+        records=(VcfRefRecord(_VCF, 0, "1", 1, "A"),),
+        reference=_Reference({"chr1": "ACGT"}),
+        sequence_bindings=(binding,),
+    )
+
+    assert result.match_count == 1
+    assert result.unresolved_sequence_count == 0
+    assert result.sequence_binding_ids == (binding.id,)
+
+
+def test_verified_binding_mismatch_retains_actual_anchor_name() -> None:
+    binding = _binding()
+    result = evaluate_vcf_ref_records(
+        vcf_resource_id=_VCF,
+        fasta_resource_id=_FASTA,
+        records=(VcfRefRecord(_VCF, 0, "1", 2, "T"),),
+        reference=_Reference({"chr1": "ACGT"}),
+        sequence_bindings=(binding,),
+    )
+
+    mismatch = result.problem_records[0]
+    assert mismatch.state is VcfRefCheckState.MISMATCH
+    assert mismatch.anchor_sequence_name == "chr1"
+    assert mismatch.fasta_bases == "C"
+
+
+def test_verified_binding_target_missing_from_reader_is_crosswire_error() -> None:
+    binding = _binding(anchor_name="chrMissing")
+    with pytest.raises(VcfRefEvaluationError, match="binding target is absent"):
+        evaluate_vcf_ref_records(
+            vcf_resource_id=_VCF,
+            fasta_resource_id=_FASTA,
+            records=(VcfRefRecord(_VCF, 0, "1", 1, "A"),),
+            reference=_Reference({"chr1": "ACGT"}),
+            sequence_bindings=(binding,),
+        )
+
+
+def test_binding_resource_and_anchor_are_validated() -> None:
+    from dataclasses import replace
+
+    binding = _binding()
+    with pytest.raises(ValueError, match="belong to the VCF"):
+        evaluate_vcf_ref_records(
+            vcf_resource_id=_VCF,
+            fasta_resource_id=_FASTA,
+            records=(),
+            reference=_Reference({"chr1": "ACGT"}),
+            sequence_bindings=(replace(binding, resource_id=ResourceId("other")),),
+        )
+    with pytest.raises(ValueError, match="supplied FASTA anchor"):
+        evaluate_vcf_ref_records(
+            vcf_resource_id=_VCF,
+            fasta_resource_id=_FASTA,
+            records=(),
+            reference=_Reference({"chr1": "ACGT"}),
+            sequence_bindings=(replace(binding, anchor_resource_id=ResourceId("other")),),
+        )
+
+
+def test_sequence_binding_trace_is_canonical_not_record_order_dependent() -> None:
+    first = _binding(local_name="z", anchor_name="chr1")
+    second = _binding(local_name="a", anchor_name="chr2")
+    result = evaluate_vcf_ref_records(
+        vcf_resource_id=_VCF,
+        fasta_resource_id=_FASTA,
+        records=(
+            VcfRefRecord(_VCF, 0, "z", 1, "A"),
+            VcfRefRecord(_VCF, 1, "a", 1, "T"),
+        ),
+        reference=_Reference({"chr1": "ACGT", "chr2": "TTTT"}),
+        sequence_bindings=(first, second),
+    )
+
+    assert result.sequence_binding_ids == tuple(sorted((first.id, second.id), key=str))
+
+
+def test_verified_binding_overrides_same_string_fasta_lookup() -> None:
+    binding = _binding(local_name="chr1", anchor_name="chr2")
+    result = evaluate_vcf_ref_records(
+        vcf_resource_id=_VCF,
+        fasta_resource_id=_FASTA,
+        records=(VcfRefRecord(_VCF, 0, "chr1", 1, "T"),),
+        reference=_Reference({"chr1": "AAAA", "chr2": "TTTT"}),
+        sequence_bindings=(binding,),
+    )
+
+    assert result.match_count == 1
+    assert result.unresolved_sequence_count == 0
+    assert result.sequence_binding_ids == (binding.id,)

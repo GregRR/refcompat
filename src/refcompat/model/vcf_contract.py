@@ -9,8 +9,13 @@ from refcompat.model.constraints import (
     ConstraintEvaluation,
     ConstraintState,
 )
-from refcompat.model.contracts import ReferenceBaseValidationCapability, ResourceContract
+from refcompat.model.contracts import (
+    ReferenceBaseValidationCapability,
+    ResourceContract,
+    SequenceIdentityCapability,
+)
 from refcompat.model.evidence import EvidenceAggregate
+from refcompat.model.reference_context import SequenceBinding
 from refcompat.model.resources import ResourceId
 from refcompat.model.vcf_ref import VcfRefValidationResult
 from refcompat.model.vcf_ref_pattern import VcfRefConflictPatternSummary
@@ -20,16 +25,19 @@ from refcompat.model.vcf_ref_pattern import VcfRefConflictPatternSummary
 class VcfContractProjection:
     """Format-neutral reasoning inputs/results derived from VCF observations.
 
-    The VCF contract contains only typed requirements. The anchor-owned direct
-    reference-base capability remains separate because it is evidence derived
-    from the VCF/FASTA pair, not an intrinsic capability of the VCF resource.
-    ``validation`` retains the compact format-specific local detail, while
-    ``conflict_pattern`` records threshold-free VCF-specific interpretation.
+    The VCF contract contains typed requirements plus any context-accepted
+    VCF-declared sequence-identity capabilities used only to establish verified
+    cross-name bindings. The anchor-owned direct reference-base capability
+    remains separate because it is evidence derived from the VCF/FASTA pair,
+    not an intrinsic capability of the VCF resource. ``validation`` retains the
+    compact format-specific local detail, while ``conflict_pattern`` records
+    threshold-free VCF-specific interpretation.
     """
 
     vcf_resource_id: ResourceId
     fasta_resource_id: ResourceId
     contract: ResourceContract
+    sequence_bindings: tuple[SequenceBinding, ...]
     reference_base_capability: ReferenceBaseValidationCapability
     constraints: tuple[CompatibilityConstraint, ...]
     evaluations: tuple[ConstraintEvaluation, ...]
@@ -50,6 +58,46 @@ class VcfContractProjection:
             raise ValueError("VCF contract projection validation must belong to the VCF")
         if self.validation.fasta_resource_id != self.fasta_resource_id:
             raise ValueError("VCF contract projection validation must use the FASTA anchor")
+        binding_ids = tuple(binding.id for binding in self.sequence_bindings)
+        if len(set(binding_ids)) != len(binding_ids):
+            raise ValueError("VCF contract projection sequence-binding IDs must be unique")
+        binding_names = tuple(binding.local_sequence_name for binding in self.sequence_bindings)
+        if len(set(binding_names)) != len(binding_names):
+            raise ValueError(
+                "VCF contract projection sequence bindings must map each local name at most once"
+            )
+        if any(binding.resource_id != self.vcf_resource_id for binding in self.sequence_bindings):
+            raise ValueError("VCF contract projection sequence bindings must belong to the VCF")
+        if any(
+            binding.anchor_resource_id != self.fasta_resource_id
+            for binding in self.sequence_bindings
+        ):
+            raise ValueError(
+                "VCF contract projection sequence bindings must target the FASTA anchor"
+            )
+        expected_validation_binding_ids = tuple(sorted(binding_ids, key=str))
+        if tuple(self.validation.sequence_binding_ids) != expected_validation_binding_ids:
+            raise ValueError(
+                "VCF contract projection sequence bindings must match validation binding trace"
+            )
+        contract_identity_capabilities = tuple(
+            capability
+            for capability in self.contract.capabilities
+            if isinstance(capability, SequenceIdentityCapability)
+        )
+        for binding in self.sequence_bindings:
+            local_sources = tuple(
+                capability
+                for capability in contract_identity_capabilities
+                if capability.id in binding.capability_ids
+                and capability.sequence_name == binding.local_sequence_name
+                and capability.identity in binding.identity_values
+            )
+            if len(local_sources) != 1:
+                raise ValueError(
+                    "VCF contract projection binding must cite its local VCF identity capability"
+                )
+
         if self.conflict_pattern.vcf_resource_id != self.vcf_resource_id:
             raise ValueError("VCF contract projection conflict pattern must belong to the VCF")
         if self.conflict_pattern.fasta_resource_id != self.fasta_resource_id:

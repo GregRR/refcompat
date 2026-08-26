@@ -85,6 +85,7 @@ The initial implementation scope is intentionally narrow:
 - FASTA ↔ BAM/CRAM reference-context checks;
 - VCF header/reference-context checks (implemented);
 - exhaustive VCF REF ↔ FASTA verification;
+- verified VCF sequence-name binding from uniquely matched contig MD5 identity;
 - GTF/GFF3 sequence-name and coordinate-bounds checks;
 - whole-bundle compatibility reasoning;
 - verified alias handling as shared evidence infrastructure;
@@ -118,7 +119,7 @@ Start with:
 
 ## Project status
 
-Milestone 1 and the Milestone 2 reasoning foundation are complete, and Milestone 3 now includes VCF context observation, exhaustive direct REF-to-FASTA validation, projection of those facts into format-neutral requirements and Tier-A evidence, explicit anchor-owned ingestion of pair-derived REF evidence into whole-bundle reasoning, and threshold-free isolated/localized/distributed/systematic REF-conflict interpretation. RefCompat now has explicit anchor-driven evaluation requests/scope, typed sequence presence/length/identity/order/reference-base requirements and capabilities, separate compatibility constraints/evaluations, qualitative traceable evidence aggregation without numeric scoring, structured issue/unresolved findings plus explicit-scope conditions, an explicit FASTA `ReferenceContext` with content-verified `SequenceBinding` plus whole-bundle orchestration, categorical `COMPATIBLE` / `COMPATIBLE_WITH_CONDITIONS` / `INCOMPATIBLE` / `INDETERMINATE` aggregation over mandatory constraints, and compact decisive conflict-core extraction. Analysis status and stable `CompatibilityReport` serialization remain later work.
+Milestone 1 and the Milestone 2 reasoning foundation are complete, and Milestone 3 now includes VCF context observation, exhaustive direct REF-to-FASTA validation, verified cross-name binding from uniquely matched contig MD5 identity, projection of those facts into format-neutral requirements and Tier-A evidence, explicit anchor-owned ingestion of pair-derived REF evidence into whole-bundle reasoning, and threshold-free isolated/localized/distributed/systematic REF-conflict interpretation. RefCompat now has explicit anchor-driven evaluation requests/scope, typed sequence presence/length/identity/order/reference-base requirements and capabilities, separate compatibility constraints/evaluations, qualitative traceable evidence aggregation without numeric scoring, structured issue/unresolved findings plus explicit-scope conditions, an explicit FASTA `ReferenceContext` with content-verified `SequenceBinding` plus whole-bundle orchestration, categorical `COMPATIBLE` / `COMPATIBLE_WITH_CONDITIONS` / `INCOMPATIBLE` / `INDETERMINATE` aggregation over mandatory constraints, and compact decisive conflict-core extraction. Analysis status and stable `CompatibilityReport` serialization remain later work.
 
 ## Current CLI diagnostics
 

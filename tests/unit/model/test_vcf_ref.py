@@ -110,3 +110,36 @@ def test_validation_result_rejects_crosswired_problem_record_resource() -> None:
             sequence_summaries=(summary,),
             problem_records=(check,),
         )
+
+
+def test_validation_rejects_duplicate_sequence_binding_ids() -> None:
+    from refcompat.model.reference_context import SequenceBindingId
+
+    binding_id = SequenceBindingId("binding")
+    with pytest.raises(ValueError, match="sequence-binding IDs must be unique"):
+        VcfRefValidationResult(
+            ResourceId("vcf"),
+            ResourceId("fasta"),
+            record_count=0,
+            match_count=0,
+            mismatch_count=0,
+            out_of_bounds_count=0,
+            unresolved_sequence_count=0,
+            sequence_binding_ids=(binding_id, binding_id),
+        )
+
+
+def test_validation_rejects_nondeterministic_sequence_binding_id_order() -> None:
+    from refcompat.model.reference_context import SequenceBindingId
+
+    with pytest.raises(ValueError, match="deterministic order"):
+        VcfRefValidationResult(
+            ResourceId("vcf"),
+            ResourceId("fasta"),
+            record_count=0,
+            match_count=0,
+            mismatch_count=0,
+            out_of_bounds_count=0,
+            unresolved_sequence_count=0,
+            sequence_binding_ids=(SequenceBindingId("z"), SequenceBindingId("a")),
+        )

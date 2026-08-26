@@ -6,6 +6,8 @@ The project is currently pre-release and still establishing its design and repos
 
 ## Unreleased
 
+- Add VCF verified sequence-name binding from uniquely matched `##contig` MD5 identity, mandatory identity requirements for valid used-contig MD5 declarations, binding-aware exhaustive REF revalidation, stale-validation rejection, and generic whole-bundle reuse without string alias guessing.
+
 - Add threshold-free VCF REF conflict-pattern interpretation that distinguishes isolated, localized, distributed, and systematic distributions only after complete direct comparison, while leaving incomplete patterns unclassified and preserving generic hard-conflict semantics.
 
 - Integrate anchor-owned pair-derived reference-base validation capabilities into generic whole-bundle reasoning while rejecting wrong-anchor, out-of-scope, duplicate, unused, or competing exhaustive supplemental evidence.

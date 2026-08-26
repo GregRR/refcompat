@@ -25,6 +25,18 @@ used sequence name, in first-observed order. Header-only `##contig`
 declarations do not create presence requirements because an unused declaration
 is not evidence that the VCF actually requires that contig for its records.
 
+A syntactically valid `##contig` MD5 declaration for an actually used contig
+also becomes one mandatory `SequenceIdentityRequirement`. When the declaration
+is directly comparable to the selected or verified-bound FASTA sequence, a
+different MD5 is Tier-A identity contradiction evidence. A declaration that
+cannot be compared remains unresolved. Invalid and unused declarations do not
+create identity requirements in this slice.
+
+Context-accepted `##contig` MD5 identity may additionally appear as a VCF peer
+capability only when it uniquely establishes a safe cross-name binding as
+defined in [`vcf-sequence-binding.md`](vcf-sequence-binding.md). That capability
+is binding evidence, not direct REF compatibility evidence.
+
 The complete VCF record set becomes one mandatory `ReferenceBaseRequirement`
 that explicitly names the selected FASTA anchor and carries its exhaustive
 record count. RefCompat deliberately does **not** create one requirement object
@@ -72,17 +84,15 @@ evidence.
 
 ## Sequence-name boundary
 
-Presence requirements use the ordinary generic sequence-presence machinery.
-This slice performs no string alias guessing and does not reinterpret an
-`UNRESOLVED_SEQUENCE` REF result as a mismatch. Verified sequence-binding
-projection for VCF remains later Milestone 3 work.
+Presence requirements use the ordinary generic sequence-presence machinery. Verified VCF bindings are now derived from uniquely matched `##contig` MD5 identity and supplied to the generic constraint machinery; string similarity remains irrelevant. Projection rejects a validation whose binding-ID trace does not match the bindings independently expected for the current VCF/FASTA/scope, preventing stale exact-name results from being silently reused.
 
 ## Deliberate boundary
 
 This slice does not yet:
 
 - convert `OUT_OF_BOUNDS` into a VCF-specific compatibility policy;
-- assess `##reference`, declared `md5`, or unused `##contig` metadata as proof;
+- treat `##reference`, declared `md5`, or unused `##contig` metadata as direct
+  REF compatibility proof;
 - rewrite REF/ALT;
 - add stable report serialization;
 - change the existing categorical bundle-verdict policy.

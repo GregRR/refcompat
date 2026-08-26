@@ -8,8 +8,8 @@ This slice exhaustively compares every VCF record's `REF` allele with an
 explicitly supplied FASTA anchor. It remains the direct record-level source
 result; contract/evidence projection is a separate layer, and VCF-specific
 pattern classification is implemented separately in
-[`vcf-ref-conflict-patterns.md`](vcf-ref-conflict-patterns.md), while verified-alias
-revalidation and report presentation remain later work.
+[`vcf-ref-conflict-patterns.md`](vcf-ref-conflict-patterns.md), while verified-alias revalidation is implemented in
+[`vcf-sequence-binding.md`](vcf-sequence-binding.md) and report presentation remains later work.
 
 ## Inputs and traversal
 
@@ -50,17 +50,16 @@ RCHECK-050B inherits that representation limit for now.
 
 Every streamed record produces exactly one direct state:
 
-- `MATCH` — exact-name FASTA sequence exists, the REF span is in bounds, and
+- `MATCH` — the exact-name or explicitly bound FASTA sequence exists, the REF span is in bounds, and
   normalized FASTA bases equal REF;
 - `MISMATCH` — the span is comparable and the FASTA bases contradict REF;
-- `OUT_OF_BOUNDS` — the exact-name sequence exists but the ordinary REF span
+- `OUT_OF_BOUNDS` — the resolved exact-name or bound sequence exists but the ordinary REF span
   cannot be represented within that sequence;
-- `UNRESOLVED_SEQUENCE` — the VCF `CHROM` has no exact-name FASTA sequence in
-  this slice.
+- `UNRESOLVED_SEQUENCE` — the VCF `CHROM` has neither an exact-name FASTA sequence nor an explicit verified binding.
 
 `UNRESOLVED_SEQUENCE` deliberately does **not** infer that familiar-looking
-names such as `1` and `chr1` are aliases. Later SequenceBinding integration may
-resolve such a record only from verified identity evidence.
+names such as `1` and `chr1` are aliases. RCHECK-050F may resolve such a record
+only through an explicit `SequenceBinding` derived from verified identity evidence.
 
 ### Coordinate conversion
 
@@ -107,8 +106,7 @@ counts. It retains an individual `VcfRefRecordCheck` for every non-match:
 
 Matching records are counted but not retained individually, so a large fully
 compatible VCF does not require memory proportional to its record count.
-Mismatches retain the actual fetched FASTA bases needed to explain the local
-content contradiction.
+Mismatches retain the actual fetched FASTA bases and resolved anchor sequence name needed to explain the local content contradiction. The result also retains deterministic IDs for any verified sequence bindings actually used, including all-match validations where no per-record problem object exists.
 
 This is descriptive aggregation only. A tiny mismatch fraction never erases a
 known mismatch. Threshold-free isolated/localized/distributed/systematic
@@ -120,7 +118,6 @@ interpretation is implemented separately in
 
 This slice does not yet:
 
-- project verified `SequenceBinding` aliases into VCF REF checking;
 - add VCF-specific pattern-dependent finding or verdict policy;
 - apply evaluation-scope exclusions;
 - sample records;

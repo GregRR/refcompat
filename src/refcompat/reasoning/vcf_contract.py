@@ -5,7 +5,11 @@ from __future__ import annotations
 import hashlib
 import json
 
-from refcompat.model.constraints import CompatibilityConstraint, ConstraintId
+from refcompat.model.constraints import (
+    CompatibilityConstraint,
+    ConstraintId,
+    capability_is_comparable,
+)
 from refcompat.model.contracts import (
     Capability,
     CapabilityId,
@@ -16,34 +20,43 @@ from refcompat.model.contracts import (
     RequirementLevel,
     RequirementOrigin,
     ResourceContract,
+    SequenceIdentityCapability,
+    SequenceIdentityRequirement,
     SequencePresenceCapability,
     SequencePresenceRequirement,
 )
-from refcompat.model.reference_context import ReferenceContext
+from refcompat.model.identity import Md5Digest
+from refcompat.model.reference_context import ReferenceContext, SequenceBinding
 from refcompat.model.resources import ResourceId
 from refcompat.model.vcf import VcfContextSnapshot
 from refcompat.model.vcf_contract import VcfContractProjection
 from refcompat.model.vcf_ref import VcfRefValidationResult
 from refcompat.reasoning.constraints import build_constraint, evaluate_constraint
 from refcompat.reasoning.evidence import aggregate_constraint_evidence
+from refcompat.reasoning.vcf_binding import (
+    derive_vcf_sequence_bindings,
+    vcf_binding_identity_capabilities,
+)
 from refcompat.reasoning.vcf_ref_pattern import classify_vcf_ref_conflicts
 
 
-def project_vcf_contract(
+def build_vcf_contract(
     snapshot: VcfContextSnapshot,
-    validation: VcfRefValidationResult,
     reference_context: ReferenceContext,
-) -> VcfContractProjection:
-    """Build scalable generic requirements/evidence from exhaustive VCF facts.
+) -> ResourceContract:
+    """Build the context-specific VCF contract before direct REF validation.
 
-    Actual CHROM usage becomes one mandatory sequence-presence requirement per
-    used sequence. Exhaustive REF validation becomes one resource-level
-    reference-base requirement rather than one object per VCF record. A single
-    mismatch therefore remains a hard contradiction even beside many matches,
-    while name/bounds cases that prevented direct comparison remain unresolved.
+    Actual CHROM usage creates mandatory presence requirements. A syntactically
+    valid ``##contig`` MD5 declaration for a used contig also creates a mandatory
+    sequence-identity requirement, while only declarations safe for verified
+    cross-name binding are retained as peer identity capabilities. The record set
+    creates one aggregate reference-base requirement. Binding capabilities
+    establish naming only; they are never direct reference-base compatibility
+    evidence.
     """
 
-    _validate_inputs(snapshot, validation, reference_context)
+    if snapshot.resource_id not in reference_context.scope.resource_ids:
+        raise ValueError("VCF resource must be inside the reference-context scope")
 
     presence_requirements = tuple(
         SequencePresenceRequirement(
@@ -55,6 +68,7 @@ def project_vcf_contract(
         )
         for sequence_name in snapshot.used_sequence_names
     )
+    identity_requirements = _declared_identity_requirements(snapshot)
     base_requirement = ReferenceBaseRequirement(
         id=_requirement_id(
             "reference-bases",
@@ -67,9 +81,44 @@ def project_vcf_contract(
         level=RequirementLevel.MANDATORY,
         record_count=snapshot.record_count,
     )
-    contract = ResourceContract(
+    return ResourceContract(
         resource_id=snapshot.resource_id,
-        requirements=(*presence_requirements, base_requirement),
+        requirements=(*presence_requirements, *identity_requirements, base_requirement),
+        capabilities=vcf_binding_identity_capabilities(snapshot, reference_context),
+    )
+
+
+def project_vcf_contract(
+    snapshot: VcfContextSnapshot,
+    validation: VcfRefValidationResult,
+    reference_context: ReferenceContext,
+) -> VcfContractProjection:
+    """Build scalable generic requirements/evidence from exhaustive VCF facts.
+
+    Verified cross-name bindings are derived independently from VCF ``##contig``
+    MD5 identity claims and the complete FASTA anchor. If such bindings exist,
+    the supplied exhaustive validation must have used exactly those bindings; a
+    stale exact-name validation is rejected rather than silently projected.
+    """
+
+    contract = build_vcf_contract(snapshot, reference_context)
+    sequence_bindings = derive_vcf_sequence_bindings(snapshot, reference_context)
+    _validate_inputs(snapshot, validation, reference_context, sequence_bindings)
+
+    presence_requirements = tuple(
+        requirement
+        for requirement in contract.requirements
+        if isinstance(requirement, SequencePresenceRequirement)
+    )
+    identity_requirements = tuple(
+        requirement
+        for requirement in contract.requirements
+        if isinstance(requirement, SequenceIdentityRequirement)
+    )
+    base_requirement = next(
+        requirement
+        for requirement in contract.requirements
+        if isinstance(requirement, ReferenceBaseRequirement)
     )
 
     base_capability = ReferenceBaseValidationCapability(
@@ -82,15 +131,53 @@ def project_vcf_contract(
         unresolved_count=(validation.out_of_bounds_count + validation.unresolved_sequence_count),
     )
 
+    bindings_by_name = {binding.local_sequence_name: binding for binding in sequence_bindings}
     constraints: list[CompatibilityConstraint] = []
-    for requirement in presence_requirements:
-        candidates = tuple(
-            capability
-            for capability in reference_context.anchor_capabilities
-            if isinstance(capability, SequencePresenceCapability)
-            and capability.sequence_name == requirement.sequence_name
+    for presence_requirement in presence_requirements:
+        binding = bindings_by_name.get(presence_requirement.sequence_name)
+        target_name = (
+            binding.anchor_sequence_name
+            if binding is not None
+            else presence_requirement.sequence_name
         )
-        constraints.append(_constraint(reference_context, requirement, candidates))
+        presence_candidates = tuple(
+            presence_capability
+            for presence_capability in reference_context.anchor_capabilities
+            if isinstance(presence_capability, SequencePresenceCapability)
+            and presence_capability.sequence_name == target_name
+        )
+        relevant_bindings = (binding,) if binding is not None else ()
+        constraints.append(
+            _constraint(
+                reference_context,
+                presence_requirement,
+                presence_candidates,
+                sequence_bindings=relevant_bindings,
+            )
+        )
+    for identity_requirement in identity_requirements:
+        binding = bindings_by_name.get(identity_requirement.sequence_name)
+        target_name = (
+            binding.anchor_sequence_name
+            if binding is not None
+            else identity_requirement.sequence_name
+        )
+        identity_candidates = tuple(
+            identity_capability
+            for identity_capability in reference_context.anchor_capabilities
+            if isinstance(identity_capability, SequenceIdentityCapability)
+            and identity_capability.sequence_name == target_name
+            and capability_is_comparable(identity_requirement, identity_capability)
+        )
+        relevant_bindings = (binding,) if binding is not None else ()
+        constraints.append(
+            _constraint(
+                reference_context,
+                identity_requirement,
+                identity_candidates,
+                sequence_bindings=relevant_bindings,
+            )
+        )
     constraints.append(_constraint(reference_context, base_requirement, (base_capability,)))
 
     constraint_tuple = tuple(constraints)
@@ -101,6 +188,7 @@ def project_vcf_contract(
         vcf_resource_id=snapshot.resource_id,
         fasta_resource_id=validation.fasta_resource_id,
         contract=contract,
+        sequence_bindings=sequence_bindings,
         reference_base_capability=base_capability,
         constraints=constraint_tuple,
         evaluations=evaluations,
@@ -110,10 +198,40 @@ def project_vcf_contract(
     )
 
 
+def _declared_identity_requirements(
+    snapshot: VcfContextSnapshot,
+) -> tuple[SequenceIdentityRequirement, ...]:
+    used_names = set(snapshot.used_sequence_names)
+    requirements: list[SequenceIdentityRequirement] = []
+    for contig in snapshot.header.contigs:
+        if contig.name not in used_names or contig.md5 is None:
+            continue
+        try:
+            digest = Md5Digest(contig.md5)
+        except ValueError:
+            continue
+        requirements.append(
+            SequenceIdentityRequirement(
+                id=_requirement_id(
+                    "identity",
+                    snapshot.resource_id,
+                    f"{contig.name}:{digest.value}",
+                ),
+                resource_id=snapshot.resource_id,
+                origin=RequirementOrigin.CORE_FORMAT,
+                level=RequirementLevel.MANDATORY,
+                sequence_name=contig.name,
+                identity=digest,
+            )
+        )
+    return tuple(requirements)
+
+
 def _validate_inputs(
     snapshot: VcfContextSnapshot,
     validation: VcfRefValidationResult,
     reference_context: ReferenceContext,
+    sequence_bindings: tuple[SequenceBinding, ...],
 ) -> None:
     if snapshot.resource_id != validation.vcf_resource_id:
         raise ValueError("VCF context and REF validation must belong to the same VCF resource")
@@ -123,6 +241,12 @@ def _validate_inputs(
         raise ValueError("VCF resource must be inside the reference-context scope")
     if snapshot.record_count != validation.record_count:
         raise ValueError("VCF context and REF validation record counts must match")
+
+    expected_binding_ids = tuple(sorted((binding.id for binding in sequence_bindings), key=str))
+    if validation.sequence_binding_ids != expected_binding_ids:
+        raise ValueError(
+            "VCF REF validation must use exactly the verified sequence bindings for this context"
+        )
 
     usage = {item.sequence_name: item.record_count for item in snapshot.chrom_usage}
     summaries = {item.sequence_name: item.record_count for item in validation.sequence_summaries}
@@ -134,11 +258,19 @@ def _constraint(
     context: ReferenceContext,
     requirement: Requirement,
     candidates: tuple[Capability, ...],
+    *,
+    sequence_bindings: tuple[SequenceBinding, ...] = (),
 ) -> CompatibilityConstraint:
     return build_constraint(
-        _constraint_id(context.anchor_resource_id, requirement, candidates),
+        _constraint_id(
+            context.anchor_resource_id,
+            requirement,
+            candidates,
+            sequence_bindings,
+        ),
         requirement,
         candidates,
+        sequence_bindings,
     )
 
 
@@ -169,6 +301,7 @@ def _reference_base_capability_id(validation: VcfRefValidationResult) -> Capabil
                 validation.mismatch_count,
                 validation.out_of_bounds_count,
                 validation.unresolved_sequence_count,
+                [str(binding_id) for binding_id in validation.sequence_binding_ids],
                 problems,
             ]
         )
@@ -179,6 +312,7 @@ def _constraint_id(
     anchor_resource_id: ResourceId,
     requirement: Requirement,
     candidates: tuple[Capability, ...],
+    sequence_bindings: tuple[SequenceBinding, ...],
 ) -> ConstraintId:
     return ConstraintId(
         "vcf-constraint:"
@@ -187,6 +321,7 @@ def _constraint_id(
                 str(anchor_resource_id),
                 str(requirement.id),
                 [str(capability.id) for capability in candidates],
+                [str(binding.id) for binding in sequence_bindings],
             ]
         )
     )
