@@ -13,6 +13,7 @@ from refcompat.model.contracts import (
     ReferenceBaseValidationCapability,
     ResourceContract,
     SequenceIdentityCapability,
+    SequenceIdentityProvenance,
 )
 from refcompat.model.evidence import EvidenceAggregate
 from refcompat.model.reference_context import SequenceBinding
@@ -92,6 +93,7 @@ class VcfContractProjection:
                 if capability.id in binding.capability_ids
                 and capability.sequence_name == binding.local_sequence_name
                 and capability.identity in binding.identity_values
+                and capability.provenance is SequenceIdentityProvenance.DECLARED_METADATA
             )
             if len(local_sources) != 1:
                 raise ValueError(

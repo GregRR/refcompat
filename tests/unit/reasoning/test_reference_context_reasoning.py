@@ -1,3 +1,4 @@
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -16,6 +17,7 @@ from refcompat.model import (
     ResourceKind,
     SequenceCollectionSnapshot,
     SequenceIdentityCapability,
+    SequenceIdentityProvenance,
     SnapshotSequence,
 )
 from refcompat.reasoning import build_reference_context, derive_sequence_bindings
@@ -76,7 +78,13 @@ def test_reference_context_rejects_wrong_snapshot_resource() -> None:
 
 def test_cross_name_content_identity_derives_binding() -> None:
     context = build_reference_context(_request(), _snapshot())
-    local = SequenceIdentityCapability(CapabilityId("local"), _CONSUMER, "1", _REFGET_A)
+    local = SequenceIdentityCapability(
+        CapabilityId("local"),
+        _CONSUMER,
+        "1",
+        _REFGET_A,
+        provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
+    )
     bindings = derive_sequence_bindings(
         context,
         (
@@ -99,7 +107,13 @@ def test_duplicate_anchor_content_does_not_guess_binding() -> None:
         ),
     )
     context = build_reference_context(_request(), snapshot)
-    local = SequenceIdentityCapability(CapabilityId("local"), _CONSUMER, "1", _REFGET_A)
+    local = SequenceIdentityCapability(
+        CapabilityId("local"),
+        _CONSUMER,
+        "1",
+        _REFGET_A,
+        provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
+    )
     assert (
         derive_sequence_bindings(
             context,
@@ -122,7 +136,13 @@ def test_sequence_scope_does_not_turn_duplicate_content_into_verified_binding() 
         ),
     )
     context = build_reference_context(_request(("chr1",)), snapshot)
-    local = SequenceIdentityCapability(CapabilityId("local"), _CONSUMER, "1", _REFGET_A)
+    local = SequenceIdentityCapability(
+        CapabilityId("local"),
+        _CONSUMER,
+        "1",
+        _REFGET_A,
+        provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
+    )
 
     assert (
         derive_sequence_bindings(
@@ -138,7 +158,13 @@ def test_sequence_scope_does_not_turn_duplicate_content_into_verified_binding() 
 
 def test_unique_binding_target_outside_scope_remains_unbound() -> None:
     context = build_reference_context(_request(("chr1",)), _snapshot())
-    local = SequenceIdentityCapability(CapabilityId("local"), _CONSUMER, "2", _REFGET_B)
+    local = SequenceIdentityCapability(
+        CapabilityId("local"),
+        _CONSUMER,
+        "2",
+        _REFGET_B,
+        provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
+    )
 
     assert (
         derive_sequence_bindings(
@@ -155,8 +181,20 @@ def test_unique_binding_target_outside_scope_remains_unbound() -> None:
 def test_conflicting_local_identity_does_not_create_binding() -> None:
     context = build_reference_context(_request(), _snapshot())
     caps = (
-        SequenceIdentityCapability(CapabilityId("a"), _CONSUMER, "1", Md5Digest("0" * 32)),
-        SequenceIdentityCapability(CapabilityId("b"), _CONSUMER, "1", Md5Digest("1" * 32)),
+        SequenceIdentityCapability(
+            CapabilityId("a"),
+            _CONSUMER,
+            "1",
+            Md5Digest("0" * 32),
+            provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
+        ),
+        SequenceIdentityCapability(
+            CapabilityId("b"),
+            _CONSUMER,
+            "1",
+            Md5Digest("1" * 32),
+            provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
+        ),
     )
     assert (
         derive_sequence_bindings(
@@ -189,7 +227,11 @@ def test_binding_rejects_duplicate_resource_contracts() -> None:
 def test_identity_schemes_do_not_cross_bind() -> None:
     context = build_reference_context(_request(), _snapshot())
     local = SequenceIdentityCapability(
-        CapabilityId("local-md5"), _CONSUMER, "1", Md5Digest("0" * 32)
+        CapabilityId("local-md5"),
+        _CONSUMER,
+        "1",
+        Md5Digest("0" * 32),
+        provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
     )
     assert (
         derive_sequence_bindings(
@@ -205,7 +247,11 @@ def test_identity_schemes_do_not_cross_bind() -> None:
 
 def test_binding_is_deterministic_across_capability_input_order() -> None:
     refget_capability = SequenceIdentityCapability(
-        CapabilityId("refget"), _CONSUMER, "1", _REFGET_A
+        CapabilityId("refget"),
+        _CONSUMER,
+        "1",
+        _REFGET_A,
+        provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
     )
     md5 = Md5Digest("0" * 32)
     snapshot = SequenceCollectionSnapshot(
@@ -214,7 +260,13 @@ def test_binding_is_deterministic_across_capability_input_order() -> None:
         sequences=(SnapshotSequence("chr1", 10, 0, _REFGET_A, md5),),
     )
     context = build_reference_context(_request(), snapshot)
-    md5_capability = SequenceIdentityCapability(CapabilityId("md5"), _CONSUMER, "1", md5)
+    md5_capability = SequenceIdentityCapability(
+        CapabilityId("md5"),
+        _CONSUMER,
+        "1",
+        md5,
+        provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
+    )
 
     first = derive_sequence_bindings(
         context,
@@ -231,3 +283,55 @@ def test_binding_is_deterministic_across_capability_input_order() -> None:
         ),
     )
     assert first == second
+
+
+def test_reference_context_rejects_declared_identity_as_anchor_capability() -> None:
+    context = build_reference_context(_request(), _snapshot())
+    declared = SequenceIdentityCapability(
+        CapabilityId("declared"),
+        _REFERENCE,
+        "chr1",
+        _REFGET_A,
+        provenance=SequenceIdentityProvenance.DECLARED_METADATA,
+    )
+
+    with pytest.raises(ValueError, match="must be content-derived"):
+        replace(context, anchor_capabilities=(*context.anchor_capabilities, declared))
+
+
+def test_reference_context_rejects_forged_or_duplicate_anchor_identity() -> None:
+    context = build_reference_context(_request(), _snapshot())
+    forged = SequenceIdentityCapability(
+        CapabilityId("forged"),
+        _REFERENCE,
+        "chr1",
+        RefgetSequenceId("SQ." + "C" * 32),
+        provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
+    )
+
+    with pytest.raises(ValueError, match="must match the selected anchor snapshot"):
+        replace(context, anchor_capabilities=(*context.anchor_capabilities, forged))
+
+    existing = next(
+        capability
+        for capability in context.anchor_capabilities
+        if isinstance(capability, SequenceIdentityCapability)
+    )
+    duplicate = replace(existing, id=CapabilityId("duplicate"))
+    with pytest.raises(ValueError, match="must be unique per sequence/value"):
+        replace(context, anchor_capabilities=(*context.anchor_capabilities, duplicate))
+
+
+def test_reference_context_rejects_missing_anchor_identity() -> None:
+    context = build_reference_context(_request(), _snapshot())
+    identity = next(
+        capability
+        for capability in context.anchor_capabilities
+        if isinstance(capability, SequenceIdentityCapability)
+    )
+    incomplete_capabilities = tuple(
+        capability for capability in context.anchor_capabilities if capability.id != identity.id
+    )
+
+    with pytest.raises(ValueError, match="must match the selected anchor snapshot"):
+        replace(context, anchor_capabilities=incomplete_capabilities)

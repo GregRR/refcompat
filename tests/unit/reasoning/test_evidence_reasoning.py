@@ -18,6 +18,7 @@ from refcompat.model.contracts import (
     RequirementLevel,
     RequirementOrigin,
     SequenceIdentityCapability,
+    SequenceIdentityProvenance,
     SequenceIdentityRequirement,
     SequenceLengthCapability,
     SequenceLengthRequirement,
@@ -84,6 +85,7 @@ def test_identity_match_is_tier_a_support() -> None:
         sequence_name="chr1",
         identity=_MD5_A,
         source_observation_ids=(ObservationId("obs-md5-support"),),
+        provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
     )
     constraint = build_constraint(ConstraintId("identity-support"), requirement, (capability,))
     evaluation = evaluate_constraint(constraint)
@@ -112,6 +114,7 @@ def test_identity_mismatch_is_tier_a_contradiction() -> None:
         sequence_name="chr1",
         identity=_MD5_B,
         source_observation_ids=(ObservationId("obs-md5"),),
+        provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
     )
     constraint = build_constraint(ConstraintId("identity"), requirement, (capability,))
     evaluation = evaluate_constraint(constraint)
@@ -214,6 +217,7 @@ def test_many_weak_supports_do_not_hide_tier_a_contradiction() -> None:
         resource_id=_ANCHOR,
         sequence_name="chrX",
         identity=_MD5_B,
+        provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
     )
     identity_constraint = build_constraint(
         ConstraintId("identity"), identity_requirement, (identity_capability,)

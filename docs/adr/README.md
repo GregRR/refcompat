@@ -18,5 +18,6 @@ ADRs record stable decisions that should not be silently changed during implemen
 | [0011](0011-python-packaging-and-quality-tooling.md) | Superseded: original Python >=3.12 packaging/tooling baseline |
 | [0012](0012-minimal-runtime-dependencies-and-format-parsing.md) | Keep runtime dependencies minimal and add parsers by milestone |
 | [0013](0013-python-310-compatibility-floor.md) | Broaden package compatibility to Python >=3.10 while recommending 3.11+ for new environments |
+| [0014](0014-identity-capability-provenance.md) | Distinguish content-derived sequence identity from declared metadata claims |
 
 ADRs use the statuses `Proposed`, `Accepted`, `Superseded`, or `Rejected`. The initial records are `Accepted` design decisions; implementation may reveal a need to supersede them, but changes should be explicit and justified.

@@ -12,7 +12,12 @@ from __future__ import annotations
 import hashlib
 import json
 
-from refcompat.model.contracts import CapabilityId, ResourceContract, SequenceIdentityCapability
+from refcompat.model.contracts import (
+    CapabilityId,
+    ResourceContract,
+    SequenceIdentityCapability,
+    SequenceIdentityProvenance,
+)
 from refcompat.model.identity import Md5Digest, SnapshotSequence
 from refcompat.model.reference_context import ReferenceContext, SequenceBinding
 from refcompat.model.vcf import VcfContextSnapshot
@@ -71,6 +76,7 @@ def vcf_binding_identity_capabilities(
                 resource_id=snapshot.resource_id,
                 sequence_name=contig.name,
                 identity=digest,
+                provenance=SequenceIdentityProvenance.DECLARED_METADATA,
             )
         )
 

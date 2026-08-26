@@ -13,6 +13,8 @@ from refcompat.model.constraints import (
 from refcompat.model.contracts import (
     ReferenceBaseRequirement,
     ResourceContract,
+    SequenceIdentityCapability,
+    SequenceIdentityProvenance,
     SequenceIdentityRequirement,
     SequenceLengthRequirement,
     SequencePresenceRequirement,
@@ -664,6 +666,39 @@ def test_unmatched_cross_name_md5_requirement_stays_unresolved() -> None:
     assert projection.evidence.evidence == ()
 
 
+def test_cross_name_md5_length_contradiction_stays_explicitly_unresolved() -> None:
+    context = _binding_context()
+    snapshot = VcfContextSnapshot(
+        _VCF,
+        VcfHeaderData(
+            "VCFv4.5",
+            contigs=(VcfContigDeclaration("1", length=999, md5=_MD5_ACGT.value),),
+        ),
+        record_count=1,
+        chrom_usage=(VcfChromUsage("1", 1),),
+    )
+    unresolved = VcfRefRecordCheck(
+        VcfRefRecord(_VCF, 0, "1", 1, "A"),
+        VcfRefCheckState.UNRESOLVED_SEQUENCE,
+    )
+    validation = _validation(
+        VcfRefSequenceSummary("1", 1, unresolved_sequence_count=1),
+        matches=0,
+        unresolved=(unresolved,),
+    )
+
+    projection = project_vcf_contract(snapshot, validation, context)
+
+    assert projection.sequence_bindings == ()
+    assert tuple(item.state for item in projection.evaluations) == (
+        ConstraintState.UNRESOLVED,
+        ConstraintState.UNRESOLVED,
+        ConstraintState.UNRESOLVED,
+        ConstraintState.UNRESOLVED,
+    )
+    assert not projection.evidence.has_conclusive_contradiction
+
+
 def test_conflicting_same_name_md5_blocks_false_compatible_bundle() -> None:
     context = _binding_context()
     conflicting_md5 = Md5Digest("0" * 32)
@@ -823,6 +858,41 @@ def test_projection_model_rejects_binding_citing_wrong_local_identity_capability
 
     with pytest.raises(ValueError, match="local VCF identity capability"):
         replace(projection, sequence_bindings=(crosswired,))
+
+
+def test_projection_model_rejects_binding_source_without_declared_provenance() -> None:
+    context = _binding_context()
+    snapshot = VcfContextSnapshot(
+        _VCF,
+        VcfHeaderData(
+            "VCFv4.5",
+            contigs=(VcfContigDeclaration("1", length=4, md5=_MD5_ACGT.value),),
+        ),
+        record_count=1,
+        chrom_usage=(VcfChromUsage("1", 1),),
+    )
+    bindings = derive_vcf_sequence_bindings(snapshot, context)
+    validation = evaluate_vcf_ref_records(
+        vcf_resource_id=_VCF,
+        fasta_resource_id=_FASTA,
+        records=(VcfRefRecord(_VCF, 0, "1", 1, "A"),),
+        reference=_Reference(),
+        sequence_bindings=bindings,
+    )
+    projection = project_vcf_contract(snapshot, validation, context)
+    identity_capability = projection.contract.capabilities[0]
+    assert isinstance(identity_capability, SequenceIdentityCapability)
+    crosswired_capability = replace(
+        identity_capability,
+        provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
+    )
+    crosswired_contract = replace(
+        projection.contract,
+        capabilities=(crosswired_capability,),
+    )
+
+    with pytest.raises(ValueError, match="local VCF identity capability"):
+        replace(projection, contract=crosswired_contract)
 
 
 def test_unverified_cross_name_case_stays_unresolved_through_bundle() -> None:

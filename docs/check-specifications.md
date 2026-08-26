@@ -449,9 +449,10 @@ IDs for bindings actually used.
 `project_vcf_contract()` independently derives the expected bindings and rejects a stale validation
 that did not use them. Bound presence requirements use the generic `VERIFIED_ALIAS` path, while
 declared-MD5 identity requirements use the generic `VERIFIED_SEQUENCE_IDENTITY`/Tier-A identity
-path. The VCF contract retains the accepted peer identity capability needed for generic
-whole-bundle `SequenceBinding` derivation; peer resources still do not supply candidate reference
-facts or vote on the FASTA anchor.
+path. The VCF contract retains the accepted peer identity capability with
+`DECLARED_METADATA` provenance for generic whole-bundle `SequenceBinding` derivation. Declared
+identity capabilities cannot satisfy identity requirements as candidate evidence; peer resources
+still do not supply candidate reference facts or vote on the FASTA anchor.
 
 No string alias guessing, MD5/refget cross-comparison, assembly-name inference, or data rewriting is
 introduced.

@@ -12,6 +12,7 @@ from refcompat.model.contracts import (
     CapabilityId,
     ResourceContract,
     SequenceIdentityCapability,
+    SequenceIdentityProvenance,
     SequenceIdentityValue,
     SequenceLengthCapability,
     SequenceOrderCapability,
@@ -74,9 +75,11 @@ def derive_sequence_bindings(
 ) -> tuple[SequenceBinding, ...]:
     """Derive unique local-name bindings from shared comparable content identity.
 
-    Peer resources never vote on the anchor. A binding exists only when the
-    resource-local identity evidence resolves to exactly one sequence in the
-    complete FASTA anchor snapshot and that target is inside the selected
+    Peer resources never vote on the anchor. Resource-local identity evidence
+    may be content-derived or an explicitly marked metadata declaration, but the
+    anchor side is always reconstructed from content-derived FASTA identities. A
+    binding exists only when the local identity resolves to exactly one sequence
+    in the complete FASTA anchor snapshot and that target is inside the selected
     evaluation scope. Anchor-sequence scope may hide usable targets, but it must
     never manufacture uniqueness by hiding an otherwise ambiguous duplicate.
     Conflicting local identities remain unbound.
@@ -245,6 +248,7 @@ def _identity_capabilities_for_sequence(
                 resource_id=resource_id,
                 sequence_name=sequence.local_name,
                 identity=identity,
+                provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
             )
         )
     return tuple(capabilities)

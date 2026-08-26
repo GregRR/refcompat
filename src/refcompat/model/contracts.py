@@ -21,6 +21,13 @@ CapabilityId = NewType("CapabilityId", str)
 SequenceIdentityValue: TypeAlias = RefgetSequenceId | Md5Digest
 
 
+class SequenceIdentityProvenance(StrEnum):
+    """How an identity value became available to the evaluator."""
+
+    CONTENT_DERIVED = "content_derived"
+    DECLARED_METADATA = "declared_metadata"
+
+
 class RequirementOrigin(StrEnum):
     """Source of a compatibility requirement."""
 
@@ -141,12 +148,18 @@ class SequenceLengthCapability:
 
 @dataclass(frozen=True, slots=True)
 class SequenceIdentityCapability:
-    """Content-derived sequence identity available to the evaluator."""
+    """Sequence identity value with explicit derivation provenance.
+
+    Only ``CONTENT_DERIVED`` identity capabilities may satisfy sequence-identity
+    requirements. ``DECLARED_METADATA`` values are claims that may support
+    conservative sequence binding but must not become reference authority.
+    """
 
     id: CapabilityId
     resource_id: ResourceId
     sequence_name: str
     identity: SequenceIdentityValue
+    provenance: SequenceIdentityProvenance
     source_observation_ids: tuple[ObservationId, ...] = ()
 
     def __post_init__(self) -> None:

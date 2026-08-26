@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from inspect import Parameter, signature
 
 import pytest
 
@@ -13,6 +14,7 @@ from refcompat.model.contracts import (
     RequirementOrigin,
     ResourceContract,
     SequenceIdentityCapability,
+    SequenceIdentityProvenance,
     SequenceIdentityRequirement,
     SequenceLengthCapability,
     SequenceLengthRequirement,
@@ -80,10 +82,36 @@ def test_identity_types_remain_algorithm_specific() -> None:
         resource_id=_RESOURCE,
         sequence_name="chr1",
         identity=_REFGET,
+        provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
     )
 
     assert isinstance(md5_requirement.identity, Md5Digest)
     assert isinstance(refget_capability.identity, RefgetSequenceId)
+
+
+def test_identity_capability_requires_explicit_provenance() -> None:
+    provenance = signature(SequenceIdentityCapability).parameters["provenance"]
+    assert provenance.default is Parameter.empty
+
+
+def test_identity_capability_tracks_claim_vs_content_provenance() -> None:
+    derived = SequenceIdentityCapability(
+        id=CapabilityId("derived"),
+        resource_id=_RESOURCE,
+        sequence_name="chr1",
+        identity=_MD5,
+        provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
+    )
+    declared = SequenceIdentityCapability(
+        id=CapabilityId("declared"),
+        resource_id=_RESOURCE,
+        sequence_name="chr1",
+        identity=_MD5,
+        provenance=SequenceIdentityProvenance.DECLARED_METADATA,
+    )
+
+    assert derived.provenance is SequenceIdentityProvenance.CONTENT_DERIVED
+    assert declared.provenance is SequenceIdentityProvenance.DECLARED_METADATA
 
 
 @pytest.mark.parametrize(

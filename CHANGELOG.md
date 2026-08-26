@@ -6,6 +6,8 @@ The project is currently pre-release and still establishing its design and repos
 
 ## Unreleased
 
+- Distinguish content-derived sequence identities from declared metadata claims, require explicit identity provenance, reject declared identities as candidate reference evidence, harden FASTA anchor identity invariants, and pin conservative VCF binding edge cases before BAM/CRAM M5 work.
+
 - Add mandatory sequence-length requirements for declared `##contig` lengths on used VCF contigs, so direct same-name length contradictions cannot be hidden by otherwise matching REF records.
 
 - Add VCF verified sequence-name binding from uniquely matched `##contig` MD5 identity, mandatory identity requirements for valid used-contig MD5 declarations, binding-aware exhaustive REF revalidation, stale-validation rejection, and generic whole-bundle reuse without string alias guessing.

@@ -28,6 +28,7 @@ from refcompat.model import (
     SatisfactionMode,
     SequenceCollectionSnapshot,
     SequenceIdentityCapability,
+    SequenceIdentityProvenance,
     SequenceIdentityRequirement,
     SequenceLengthCapability,
     SequenceLengthRequirement,
@@ -113,7 +114,15 @@ def test_cross_name_binding_satisfies_typed_requirements() -> None:
                 RequirementId("identity"), _CONSUMER, _ORIGIN, _LEVEL, "1", _A
             ),
         ),
-        capabilities=(SequenceIdentityCapability(CapabilityId("local"), _CONSUMER, "1", _A),),
+        capabilities=(
+            SequenceIdentityCapability(
+                CapabilityId("local"),
+                _CONSUMER,
+                "1",
+                _A,
+                provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
+            ),
+        ),
     )
     result = reason_bundle(_request(), _snapshot(), (ResourceContract(_REFERENCE), consumer))
     assert len(result.sequence_bindings) == 1
@@ -174,7 +183,15 @@ def test_verified_binding_overrides_misleading_same_string_name() -> None:
                 RequirementId("length"), _CONSUMER, _ORIGIN, _LEVEL, "chr1", 20
             ),
         ),
-        capabilities=(SequenceIdentityCapability(CapabilityId("local"), _CONSUMER, "chr1", _B),),
+        capabilities=(
+            SequenceIdentityCapability(
+                CapabilityId("local"),
+                _CONSUMER,
+                "chr1",
+                _B,
+                provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
+            ),
+        ),
     )
     result = reason_bundle(_request(), _snapshot(), (ResourceContract(_REFERENCE), consumer))
     assert result.sequence_bindings[0].anchor_sequence_name == "chr2"
@@ -193,8 +210,20 @@ def test_bindings_project_sequence_order() -> None:
             ),
         ),
         capabilities=(
-            SequenceIdentityCapability(CapabilityId("one"), _CONSUMER, "1", _A),
-            SequenceIdentityCapability(CapabilityId("two"), _CONSUMER, "2", _B),
+            SequenceIdentityCapability(
+                CapabilityId("one"),
+                _CONSUMER,
+                "1",
+                _A,
+                provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
+            ),
+            SequenceIdentityCapability(
+                CapabilityId("two"),
+                _CONSUMER,
+                "2",
+                _B,
+                provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
+            ),
         ),
     )
     result = reason_bundle(_request(), _snapshot(), (ResourceContract(_REFERENCE), consumer))
@@ -214,7 +243,15 @@ def test_duplicate_anchor_content_leaves_cross_name_requirement_unresolved() -> 
         requirements=(
             SequenceLengthRequirement(RequirementId("length"), _CONSUMER, _ORIGIN, _LEVEL, "1", 10),
         ),
-        capabilities=(SequenceIdentityCapability(CapabilityId("local"), _CONSUMER, "1", _A),),
+        capabilities=(
+            SequenceIdentityCapability(
+                CapabilityId("local"),
+                _CONSUMER,
+                "1",
+                _A,
+                provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
+            ),
+        ),
     )
     result = reason_bundle(_request(), snapshot, (ResourceContract(_REFERENCE), consumer))
     assert result.sequence_bindings == ()
@@ -320,8 +357,20 @@ def test_constraint_carries_only_bindings_relevant_to_its_requirement() -> None:
             SequenceLengthRequirement(RequirementId("length"), _CONSUMER, _ORIGIN, _LEVEL, "1", 10),
         ),
         capabilities=(
-            SequenceIdentityCapability(CapabilityId("one"), _CONSUMER, "1", _A),
-            SequenceIdentityCapability(CapabilityId("two"), _CONSUMER, "2", _B),
+            SequenceIdentityCapability(
+                CapabilityId("one"),
+                _CONSUMER,
+                "1",
+                _A,
+                provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
+            ),
+            SequenceIdentityCapability(
+                CapabilityId("two"),
+                _CONSUMER,
+                "2",
+                _B,
+                provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
+            ),
         ),
     )
     result = reason_bundle(_request(), _snapshot(), (ResourceContract(_REFERENCE), consumer))
@@ -356,7 +405,15 @@ def test_same_name_identity_binding_is_not_attached_when_projection_is_exact() -
                 RequirementId("length"), _CONSUMER, _ORIGIN, _LEVEL, "chr1", 10
             ),
         ),
-        capabilities=(SequenceIdentityCapability(CapabilityId("identity"), _CONSUMER, "chr1", _A),),
+        capabilities=(
+            SequenceIdentityCapability(
+                CapabilityId("identity"),
+                _CONSUMER,
+                "chr1",
+                _A,
+                provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
+            ),
+        ),
     )
     result = reason_bundle(_request(), _snapshot(), (ResourceContract(_REFERENCE), consumer))
     assert len(result.sequence_bindings) == 1

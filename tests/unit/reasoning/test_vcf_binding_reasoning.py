@@ -13,6 +13,7 @@ from refcompat.model import (
     ResourceId,
     ResourceKind,
     SequenceCollectionSnapshot,
+    SequenceIdentityProvenance,
     SnapshotSequence,
     VcfChromUsage,
     VcfContextSnapshot,
@@ -65,8 +66,11 @@ def test_unique_declared_md5_derives_cross_name_binding() -> None:
     context = _context(SnapshotSequence("chr1", 4, 0, md5=_MD5_ACGT))
     snapshot = _vcf(VcfContigDeclaration("1", length=4, md5=_MD5_ACGT.value))
 
+    capabilities = vcf_binding_identity_capabilities(snapshot, context)
     bindings = derive_vcf_sequence_bindings(snapshot, context)
 
+    assert len(capabilities) == 1
+    assert capabilities[0].provenance is SequenceIdentityProvenance.DECLARED_METADATA
     assert len(bindings) == 1
     assert bindings[0].local_sequence_name == "1"
     assert bindings[0].anchor_sequence_name == "chr1"
@@ -169,3 +173,25 @@ def test_verified_identity_can_override_misleading_same_string_name() -> None:
     assert bindings[0].local_sequence_name == "chr1"
     assert bindings[0].anchor_sequence_name == "chr2"
     assert bindings[0].identity_values == (_MD5_TTTT,)
+
+
+def test_two_local_names_can_bind_to_one_unique_anchor_sequence() -> None:
+    context = _context(SnapshotSequence("chr1", 4, 0, md5=_MD5_ACGT))
+    snapshot = VcfContextSnapshot(
+        _VCF,
+        VcfHeaderData(
+            "VCFv4.5",
+            contigs=(
+                VcfContigDeclaration("1", length=4, md5=_MD5_ACGT.value),
+                VcfContigDeclaration("chrOne", length=4, md5=_MD5_ACGT.value),
+            ),
+        ),
+        record_count=2,
+        chrom_usage=(VcfChromUsage("1", 1), VcfChromUsage("chrOne", 1)),
+    )
+
+    bindings = derive_vcf_sequence_bindings(snapshot, context)
+
+    assert tuple(
+        (binding.local_sequence_name, binding.anchor_sequence_name) for binding in bindings
+    ) == (("1", "chr1"), ("chrOne", "chr1"))

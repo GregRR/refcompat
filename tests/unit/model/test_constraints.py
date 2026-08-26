@@ -18,6 +18,7 @@ from refcompat.model.contracts import (
     RequirementLevel,
     RequirementOrigin,
     SequenceIdentityCapability,
+    SequenceIdentityProvenance,
     SequenceIdentityRequirement,
     SequenceLengthCapability,
     SequencePresenceCapability,
@@ -144,6 +145,7 @@ def test_constraint_rejects_identity_scheme_mismatch() -> None:
         resource_id=_RESOURCE,
         sequence_name="chr1",
         identity=Md5Digest("f1f8f4bf413b16ad135722aa4591043e"),
+        provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
     )
 
     with pytest.raises(ValueError, match="capabilities must match"):
@@ -151,6 +153,32 @@ def test_constraint_rejects_identity_scheme_mismatch() -> None:
             id=ConstraintId("scheme-mismatch"),
             requirement=requirement,
             candidate_capabilities=(md5,),
+            rule=ConstraintRule.SEQUENCE_IDENTITY,
+        )
+
+
+def test_constraint_rejects_declared_identity_as_candidate_evidence() -> None:
+    requirement = SequenceIdentityRequirement(
+        id=RequirementId("req-identity-declared"),
+        resource_id=_RESOURCE,
+        origin=RequirementOrigin.CORE_FORMAT,
+        level=RequirementLevel.MANDATORY,
+        sequence_name="chr1",
+        identity=Md5Digest("f1f8f4bf413b16ad135722aa4591043e"),
+    )
+    declared = SequenceIdentityCapability(
+        id=CapabilityId("declared-md5"),
+        resource_id=_RESOURCE,
+        sequence_name="chr1",
+        identity=requirement.identity,
+        provenance=SequenceIdentityProvenance.DECLARED_METADATA,
+    )
+
+    with pytest.raises(ValueError, match="capabilities must match"):
+        CompatibilityConstraint(
+            id=ConstraintId("declared-identity-candidate"),
+            requirement=requirement,
+            candidate_capabilities=(declared,),
             rule=ConstraintRule.SEQUENCE_IDENTITY,
         )
 

@@ -14,6 +14,7 @@ from refcompat.model.contracts import (
     RequirementLevel,
     RequirementOrigin,
     SequenceIdentityCapability,
+    SequenceIdentityProvenance,
     SequenceIdentityRequirement,
     SequenceLengthCapability,
     SequenceLengthRequirement,
@@ -169,16 +170,32 @@ def test_identity_requires_same_identity_scheme_and_local_name() -> None:
         identity=_MD5_A,
     )
     matching = SequenceIdentityCapability(
-        id=CapabilityId("matching"), resource_id=_ANCHOR, sequence_name="chr1", identity=_MD5_A
+        id=CapabilityId("matching"),
+        resource_id=_ANCHOR,
+        sequence_name="chr1",
+        identity=_MD5_A,
+        provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
     )
     wrong_md5 = SequenceIdentityCapability(
-        id=CapabilityId("wrong"), resource_id=_ANCHOR, sequence_name="chr1", identity=_MD5_B
+        id=CapabilityId("wrong"),
+        resource_id=_ANCHOR,
+        sequence_name="chr1",
+        identity=_MD5_B,
+        provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
     )
     refget = SequenceIdentityCapability(
-        id=CapabilityId("refget"), resource_id=_ANCHOR, sequence_name="chr1", identity=_REFGET
+        id=CapabilityId("refget"),
+        resource_id=_ANCHOR,
+        sequence_name="chr1",
+        identity=_REFGET,
+        provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
     )
     renamed = SequenceIdentityCapability(
-        id=CapabilityId("renamed"), resource_id=_ANCHOR, sequence_name="1", identity=_MD5_A
+        id=CapabilityId("renamed"),
+        resource_id=_ANCHOR,
+        sequence_name="1",
+        identity=_MD5_A,
+        provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
     )
 
     satisfied = evaluate_constraint(build_constraint(ConstraintId("ok"), requirement, (matching,)))

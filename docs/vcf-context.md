@@ -34,7 +34,7 @@ VcfContextSnapshot
 
 Convenience projections expose declared names, used names, used-but-undeclared names, and declared-but-unused names. These remain observations; no projection is itself a compatibility verdict.
 
-The `md5` value on a `##contig` line is intentionally stored as declared text rather than promoted directly to RefCompat's verified `Md5Digest` identity type. RCHECK-050F now retains syntactically valid MD5 declarations on used contigs as sequence-identity requirements and may additionally use a declaration for conservative cross-name binding when it uniquely identifies an eligible FASTA sequence. The declaration still does not prove REF compatibility by itself.
+The `md5` value on a `##contig` line is intentionally stored first as declared text. RCHECK-050F parses syntactically valid values on used contigs into sequence-identity requirements and, when the binding checks pass, into identity capabilities explicitly marked `DECLARED_METADATA`. They are never marked `CONTENT_DERIVED`. A declaration may support conservative cross-name binding when it uniquely identifies an eligible FASTA sequence, but it still does not prove REF compatibility by itself.
 
 ## Parser boundary
 

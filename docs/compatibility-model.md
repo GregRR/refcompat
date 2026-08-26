@@ -184,7 +184,7 @@ GTF local name 1     -> SQ.ABC...
 
 A verified alias relationship may then be derived from common identity. The first implementation requires comparable content identity to resolve one local name to exactly one selected anchor sequence. Duplicate anchor sequences with the same content identity remain ambiguous rather than being broken by string resemblance. Conflicting local identity facts likewise remain unbound. The architecture prefers the question “what sequence does this name denote?” over a global string-replacement table.
 
-For VCF resources, a syntactically valid `##contig` MD5 declaration may be retained only as binding evidence after it uniquely identifies a sequence in the complete FASTA anchor and passes the VCF binding checks. That declared identity can establish which anchor sequence a VCF label denotes, but it is not direct REF-compatibility proof; exhaustive REF comparison remains authoritative for base agreement.
+For VCF resources, a syntactically valid `##contig` MD5 declaration may be retained as a `DECLARED_METADATA` identity capability only for binding evidence after it uniquely identifies a sequence in the complete FASTA anchor and passes the VCF binding checks. FASTA anchor identities are `CONTENT_DERIVED`; only those derived capabilities may satisfy identity requirements or act as candidate reference authority. The declared identity can establish which anchor sequence a VCF label denotes, but it is not direct REF-compatibility proof; exhaustive REF comparison remains authoritative for base agreement.
 
 For an actually used VCF contig, a declared `##contig` length is also a mandatory
 structural requirement. An exact-name or verified-bound FASTA sequence with a

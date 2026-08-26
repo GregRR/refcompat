@@ -225,6 +225,8 @@ Reasoner-produced candidate/established shared reference context. In v0.1 the ex
 
 Evidence-backed mapping from a resource-local name to one anchor-local sequence. The first implementation derives a binding only from comparable content identity that resolves uniquely across the complete FASTA anchor snapshot; explicit sequence scope may hide a unique target but must never manufacture uniqueness by hiding duplicate-content alternatives. Conflicting local identities remain unbound. Alias relationships are derived from bindings rather than blind string substitution.
 
+Sequence identity capabilities carry required explicit provenance. `CONTENT_DERIVED` identities may satisfy sequence-identity requirements and may appear in the FASTA anchor context; `DECLARED_METADATA` identities are claims that may support conservative binding but cannot become candidate reference authority. `ReferenceContext` independently verifies that its anchor identity capabilities exactly match the selected FASTA snapshot. This distinction applies to VCF `##contig md5` now and is the required boundary for BAM/CRAM `@SQ M5` in Milestone 4.
+
 Later hardening: if repeated binding derivation becomes performance-sensitive, consider caching or reusing full-snapshot anchor identity capabilities. Any such optimization must preserve complete-FASTA uniqueness and ambiguity semantics.
 
 ### 5.9 `CoordinateContext`

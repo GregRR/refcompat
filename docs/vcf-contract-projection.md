@@ -40,9 +40,10 @@ cannot be compared remains unresolved. Invalid and unused declarations do not
 create identity requirements in this slice.
 
 Context-accepted `##contig` MD5 identity may additionally appear as a VCF peer
-capability only when it uniquely establishes a safe cross-name binding as
-defined in [`vcf-sequence-binding.md`](vcf-sequence-binding.md). That capability
-is binding evidence, not direct REF compatibility evidence.
+capability with `DECLARED_METADATA` provenance only when it uniquely establishes
+a safe cross-name binding as defined in
+[`vcf-sequence-binding.md`](vcf-sequence-binding.md). That capability is binding
+evidence only and cannot satisfy an identity requirement as candidate evidence.
 
 The complete VCF record set becomes one mandatory `ReferenceBaseRequirement`
 that explicitly names the selected FASTA anchor and carries its exhaustive

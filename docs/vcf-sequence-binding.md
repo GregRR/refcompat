@@ -13,7 +13,7 @@ VCF 4.5 reserves `md5` on `##contig` as the MD5 checksum of the referenced
 sequence. RefCompat may use that declaration as **binding evidence**, not as
 reference compatibility proof.
 
-A used VCF contig can contribute a binding identity capability only when:
+A used VCF contig can contribute a `DECLARED_METADATA` binding identity capability only when:
 
 - every sequence in the complete FASTA anchor snapshot has an MD5 identity available, so an unobserved duplicate target cannot hide behind missing anchor identity;
 - its `md5` is syntactically valid;
@@ -29,7 +29,10 @@ applied. Scope therefore cannot manufacture certainty by hiding a duplicate
 sequence with identical content.
 
 Invalid MD5, absent MD5, duplicate-content targets, out-of-scope targets, and
-length contradictions produce no binding. Familiar-looking strings never
+length contradictions produce no binding. In particular, a cross-name header
+whose declared MD5 points at one anchor sequence while its declared length
+contradicts that target remains unresolved rather than using either field to
+manufacture a binding or hard conflict. Familiar-looking strings never
 substitute for identity evidence.
 
 Independently of whether an MD5 binding can be established, every **used**
@@ -48,10 +51,11 @@ cross-name declaration that cannot be bound remains unresolved rather than
 inventing an alias. Invalid or unused MD5 declarations create no identity
 requirement in this slice.
 
-The VCF contract retains the context-accepted identity capability needed to
-establish a safe cross-name binding separately from that requirement. Peer
-capabilities still do not become reference authority; whole-bundle candidate
-reference facts continue to come from the selected FASTA context.
+The VCF contract retains the context-accepted `DECLARED_METADATA` identity
+capability needed to establish a safe cross-name binding separately from that
+requirement. Such a capability cannot satisfy an identity requirement as
+candidate evidence; whole-bundle candidate reference facts continue to come
+from `CONTENT_DERIVED` identities in the selected FASTA context.
 
 ## Binding-aware REF comparison
 

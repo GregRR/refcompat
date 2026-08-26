@@ -12,7 +12,13 @@ from dataclasses import dataclass
 from typing import NewType
 
 from refcompat._compat import StrEnum
-from refcompat.model.contracts import Capability, CapabilityId, SequenceIdentityValue
+from refcompat.model.contracts import (
+    Capability,
+    CapabilityId,
+    SequenceIdentityCapability,
+    SequenceIdentityProvenance,
+    SequenceIdentityValue,
+)
 from refcompat.model.evaluation import EvaluationScope
 from refcompat.model.identity import (
     CollectionCompleteness,
@@ -92,6 +98,36 @@ class ReferenceContext:
             for capability in self.anchor_capabilities
         ):
             raise ValueError("reference-context capabilities must belong to the FASTA anchor")
+
+        identity_capabilities = tuple(
+            capability
+            for capability in self.anchor_capabilities
+            if isinstance(capability, SequenceIdentityCapability)
+        )
+        if any(
+            capability.provenance is not SequenceIdentityProvenance.CONTENT_DERIVED
+            for capability in identity_capabilities
+        ):
+            raise ValueError(
+                "reference-context identity capabilities must be content-derived from the anchor"
+            )
+        expected_identities: set[tuple[str, SequenceIdentityValue]] = {
+            (sequence.local_name, identity)
+            for sequence in self.sequences
+            for identity in (sequence.refget_id, sequence.md5)
+            if identity is not None
+        }
+        actual_identities: set[tuple[str, SequenceIdentityValue]] = {
+            (capability.sequence_name, capability.identity) for capability in identity_capabilities
+        }
+        if len(identity_capabilities) != len(actual_identities):
+            raise ValueError(
+                "reference-context anchor identity capabilities must be unique per sequence/value"
+            )
+        if actual_identities != expected_identities:
+            raise ValueError(
+                "reference-context identity capabilities must match the selected anchor snapshot"
+            )
 
 
 @dataclass(frozen=True, slots=True)

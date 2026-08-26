@@ -36,7 +36,13 @@ turning them into contradictions.
 `SequenceBinding` maps a resource-local sequence name to one anchor-local
 sequence only when comparable content identity establishes the relationship.
 The current derivation supports refget sequence IDs and M5/MD5 identities
-without cross-algorithm comparison.
+without cross-algorithm comparison. Identity capabilities require explicit
+provenance distinguishing `CONTENT_DERIVED` values from `DECLARED_METADATA`
+claims. Only content-derived identities may satisfy sequence-identity
+requirements or populate authoritative anchor identity capabilities; declared
+metadata may participate only in conservative binding derivation.
+`ReferenceContext` independently verifies that its anchor identity capability
+set exactly matches the selected FASTA snapshot.
 
 A binding records:
 

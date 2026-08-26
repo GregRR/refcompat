@@ -14,6 +14,7 @@ from refcompat.model.contracts import (
     Requirement,
     RequirementId,
     SequenceIdentityCapability,
+    SequenceIdentityProvenance,
     SequenceIdentityRequirement,
     SequenceLengthCapability,
     SequenceLengthRequirement,
@@ -166,6 +167,8 @@ def capability_is_comparable(requirement: Requirement, capability: Capability) -
         return isinstance(capability, SequenceLengthCapability)
     if isinstance(requirement, SequenceIdentityRequirement):
         if not isinstance(capability, SequenceIdentityCapability):
+            return False
+        if capability.provenance is not SequenceIdentityProvenance.CONTENT_DERIVED:
             return False
         if isinstance(requirement.identity, RefgetSequenceId):
             return isinstance(capability.identity, RefgetSequenceId)
