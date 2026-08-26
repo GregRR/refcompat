@@ -3,6 +3,11 @@
 External library types must not leak into this layer.
 """
 
+from refcompat.model.alignment import (
+    AlignmentHeaderData,
+    AlignmentHeaderSnapshot,
+    AlignmentProgramRecord,
+)
 from refcompat.model.bundle import BundleReasoningResult
 from refcompat.model.conflict_core import (
     ConflictCore,
@@ -135,6 +140,9 @@ from refcompat.model.vcf_ref_pattern import (
 from refcompat.model.verdict import CompatibilityVerdict, VerdictAggregation
 
 __all__ = [
+    "AlignmentHeaderData",
+    "AlignmentHeaderSnapshot",
+    "AlignmentProgramRecord",
     "ArtifactDigest",
     "ArtifactDigestAlgorithm",
     "ArtifactIdentity",

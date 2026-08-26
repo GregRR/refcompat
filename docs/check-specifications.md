@@ -234,6 +234,8 @@ RefCompat does not automatically rename dictionary sequences, rewrite `@SQ` meta
 
 ## RCHECK-040 — BAM/CRAM ↔ FASTA reference context
 
+**Implementation status:** header observation is implemented for BAM and CRAM; contract projection, binding, relationship reasoning, and CRAM reference-dependent behavior remain later Milestone 4 slices.
+
 ### Purpose
 
 Determine what reference environment the alignment header declares and whether its sequence requirements reconcile with the FASTA anchor.
@@ -244,11 +246,13 @@ Header/reference-dictionary focused. It does not validate alignment correctness,
 
 ### Observations
 
-From `@SQ`, where present:
+From the parser-visible SAM header, where present:
 
-- `SN`, `LN`, `M5`, `AN`, `AS`, `UR`, `SP`, `AH`, `TP`, order.
+- `@HD` `VN`, `SO`, `GO`, and `SS`;
+- ordered `@SQ` `SN`, `LN`, `M5`, `AN`, `AS`, `UR`, `SP`, `AH`, and `TP`;
+- `@PG` `ID`, `PN`, `CL`, `PP`, `DS`, and `VN` as provenance observations.
 
-`@PG` records may contribute provenance claims but do not establish sequence identity.
+The implemented observation boundary does not scan alignment records. Valid extension tags are ignored rather than treated as parse failures, and BAM's binary reference-name/length dictionary is retained when textual `@SQ` lines are absent. `@PG` records may contribute provenance claims but do not establish sequence identity. `@SQ M5` remains declared metadata at this stage; ADR 0014 requires any later identity capability derived from it to carry `DECLARED_METADATA` provenance.
 
 ### Requirements
 

@@ -396,7 +396,7 @@ Compare sequence names, lengths, order, M5, aliases, and provenance fields. Dist
 
 ### RCHECK-040 — BAM/CRAM ↔ FASTA
 
-Reconcile alignment `@SQ` reference context with the anchor. Header-only inspection does not establish actual read use of every declared sequence.
+Reconcile alignment `@SQ` reference context with the anchor. Header-only inspection does not establish actual read use of every declared sequence. The first Milestone 4 slice now copies parser-visible `@HD`, ordered `@SQ`, and `@PG` metadata from BAM/CRAM into RefCompat-owned observation values without scanning records; `@SQ M5` remains declared metadata and no compatibility conclusion is made yet.
 
 ### RCHECK-050 — VCF ↔ FASTA
 

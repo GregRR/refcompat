@@ -28,4 +28,5 @@ If a supporting document and `DESIGN.md` disagree, `DESIGN.md` wins until the di
 - [`vcf-bundle-orchestration.md`](vcf-bundle-orchestration.md) — Milestone 3 ingestion of anchor-owned pair-derived REF evidence into whole-bundle reasoning.
 - [`vcf-ref-conflict-patterns.md`](vcf-ref-conflict-patterns.md) — threshold-free Milestone 3 interpretation of isolated, localized, distributed, systematic, and incomplete REF-conflict distributions.
 - [`vcf-sequence-binding.md`](vcf-sequence-binding.md) — Milestone 3 verified VCF cross-name binding from contig MD5 identity and binding-aware REF revalidation.
+- [`alignment-header-observation.md`](alignment-header-observation.md) — Milestone 4 BAM/CRAM SAM-header observation and pysam boundary.
 - [`conflict-core.md`](conflict-core.md) — sixth Milestone 2 compact decisive conflict/evidence-core extraction boundary.

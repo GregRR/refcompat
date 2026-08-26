@@ -48,7 +48,7 @@ Remote metadata/discovery is separate from deterministic local identity. A metad
 
 Format-specific extraction. Inspectors produce immutable observations and claims. They do not emit top-level compatibility verdicts or decide that a familiar-looking name is a verified alias.
 
-Inspectors are added one format at a time rather than pre-populating unused modules. `inspectors/fasta_index.py` parses supplied five-column FAI data and computes expected uncompressed FASTA geometry. `inspectors/sequence_dictionary.py` parses narrow SAM/Picard `.dict` artifacts and derives expected `SN`/`LN`/`M5` records from the already-computed complete FASTA identity snapshot. `inspectors/vcf.py` streams parser-isolated VCF observations, while `inspectors/fasta_sequence.py` provides temporary-index FASTA random access computed from the FASTA itself. None decides a top-level compatibility verdict.
+Inspectors are added one format at a time rather than pre-populating unused modules. `inspectors/fasta_index.py` parses supplied five-column FAI data and computes expected uncompressed FASTA geometry. `inspectors/sequence_dictionary.py` parses narrow SAM/Picard `.dict` artifacts and derives expected `SN`/`LN`/`M5` records from the already-computed complete FASTA identity snapshot. `inspectors/vcf.py` streams parser-isolated VCF observations, `inspectors/alignment.py` copies BAM/CRAM SAM-header declarations without scanning reads, and `inspectors/fasta_sequence.py` provides temporary-index FASTA random access computed from the FASTA itself. None decides a top-level compatibility verdict.
 
 ## `reasoning/`
 

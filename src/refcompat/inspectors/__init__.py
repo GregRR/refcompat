@@ -1,5 +1,13 @@
 """Format-specific observation extraction."""
 
+from refcompat.inspectors.alignment import (
+    AlignmentInspectionError,
+    AlignmentParseError,
+    AlignmentProviderIncompatibleError,
+    AlignmentUnreadableError,
+    UnsupportedAlignmentResourceError,
+    inspect_alignment_header,
+)
 from refcompat.inspectors.fasta_index import (
     FastaIndexComputationError,
     FastaIndexError,
@@ -39,6 +47,10 @@ from refcompat.inspectors.vcf import (
 )
 
 __all__ = [
+    "AlignmentInspectionError",
+    "AlignmentParseError",
+    "AlignmentProviderIncompatibleError",
+    "AlignmentUnreadableError",
     "FastaIndexComputationError",
     "FastaIndexError",
     "FastaIndexParseError",
@@ -52,6 +64,7 @@ __all__ = [
     "SequenceDictionaryError",
     "SequenceDictionaryParseError",
     "SequenceDictionaryUnreadableError",
+    "UnsupportedAlignmentResourceError",
     "UnsupportedFastaIndexRepresentationError",
     "UnsupportedFastaIndexResourceError",
     "UnsupportedFastaSequenceResourceError",
@@ -63,6 +76,7 @@ __all__ = [
     "VcfUnreadableError",
     "compute_expected_fasta_index",
     "expected_sequence_dictionary_from_snapshot",
+    "inspect_alignment_header",
     "inspect_vcf_context",
     "iter_vcf_ref_records",
     "open_fasta_sequence_reader",
