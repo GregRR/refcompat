@@ -22,6 +22,8 @@ from refcompat.model.contracts import (
     ResourceContract,
     SequenceIdentityCapability,
     SequenceIdentityRequirement,
+    SequenceLengthCapability,
+    SequenceLengthRequirement,
     SequencePresenceCapability,
     SequencePresenceRequirement,
 )
@@ -46,13 +48,14 @@ def build_vcf_contract(
 ) -> ResourceContract:
     """Build the context-specific VCF contract before direct REF validation.
 
-    Actual CHROM usage creates mandatory presence requirements. A syntactically
-    valid ``##contig`` MD5 declaration for a used contig also creates a mandatory
-    sequence-identity requirement, while only declarations safe for verified
-    cross-name binding are retained as peer identity capabilities. The record set
-    creates one aggregate reference-base requirement. Binding capabilities
-    establish naming only; they are never direct reference-base compatibility
-    evidence.
+    Actual CHROM usage creates mandatory presence requirements. Declared lengths
+    for used contigs create mandatory sequence-length requirements. A
+    syntactically valid ``##contig`` MD5 declaration for a used contig also
+    creates a mandatory sequence-identity requirement, while only declarations
+    safe for verified cross-name binding are retained as peer identity
+    capabilities. The record set creates one aggregate reference-base
+    requirement. Binding capabilities establish naming only; they are never
+    direct reference-base compatibility evidence.
     """
 
     if snapshot.resource_id not in reference_context.scope.resource_ids:
@@ -69,6 +72,7 @@ def build_vcf_contract(
         for sequence_name in snapshot.used_sequence_names
     )
     identity_requirements = _declared_identity_requirements(snapshot)
+    length_requirements = _declared_length_requirements(snapshot)
     base_requirement = ReferenceBaseRequirement(
         id=_requirement_id(
             "reference-bases",
@@ -83,7 +87,12 @@ def build_vcf_contract(
     )
     return ResourceContract(
         resource_id=snapshot.resource_id,
-        requirements=(*presence_requirements, *identity_requirements, base_requirement),
+        requirements=(
+            *presence_requirements,
+            *identity_requirements,
+            *length_requirements,
+            base_requirement,
+        ),
         capabilities=vcf_binding_identity_capabilities(snapshot, reference_context),
     )
 
@@ -114,6 +123,11 @@ def project_vcf_contract(
         requirement
         for requirement in contract.requirements
         if isinstance(requirement, SequenceIdentityRequirement)
+    )
+    length_requirements = tuple(
+        requirement
+        for requirement in contract.requirements
+        if isinstance(requirement, SequenceLengthRequirement)
     )
     base_requirement = next(
         requirement
@@ -178,6 +192,28 @@ def project_vcf_contract(
                 sequence_bindings=relevant_bindings,
             )
         )
+    for length_requirement in length_requirements:
+        binding = bindings_by_name.get(length_requirement.sequence_name)
+        target_name = (
+            binding.anchor_sequence_name
+            if binding is not None
+            else length_requirement.sequence_name
+        )
+        length_candidates = tuple(
+            length_capability
+            for length_capability in reference_context.anchor_capabilities
+            if isinstance(length_capability, SequenceLengthCapability)
+            and length_capability.sequence_name == target_name
+        )
+        relevant_bindings = (binding,) if binding is not None else ()
+        constraints.append(
+            _constraint(
+                reference_context,
+                length_requirement,
+                length_candidates,
+                sequence_bindings=relevant_bindings,
+            )
+        )
     constraints.append(_constraint(reference_context, base_requirement, (base_capability,)))
 
     constraint_tuple = tuple(constraints)
@@ -225,6 +261,28 @@ def _declared_identity_requirements(
             )
         )
     return tuple(requirements)
+
+
+def _declared_length_requirements(
+    snapshot: VcfContextSnapshot,
+) -> tuple[SequenceLengthRequirement, ...]:
+    used_names = set(snapshot.used_sequence_names)
+    return tuple(
+        SequenceLengthRequirement(
+            id=_requirement_id(
+                "length",
+                snapshot.resource_id,
+                f"{contig.name}:{contig.length}",
+            ),
+            resource_id=snapshot.resource_id,
+            origin=RequirementOrigin.CORE_FORMAT,
+            level=RequirementLevel.MANDATORY,
+            sequence_name=contig.name,
+            length=contig.length,
+        )
+        for contig in snapshot.header.contigs
+        if contig.name in used_names and contig.length is not None
+    )
 
 
 def _validate_inputs(

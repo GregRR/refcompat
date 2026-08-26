@@ -32,6 +32,13 @@ Invalid MD5, absent MD5, duplicate-content targets, out-of-scope targets, and
 length contradictions produce no binding. Familiar-looking strings never
 substitute for identity evidence.
 
+Independently of whether an MD5 binding can be established, every **used**
+contig with a declared length contributes a mandatory
+`SequenceLengthRequirement`. A directly resolvable same-name length conflict
+therefore remains visible even when all REF records happen to fall within the
+shared coordinate range. A cross-name length declaration without a verified
+binding remains unresolved rather than being matched by length alone.
+
 For every **used** contig with a syntactically valid declared MD5, the VCF
 contract also retains a mandatory `SequenceIdentityRequirement`. This keeps the
 header declaration visible even when it cannot establish a cross-name binding.
@@ -82,13 +89,13 @@ current VCF, FASTA, and scope. If the supplied validation did not use exactly
 those bindings, projection fails instead of silently projecting a stale
 exact-name result.
 
-Presence requirements are evaluated through the same binding and can therefore
-be satisfied with `VERIFIED_ALIAS`. Valid used-contig MD5 declarations are also
-evaluated as generic sequence-identity requirements against the selected or
-bound FASTA sequence. Matching declarations are satisfied with
-`VERIFIED_SEQUENCE_IDENTITY`; directly comparable contradictions remain Tier-A
-evidence. The exhaustive reference-base requirement continues to use the
-separately supplied anchor-owned `ReferenceBaseValidationCapability`.
+Presence and declared-length requirements are evaluated through the same
+binding and can therefore be satisfied with `VERIFIED_ALIAS`. Valid used-contig
+MD5 declarations are also evaluated as generic sequence-identity requirements
+against the selected or bound FASTA sequence. Matching declarations are
+satisfied with `VERIFIED_SEQUENCE_IDENTITY`; directly comparable contradictions
+remain Tier-A evidence. The exhaustive reference-base requirement continues to
+use the separately supplied anchor-owned `ReferenceBaseValidationCapability`.
 
 Because the accepted VCF MD5 identity capability is retained in the VCF
 `ResourceContract`, ordinary whole-bundle reasoning independently derives the

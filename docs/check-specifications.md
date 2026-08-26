@@ -340,10 +340,13 @@ conflict-pattern interpretation is implemented in RCHECK-050E.
 Projection rules:
 
 - each actually used `CHROM` name creates one mandatory `SequencePresenceRequirement`;
+- a declared `##contig` length for an actually used contig creates one mandatory
+  `SequenceLengthRequirement`; a directly comparable length mismatch is structural
+  contradiction evidence, while an unresolvable cross-name declaration remains unresolved;
 - a syntactically valid `##contig` MD5 declaration for an actually used contig creates one
   mandatory `SequenceIdentityRequirement`; a directly comparable MD5 conflict is Tier-A
   contradiction evidence, while an unresolvable cross-name declaration remains unresolved;
-- unused `##contig` declarations do not create presence or identity requirements;
+- unused `##contig` declarations do not create presence, length, or identity requirements;
 - the complete VCF record set creates one mandatory `ReferenceBaseRequirement` that names the
   selected FASTA anchor, not one requirement per record;
 - exhaustive REF checking creates one FASTA-anchor-owned
@@ -395,7 +398,7 @@ validation remains unresolved without fabricated evidence.
 
 ### RCHECK-050E — REF conflict-pattern interpretation
 
-**Implementation status:** implemented for exhaustive direct validation, including RCHECK-050F verified-binding revalidation. Stable report/CLI presentation remains later Milestone 3 work.
+**Implementation status:** implemented for exhaustive direct validation, including RCHECK-050F verified-binding revalidation. Stable report/CLI presentation remains deferred.
 
 `classify_vcf_ref_conflicts()` interprets the distribution of already-proven direct REF mismatches
 without changing the generic `ReferenceBaseRequirement` state or bundle verdict. It uses no

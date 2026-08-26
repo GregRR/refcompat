@@ -25,6 +25,13 @@ used sequence name, in first-observed order. Header-only `##contig`
 declarations do not create presence requirements because an unused declaration
 is not evidence that the VCF actually requires that contig for its records.
 
+A declared `##contig` length for an actually used contig also becomes one
+mandatory `SequenceLengthRequirement`. When the local name resolves exactly or
+through a verified binding, a different FASTA length is a structural
+contradiction. If the local name cannot be resolved, the length requirement
+remains unresolved rather than being compared to a same-length sequence by
+guesswork. Unused declarations do not create length requirements.
+
 A syntactically valid `##contig` MD5 declaration for an actually used contig
 also becomes one mandatory `SequenceIdentityRequirement`. When the declaration
 is directly comparable to the selected or verified-bound FASTA sequence, a
@@ -84,7 +91,13 @@ evidence.
 
 ## Sequence-name boundary
 
-Presence requirements use the ordinary generic sequence-presence machinery. Verified VCF bindings are now derived from uniquely matched `##contig` MD5 identity and supplied to the generic constraint machinery; string similarity remains irrelevant. Projection rejects a validation whose binding-ID trace does not match the bindings independently expected for the current VCF/FASTA/scope, preventing stale exact-name results from being silently reused.
+Presence and declared-length requirements use the ordinary generic sequence
+constraint machinery. Verified VCF bindings are derived from uniquely matched
+`##contig` MD5 identity and supplied to those generic constraints, so a bound
+length can be satisfied through `VERIFIED_ALIAS`; string similarity remains
+irrelevant. Projection rejects a validation whose binding-ID trace does not
+match the bindings independently expected for the current VCF/FASTA/scope,
+preventing stale exact-name results from being silently reused.
 
 ## Deliberate boundary
 

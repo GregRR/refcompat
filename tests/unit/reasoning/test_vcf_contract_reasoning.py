@@ -14,6 +14,7 @@ from refcompat.model.contracts import (
     ReferenceBaseRequirement,
     ResourceContract,
     SequenceIdentityRequirement,
+    SequenceLengthRequirement,
     SequencePresenceRequirement,
 )
 from refcompat.model.evaluation import EvaluationRequest, EvaluationScope
@@ -294,7 +295,10 @@ def test_projection_uses_actual_chrom_usage_not_declared_unused_contigs() -> Non
         _VCF,
         VcfHeaderData(
             "VCFv4.5",
-            contigs=(VcfContigDeclaration("chr1"), VcfContigDeclaration("chr2")),
+            contigs=(
+                VcfContigDeclaration("chr1", length=100),
+                VcfContigDeclaration("chr2", length=200),
+            ),
         ),
         record_count=1,
         chrom_usage=(VcfChromUsage("chr1", 1),),
@@ -307,6 +311,12 @@ def test_projection_uses_actual_chrom_usage_not_declared_unused_contigs() -> Non
         if isinstance(item, SequencePresenceRequirement)
     )
     assert presence_names == ("chr1",)
+    length_names = tuple(
+        item.sequence_name
+        for item in projection.contract.requirements
+        if isinstance(item, SequenceLengthRequirement)
+    )
+    assert length_names == ("chr1",)
 
 
 def test_projection_model_rejects_capability_counts_crosswired_from_validation() -> None:
@@ -545,9 +555,11 @@ def test_verified_alias_projection_feeds_whole_bundle_without_peer_voting() -> N
         ConstraintState.SATISFIED,
         ConstraintState.SATISFIED,
         ConstraintState.SATISFIED,
+        ConstraintState.SATISFIED,
     )
     assert bundle.evaluations[0].satisfaction_mode is SatisfactionMode.VERIFIED_ALIAS
     assert bundle.evaluations[1].satisfaction_mode is SatisfactionMode.VERIFIED_SEQUENCE_IDENTITY
+    assert bundle.evaluations[2].satisfaction_mode is SatisfactionMode.VERIFIED_ALIAS
 
 
 def test_used_valid_md5_creates_mandatory_identity_requirement() -> None:
@@ -581,6 +593,40 @@ def test_used_valid_md5_creates_mandatory_identity_requirement() -> None:
         ConstraintState.SATISFIED,
         ConstraintState.SATISFIED,
         ConstraintState.SATISFIED,
+        ConstraintState.SATISFIED,
+    )
+
+
+def test_used_declared_length_creates_mandatory_length_requirement() -> None:
+    context = _binding_context()
+    snapshot = VcfContextSnapshot(
+        _VCF,
+        VcfHeaderData(
+            "VCFv4.5",
+            contigs=(VcfContigDeclaration("chr1", length=4),),
+        ),
+        record_count=1,
+        chrom_usage=(VcfChromUsage("chr1", 1),),
+    )
+    validation = _validation(
+        VcfRefSequenceSummary("chr1", 1, match_count=1),
+        matches=1,
+    )
+
+    projection = project_vcf_contract(snapshot, validation, context)
+
+    length_requirements = tuple(
+        requirement
+        for requirement in projection.contract.requirements
+        if isinstance(requirement, SequenceLengthRequirement)
+    )
+    assert len(length_requirements) == 1
+    assert length_requirements[0].sequence_name == "chr1"
+    assert length_requirements[0].length == 4
+    assert tuple(item.state for item in projection.evaluations) == (
+        ConstraintState.SATISFIED,
+        ConstraintState.SATISFIED,
+        ConstraintState.SATISFIED,
     )
 
 
@@ -610,6 +656,7 @@ def test_unmatched_cross_name_md5_requirement_stays_unresolved() -> None:
 
     assert projection.sequence_bindings == ()
     assert tuple(item.state for item in projection.evaluations) == (
+        ConstraintState.UNRESOLVED,
         ConstraintState.UNRESOLVED,
         ConstraintState.UNRESOLVED,
         ConstraintState.UNRESOLVED,
@@ -649,6 +696,57 @@ def test_conflicting_same_name_md5_blocks_false_compatible_bundle() -> None:
     assert len(identity_evaluations) == 1
     assert identity_evaluations[0].state is ConstraintState.UNSATISFIED
     assert projection.evidence.has_conclusive_contradiction
+
+    resources = (
+        Resource(_FASTA, ResourceKind.FASTA, ArtifactIdentity(path=Path("anchor.fa"))),
+        Resource(_VCF, ResourceKind.VCF, ArtifactIdentity(path=Path("variants.vcf"))),
+    )
+    request = EvaluationRequest(resources, _FASTA, context.scope)
+    bundle = reason_bundle(
+        request,
+        context.anchor_snapshot,
+        (ResourceContract(_FASTA), projection.contract),
+        supplemental_capabilities=(projection.reference_base_capability,),
+    )
+
+    assert tuple(item.state for item in bundle.evaluations) == (
+        ConstraintState.SATISFIED,
+        ConstraintState.UNSATISFIED,
+        ConstraintState.SATISFIED,
+        ConstraintState.SATISFIED,
+    )
+    assert aggregate_bundle_verdict(bundle).verdict is CompatibilityVerdict.INCOMPATIBLE
+
+
+def test_conflicting_same_name_length_blocks_false_compatible_bundle() -> None:
+    context = _binding_context()
+    snapshot = VcfContextSnapshot(
+        _VCF,
+        VcfHeaderData(
+            "VCFv4.5",
+            contigs=(VcfContigDeclaration("chr1", length=5),),
+        ),
+        record_count=1,
+        chrom_usage=(VcfChromUsage("chr1", 1),),
+    )
+    validation = _validation(
+        VcfRefSequenceSummary("chr1", 1, match_count=1),
+        matches=1,
+    )
+
+    projection = project_vcf_contract(snapshot, validation, context)
+
+    length_evaluations = tuple(
+        evaluation
+        for constraint, evaluation in zip(
+            projection.constraints,
+            projection.evaluations,
+            strict=True,
+        )
+        if isinstance(constraint.requirement, SequenceLengthRequirement)
+    )
+    assert len(length_evaluations) == 1
+    assert length_evaluations[0].state is ConstraintState.UNSATISFIED
 
     resources = (
         Resource(_FASTA, ResourceKind.FASTA, ArtifactIdentity(path=Path("anchor.fa"))),
@@ -762,9 +860,11 @@ def test_unverified_cross_name_case_stays_unresolved_through_bundle() -> None:
     assert tuple(item.state for item in projection.evaluations) == (
         ConstraintState.UNRESOLVED,
         ConstraintState.UNRESOLVED,
+        ConstraintState.UNRESOLVED,
     )
     assert bundle.sequence_bindings == ()
     assert tuple(item.state for item in bundle.evaluations) == (
+        ConstraintState.UNRESOLVED,
         ConstraintState.UNRESOLVED,
         ConstraintState.UNRESOLVED,
     )

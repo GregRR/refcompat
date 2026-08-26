@@ -123,4 +123,5 @@ This slice does not yet:
 - sample records;
 - rewrite, swap, normalize, delete, or repair REF/ALT alleles.
 
-Those remain later Milestone 3 reasoning/reporting boundaries.
+Those remain explicitly deferred reasoning/reporting boundaries rather than
+unfinished Milestone 3 core VCF requirements.

@@ -186,6 +186,13 @@ A verified alias relationship may then be derived from common identity. The firs
 
 For VCF resources, a syntactically valid `##contig` MD5 declaration may be retained only as binding evidence after it uniquely identifies a sequence in the complete FASTA anchor and passes the VCF binding checks. That declared identity can establish which anchor sequence a VCF label denotes, but it is not direct REF-compatibility proof; exhaustive REF comparison remains authoritative for base agreement.
 
+For an actually used VCF contig, a declared `##contig` length is also a mandatory
+structural requirement. An exact-name or verified-bound FASTA sequence with a
+different length is contradictory structural evidence even if every observed REF
+record lies inside the shared coordinate range and matches. Without a verified
+name resolution, a cross-name length declaration remains unresolved; length
+equality alone never establishes an alias.
+
 ## `CoordinateContext`
 
 Describes coordinate encoding, not biological identity.
