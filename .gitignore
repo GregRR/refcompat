@@ -35,4 +35,5 @@ dist/
 
 # Local project notes and research inputs
 .refcompat-local/
+.claudeignore
 research/incident-corpus/
