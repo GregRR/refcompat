@@ -2,8 +2,8 @@
 
 This bridge remains header-only. It treats ``@SQ`` names, lengths, and M5
 values as declarations made by the alignment resource. M5 becomes a mandatory
-identity requirement when present, but this slice does not yet emit peer
-identity capabilities or derive cross-name bindings from alignment metadata.
+identity requirement when present and may also contribute declared-metadata
+binding evidence when it passes the conservative alignment binding rules.
 """
 
 from __future__ import annotations
@@ -24,6 +24,7 @@ from refcompat.model.contracts import (
 )
 from refcompat.model.reference_context import ReferenceContext
 from refcompat.model.resources import ResourceId
+from refcompat.reasoning.alignment_binding import alignment_binding_identity_capabilities
 
 
 def build_alignment_contract(
@@ -38,10 +39,11 @@ def build_alignment_contract(
     URI, species, topology, alternate-locus metadata, and ``@PG`` provenance
     remain observations in this slice and do not create requirements.
 
-    The contract intentionally emits no peer identity capabilities yet, so
-    cross-name M5 binding remains a later Milestone 4 boundary. Exact-name M5
-    declarations can nevertheless be assessed against content-derived FASTA
-    identity through the generic constraint machinery.
+    A cross-name M5 declaration may also contribute a ``DECLARED_METADATA``
+    identity capability when it uniquely identifies an in-scope FASTA sequence
+    in the complete anchor snapshot and agrees with that target's length. Such
+    a capability is binding evidence only and cannot satisfy identity
+    requirements as candidate reference evidence.
     """
 
     if snapshot.resource_id not in reference_context.scope.resource_ids:
@@ -100,6 +102,7 @@ def build_alignment_contract(
     return ResourceContract(
         resource_id=snapshot.resource_id,
         requirements=requirements,
+        capabilities=alignment_binding_identity_capabilities(snapshot, reference_context),
     )
 
 

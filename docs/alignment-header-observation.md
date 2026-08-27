@@ -46,8 +46,8 @@ it does not establish sequence identity.
 An alignment `@SQ M5` is copied into the domain model as a normalized
 `Md5Digest`, but its presence in a BAM/CRAM header does not make it
 content-derived anchor authority. The current contract bridge projects that
-declaration as a sequence-identity requirement. Any later identity capability
-created from the same header value for binding must carry
+declaration as a sequence-identity requirement. The separate binding bridge may now create a conservative identity capability
+from the same header value, but it must carry
 `SequenceIdentityProvenance.DECLARED_METADATA`, as required by ADR 0014.
 
 This is the same claim-versus-derived distinction already enforced for VCF
@@ -64,9 +64,11 @@ This slice does **not** iterate alignment records. Therefore:
 - an empty `@SQ` dictionary is representable so an unmapped-only alignment
   resource can still be observed without inventing reference requirements.
 
-Milestone 4 contract projection now maps the declared header dictionary into
-core reference requirements while keeping these header-only limits explicit; see
-[`alignment-contract-projection.md`](alignment-contract-projection.md).
+Milestone 4 contract projection maps the declared header dictionary into core
+reference requirements, and a separate binding bridge may resolve safe
+cross-name M5 identity while keeping these header-only limits explicit; see
+[`alignment-contract-projection.md`](alignment-contract-projection.md) and
+[`alignment-sequence-binding.md`](alignment-sequence-binding.md).
 
 ## CRAM and reference availability
 
@@ -102,9 +104,10 @@ valid M5 values, and unique `@PG ID` values on the normalized data it accepts.
 
 ## Explicit non-goals for this slice
 
-This observation slice, together with the separate contract bridge, still does not:
+This observation slice remains separate from the contract and binding bridges.
+The combined Milestone 4 implementation still does not:
 
-- derive sequence bindings from `M5` or `AN`;
+- derive sequence bindings from `AN` or familiar name patterns;
 - classify exact/subset/superset/order relationships;
 - scan reads to determine actual reference usage;
 - decode CRAM records that require external reference content;

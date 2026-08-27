@@ -34,8 +34,8 @@ exactly match the identities present on the selected FASTA snapshot sequences.
 
 ## Consequences
 
-VCF `##contig md5` and future BAM/CRAM `@SQ M5` values can use the same typed
-identity value while retaining a structural claim-versus-derived distinction.
+VCF `##contig md5` and BAM/CRAM `@SQ M5` values use the same typed identity
+value while retaining a structural claim-versus-derived distinction.
 Accidentally passing a declared identity as candidate reference evidence fails
 at the constraint boundary instead of relying on convention.
 

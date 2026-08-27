@@ -1,7 +1,7 @@
 # BAM/CRAM contract projection
 
-**Status:** Milestone 4 core header-contract projection implemented; verified
-cross-name binding and relationship classification remain later slices.
+**Status:** Milestone 4 core header-contract projection and verified M5-backed
+cross-name binding implemented; relationship classification remains later.
 
 RefCompat projects the declared BAM/CRAM SAM reference dictionary into the same
 format-neutral requirement vocabulary used by the rest of the reasoner. This
@@ -36,21 +36,28 @@ constraint model and ADR 0014.
 A same-name M5 disagreement is therefore a directly comparable hard identity
 conflict. A same-name match can be satisfied through verified sequence identity.
 
-## Binding remains separate
+## Binding evidence remains separate from requirement evidence
 
-This slice intentionally emits no peer `SequenceIdentityCapability` values from
-alignment `M5` declarations. Therefore:
+The contract now retains a cross-name `DECLARED_METADATA` identity capability
+only when the alignment M5 passes the conservative rules documented in
+[`alignment-sequence-binding.md`](alignment-sequence-binding.md): complete-anchor
+MD5 coverage, uniqueness against the full anchor before scope, in-scope target,
+different local name, and `LN` agreement with the target.
 
-- a different `SN` with the same M5 does not yet create a `SequenceBinding`;
-- an `AN` alternate name is retained as header metadata but is not trusted as an
-  alias;
-- same-length/different-name records remain unresolved without verified identity
+That capability may establish a `SequenceBinding` through the generic bundle
+reasoner, but it cannot itself satisfy the mandatory identity requirement.
+Identity requirements continue to accept only `CONTENT_DERIVED` anchor identity
+capabilities.
+
+Consequently:
+
+- a different `SN` with a uniquely matched, length-consistent M5 can be satisfied
+  through verified binding;
+- `AN` remains metadata and does not establish an alias on its own;
+- same-length/different-name records remain unresolved without usable M5
   binding;
+- an M5/LN contradiction does not bind and remains unresolved cross-name;
 - familiar naming conventions are never inferred.
-
-A later Milestone 4 slice will decide when an alignment `M5` declaration is safe
-to expose as `DECLARED_METADATA` binding evidence, including full-anchor
-uniqueness and conflicting-header safeguards.
 
 ## Order and other metadata
 

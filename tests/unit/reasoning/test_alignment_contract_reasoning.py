@@ -26,6 +26,8 @@ from refcompat.model import (
     SatisfactionMode,
     SequenceCollectionSnapshot,
     SequenceDictionaryRecord,
+    SequenceIdentityCapability,
+    SequenceIdentityProvenance,
     SequenceIdentityRequirement,
     SequenceLengthRequirement,
     SequencePresenceRequirement,
@@ -156,6 +158,19 @@ def test_alignment_contract_requires_scoped_resource() -> None:
         )
 
 
+def test_alignment_contract_rejects_anchor_resource_cross_wiring() -> None:
+    snapshot = AlignmentHeaderSnapshot(
+        resource_id=_REFERENCE,
+        resource_kind=ResourceKind.BAM,
+        header=AlignmentHeaderData(
+            sequences=(SequenceDictionaryRecord(name="chr1", length=4, md5=_MD5_A),)
+        ),
+    )
+
+    with pytest.raises(ValueError, match="cannot be the FASTA anchor"):
+        build_alignment_contract(snapshot, _context())
+
+
 def test_alignment_contract_ids_are_deterministic() -> None:
     snapshot = _alignment_snapshot((SequenceDictionaryRecord(name="chr1", length=4, md5=_MD5_A),))
     context = _context()
@@ -226,7 +241,7 @@ def test_same_name_m5_conflict_is_unsatisfied() -> None:
     ]
 
 
-def test_cross_name_m5_and_an_do_not_create_binding_in_contract_slice() -> None:
+def test_verified_cross_name_m5_satisfies_alignment_requirements() -> None:
     snapshot = _alignment_snapshot(
         (
             SequenceDictionaryRecord(
@@ -245,6 +260,78 @@ def test_cross_name_m5_and_an_do_not_create_binding_in_contract_slice() -> None:
         (ResourceContract(_REFERENCE), contract),
     )
 
+    assert len(contract.capabilities) == 1
+    binding_capability = contract.capabilities[0]
+    assert isinstance(binding_capability, SequenceIdentityCapability)
+    assert binding_capability.provenance is SequenceIdentityProvenance.DECLARED_METADATA
+    assert len(result.sequence_bindings) == 1
+    assert result.sequence_bindings[0].local_sequence_name == "1"
+    assert result.sequence_bindings[0].anchor_sequence_name == "chr1"
+    assert [item.state for item in result.evaluations] == [
+        ConstraintState.SATISFIED,
+        ConstraintState.SATISFIED,
+        ConstraintState.SATISFIED,
+    ]
+    assert [item.satisfaction_mode for item in result.evaluations] == [
+        SatisfactionMode.VERIFIED_ALIAS,
+        SatisfactionMode.VERIFIED_ALIAS,
+        SatisfactionMode.VERIFIED_SEQUENCE_IDENTITY,
+    ]
+
+
+def test_an_without_m5_remains_unresolved() -> None:
+    snapshot = _alignment_snapshot(
+        (SequenceDictionaryRecord(name="1", length=4, alternate_names=("chr1",)),)
+    )
+    contract = build_alignment_contract(snapshot, _context())
+
+    result = reason_bundle(
+        _request(),
+        _anchor_snapshot(),
+        (ResourceContract(_REFERENCE), contract),
+    )
+
     assert contract.capabilities == ()
     assert result.sequence_bindings == ()
     assert all(item.state is ConstraintState.UNRESOLVED for item in result.evaluations)
+
+
+def test_cross_name_m5_length_contradiction_remains_unresolved() -> None:
+    snapshot = _alignment_snapshot((SequenceDictionaryRecord(name="1", length=5, md5=_MD5_A),))
+    contract = build_alignment_contract(snapshot, _context())
+
+    result = reason_bundle(
+        _request(),
+        _anchor_snapshot(),
+        (ResourceContract(_REFERENCE), contract),
+    )
+
+    assert contract.capabilities == ()
+    assert result.sequence_bindings == ()
+    assert all(item.state is ConstraintState.UNRESOLVED for item in result.evaluations)
+
+
+def test_verified_identity_overrides_misleading_exact_name_in_bundle() -> None:
+    snapshot = _alignment_snapshot((SequenceDictionaryRecord(name="chr1", length=8, md5=_MD5_B),))
+    contract = build_alignment_contract(snapshot, _context())
+
+    result = reason_bundle(
+        _request(),
+        _anchor_snapshot(),
+        (ResourceContract(_REFERENCE), contract),
+    )
+
+    assert len(result.sequence_bindings) == 1
+    binding = result.sequence_bindings[0]
+    assert binding.local_sequence_name == "chr1"
+    assert binding.anchor_sequence_name == "chr2"
+    assert [item.state for item in result.evaluations] == [
+        ConstraintState.SATISFIED,
+        ConstraintState.SATISFIED,
+        ConstraintState.SATISFIED,
+    ]
+    assert [item.satisfaction_mode for item in result.evaluations] == [
+        SatisfactionMode.VERIFIED_ALIAS,
+        SatisfactionMode.VERIFIED_ALIAS,
+        SatisfactionMode.VERIFIED_SEQUENCE_IDENTITY,
+    ]

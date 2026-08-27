@@ -234,7 +234,7 @@ RefCompat does not automatically rename dictionary sequences, rewrite `@SQ` meta
 
 ## RCHECK-040 — BAM/CRAM ↔ FASTA reference context
 
-**Implementation status:** header observation and core `@SQ` contract projection are implemented for BAM and CRAM; cross-name binding, relationship reasoning, and CRAM reference-dependent behavior remain later Milestone 4 slices.
+**Implementation status:** header observation, core `@SQ` contract projection, and conservative M5-backed cross-name binding are implemented for BAM and CRAM; relationship reasoning and CRAM reference-dependent behavior remain later Milestone 4 slices.
 
 ### Purpose
 
@@ -252,15 +252,16 @@ From the parser-visible SAM header, where present:
 - ordered `@SQ` `SN`, `LN`, `M5`, `AN`, `AS`, `UR`, `SP`, `AH`, and `TP`;
 - `@PG` `ID`, `PN`, `CL`, `PP`, `DS`, and `VN` as provenance observations.
 
-The implemented observation boundary does not scan alignment records. Valid extension tags are ignored rather than treated as parse failures, and BAM's binary reference-name/length dictionary is retained when textual `@SQ` lines are absent. `@PG` records may contribute provenance claims but do not establish sequence identity. `@SQ M5` remains declared metadata; the current contract bridge projects it as an identity requirement, not as anchor authority or peer binding evidence. ADR 0014 requires any later identity capability derived from it to carry `DECLARED_METADATA` provenance.
+The implemented observation boundary does not scan alignment records. Valid extension tags are ignored rather than treated as parse failures, and BAM's binary reference-name/length dictionary is retained when textual `@SQ` lines are absent. `@PG` records may contribute provenance claims but do not establish sequence identity. `@SQ M5` remains declared metadata; the contract bridge projects it as an identity requirement, and the binding bridge may expose only a conservative `DECLARED_METADATA` capability for name resolution. It never becomes anchor authority or candidate reference evidence.
 
 ### Requirements
 
 For each declared reference sequence, the implemented core contract creates mandatory presence and length requirements and, when M5 is present, a mandatory MD5 identity requirement. Generic evaluation can already satisfy or contradict directly comparable same-name requirements against the content-derived FASTA anchor.
 
+Cross-name local names now resolve only through verified M5-backed sequence binding with complete-anchor uniqueness, scope, and length-consistency checks. `AN` remains observational rather than binding authority.
+
 Still required in later Milestone 4 slices:
 
-- local names may resolve cross-name only through verified sequence binding;
 - order is represented separately and becomes mandatory only when scope/profile requires it.
 
 ### Completeness caution

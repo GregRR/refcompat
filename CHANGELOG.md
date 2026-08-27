@@ -6,7 +6,9 @@ The project is currently pre-release; entries under `Unreleased` describe ongoin
 
 ## Unreleased
 
-- Project BAM/CRAM `@SQ` names, lengths, and M5 declarations into mandatory format-neutral presence, length, and identity requirements while keeping cross-name binding and order policy deferred.
+- Add conservative BAM/CRAM cross-name sequence binding from uniquely matched `@SQ M5` identity with full-anchor uniqueness, scope, length-consistency, declared-metadata provenance, and generic whole-bundle reuse while leaving `AN` non-authoritative.
+
+- Project BAM/CRAM `@SQ` names, lengths, and M5 declarations into mandatory format-neutral presence, length, and identity requirements while keeping order policy deferred.
 
 - Add bundled third-party notices for redistributed refget and HTSlib known-answer test fixtures and include those notices in built distributions.
 

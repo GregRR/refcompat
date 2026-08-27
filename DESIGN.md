@@ -396,7 +396,7 @@ Compare sequence names, lengths, order, M5, aliases, and provenance fields. Dist
 
 ### RCHECK-040 — BAM/CRAM ↔ FASTA
 
-Reconcile alignment `@SQ` reference context with the anchor. Header-only inspection does not establish actual read use of every declared sequence. Milestone 4 now copies parser-visible `@HD`, ordered `@SQ`, and `@PG` metadata from BAM/CRAM into RefCompat-owned observation values and projects each declared `SN`/`LN` plus any `M5` into mandatory core-format presence, length, and identity requirements. The M5 requirement can be assessed only against content-derived anchor identity; the alignment declaration is not anchor authority, and cross-name M5 binding remains a separate later boundary.
+Reconcile alignment `@SQ` reference context with the anchor. Header-only inspection does not establish actual read use of every declared sequence. Milestone 4 now copies parser-visible `@HD`, ordered `@SQ`, and `@PG` metadata from BAM/CRAM into RefCompat-owned observation values and projects each declared `SN`/`LN` plus any `M5` into mandatory core-format presence, length, and identity requirements. The M5 requirement can be assessed only against content-derived anchor identity; the alignment declaration is not anchor authority. Conservative cross-name bindings are now derived only from `DECLARED_METADATA` M5 claims that uniquely identify one sequence in the complete FASTA anchor, remain inside anchor-sequence scope, and agree with the target length. `AN` and familiar name patterns remain non-authoritative.
 
 ### RCHECK-050 — VCF ↔ FASTA
 
