@@ -29,4 +29,5 @@ If a supporting document and `DESIGN.md` disagree, `DESIGN.md` wins until the di
 - [`vcf-ref-conflict-patterns.md`](vcf-ref-conflict-patterns.md) — threshold-free Milestone 3 interpretation of isolated, localized, distributed, systematic, and incomplete REF-conflict distributions.
 - [`vcf-sequence-binding.md`](vcf-sequence-binding.md) — Milestone 3 verified VCF cross-name binding from contig MD5 identity and binding-aware REF revalidation.
 - [`alignment-header-observation.md`](alignment-header-observation.md) — Milestone 4 BAM/CRAM SAM-header observation and pysam boundary.
+- [`alignment-contract-projection.md`](alignment-contract-projection.md) — BAM/CRAM `@SQ` presence, length, and declared-M5 projection into generic requirements.
 - [`conflict-core.md`](conflict-core.md) — sixth Milestone 2 compact decisive conflict/evidence-core extraction boundary.

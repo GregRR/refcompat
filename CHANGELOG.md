@@ -6,6 +6,8 @@ The project is currently pre-release; entries under `Unreleased` describe ongoin
 
 ## Unreleased
 
+- Project BAM/CRAM `@SQ` names, lengths, and M5 declarations into mandatory format-neutral presence, length, and identity requirements while keeping cross-name binding and order policy deferred.
+
 - Add bundled third-party notices for redistributed refget and HTSlib known-answer test fixtures and include those notices in built distributions.
 
 - Begin Milestone 4 with BAM/CRAM header observation for ordered `@SQ` reference metadata, `@HD` ordering claims, and `@PG` provenance, including extension-tag-tolerant parsing, BAM binary reference-dictionary fallback, and header-only CRAM inspection that does not require reference content.

@@ -71,7 +71,8 @@ The roadmap intentionally avoids turning RefCompat into a universal genomics val
 **Goal:** reconcile alignment reference dictionaries with the FASTA anchor.
 
 - [x] Inspect `@SQ` names, lengths, order, M5, aliases, assembly, URI, and species metadata where available.
-- [ ] Treat `@SQ M5` as declared identity metadata; it may support conservative binding but must never become content-derived anchor authority.
+- [x] Project declared `@SQ` names, lengths, and M5 values into mandatory core-format presence, length, and identity requirements without promoting M5 to anchor authority.
+- [ ] Use `@SQ M5` only as explicitly declared metadata when deriving conservative cross-name sequence bindings.
 - [ ] Distinguish exact identity, verified naming-only differences, order differences, subset/superset relationships, and content conflicts.
 - [ ] Keep header-only completeness limitations explicit.
 - [ ] Define conservative CRAM behavior when required reference content is unavailable offline.

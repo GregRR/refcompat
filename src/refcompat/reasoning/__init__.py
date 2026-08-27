@@ -1,5 +1,6 @@
 """Evidence-backed compatibility reasoning."""
 
+from refcompat.reasoning.alignment_contract import build_alignment_contract
 from refcompat.reasoning.bundle import reason_bundle
 from refcompat.reasoning.conflict_core import extract_conflict_cores
 from refcompat.reasoning.constraints import build_constraint, evaluate_constraint
@@ -21,6 +22,7 @@ __all__ = [
     "VcfRefEvaluationError",
     "aggregate_bundle_verdict",
     "aggregate_constraint_evidence",
+    "build_alignment_contract",
     "build_constraint",
     "build_reference_context",
     "build_vcf_contract",

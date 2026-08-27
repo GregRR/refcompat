@@ -1,6 +1,6 @@
 # BAM/CRAM header observation
 
-**Status:** Milestone 4 header-observation boundary implemented.
+**Status:** Milestone 4 header-observation boundary implemented; core contract projection is documented separately.
 
 RefCompat inspects the SAM header carried by BAM and CRAM resources before it
 attempts compatibility reasoning. This boundary is observational: header fields
@@ -45,8 +45,9 @@ it does not establish sequence identity.
 
 An alignment `@SQ M5` is copied into the domain model as a normalized
 `Md5Digest`, but its presence in a BAM/CRAM header does not make it
-content-derived anchor authority. Milestone 4 contract/binding work must convert
-such values to identity capabilities only with
+content-derived anchor authority. The current contract bridge projects that
+declaration as a sequence-identity requirement. Any later identity capability
+created from the same header value for binding must carry
 `SequenceIdentityProvenance.DECLARED_METADATA`, as required by ADR 0014.
 
 This is the same claim-versus-derived distinction already enforced for VCF
@@ -63,8 +64,9 @@ This slice does **not** iterate alignment records. Therefore:
 - an empty `@SQ` dictionary is representable so an unmapped-only alignment
   resource can still be observed without inventing reference requirements.
 
-Future Milestone 4 reasoning projects the declared header dictionary into
-reference requirements while keeping these header-only limits explicit.
+Milestone 4 contract projection now maps the declared header dictionary into
+core reference requirements while keeping these header-only limits explicit; see
+[`alignment-contract-projection.md`](alignment-contract-projection.md).
 
 ## CRAM and reference availability
 
@@ -100,10 +102,8 @@ valid M5 values, and unique `@PG ID` values on the normalized data it accepts.
 
 ## Explicit non-goals for this slice
 
-This slice does not yet:
+This observation slice, together with the separate contract bridge, still does not:
 
-- build BAM/CRAM `ResourceContract` requirements;
-- compare `@SQ` declarations with the FASTA anchor;
 - derive sequence bindings from `M5` or `AN`;
 - classify exact/subset/superset/order relationships;
 - scan reads to determine actual reference usage;
