@@ -6,6 +6,8 @@ The project is currently pre-release; entries under `Unreleased` describe ongoin
 
 ## Unreleased
 
+- Add ordinary Milestone 5 GTF/GFF3-to-FASTA coordinate validation: sparse used-seqid presence requirements, exact-name anchor resolution, exhaustive one-based closed bounds checks, bounded representative problem diagnostics, Tier-B coordinate capability projection, unresolved unfamiliar names, strict GFF3 seqid escaping, and conservative deferral of possible circular GFF3 bounds.
+
 - Add the format-neutral Milestone 5 coordinate-bounds reasoning dimension: scalable anchor-named requirements, anchor-owned exhaustive validation capabilities, Tier-B structural evidence, bundle supplemental-capability integration, coordinate-conflict findings, and verdict/conflict-core propagation without annotation-specific policy.
 
 - Add the Milestone 5 streaming GTF/GFF3 observation layer with sparse seqid/coordinate summaries, raw-plus-decoded GFF3 identifiers, sequence-region and provenance observations, `Is_circular=true` feature observations, embedded-FASTA boundary detection, gzip support, and exhaustive feature iteration without building gene-model hierarchy.

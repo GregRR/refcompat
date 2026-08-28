@@ -25,6 +25,13 @@ from refcompat.model.annotation import (
     Gff3FastaBoundary,
     Gff3SequenceRegion,
 )
+from refcompat.model.annotation_bounds import (
+    AnnotationCoordinateCheck,
+    AnnotationCoordinateCheckState,
+    AnnotationCoordinateSequenceSummary,
+    AnnotationCoordinateValidationResult,
+)
+from refcompat.model.annotation_contract import AnnotationContractProjection
 from refcompat.model.bundle import BundleReasoningResult
 from refcompat.model.conflict_core import (
     ConflictCore,
@@ -172,6 +179,11 @@ __all__ = [
     "AlignmentProgramRecord",
     "AlignmentSequenceResolution",
     "AnnotationContextSnapshot",
+    "AnnotationContractProjection",
+    "AnnotationCoordinateCheck",
+    "AnnotationCoordinateCheckState",
+    "AnnotationCoordinateSequenceSummary",
+    "AnnotationCoordinateValidationResult",
     "AnnotationFeatureRecord",
     "AnnotationProvenanceClaim",
     "AnnotationSequenceUsage",

@@ -6,6 +6,14 @@ from refcompat.reasoning.alignment_binding import (
 )
 from refcompat.reasoning.alignment_contract import build_alignment_contract
 from refcompat.reasoning.alignment_relationship import classify_alignment_dictionary_relationship
+from refcompat.reasoning.annotation_bounds import (
+    AnnotationCoordinateEvaluationError,
+    evaluate_annotation_coordinates,
+)
+from refcompat.reasoning.annotation_contract import (
+    build_annotation_contract,
+    project_annotation_contract,
+)
 from refcompat.reasoning.bundle import reason_bundle
 from refcompat.reasoning.conflict_core import extract_conflict_cores
 from refcompat.reasoning.constraints import build_constraint, evaluate_constraint
@@ -25,11 +33,13 @@ from refcompat.reasoning.vcf_ref_pattern import classify_vcf_ref_conflicts
 from refcompat.reasoning.verdict import aggregate_bundle_verdict
 
 __all__ = [
+    "AnnotationCoordinateEvaluationError",
     "VcfRefEvaluationError",
     "aggregate_bundle_verdict",
     "aggregate_constraint_evidence",
     "alignment_binding_identity_capabilities",
     "build_alignment_contract",
+    "build_annotation_contract",
     "build_constraint",
     "build_reference_context",
     "build_vcf_contract",
@@ -39,6 +49,7 @@ __all__ = [
     "derive_constraint_evidence",
     "derive_sequence_bindings",
     "derive_vcf_sequence_bindings",
+    "evaluate_annotation_coordinates",
     "evaluate_constraint",
     "evaluate_fasta_index_integrity",
     "evaluate_sequence_dictionary_integrity",
@@ -46,6 +57,7 @@ __all__ = [
     "extract_conflict_cores",
     "interpret_constraint_results",
     "plan_cram_offline_reference",
+    "project_annotation_contract",
     "project_vcf_contract",
     "reason_bundle",
     "vcf_binding_identity_capabilities",

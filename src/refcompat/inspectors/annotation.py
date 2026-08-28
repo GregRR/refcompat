@@ -35,6 +35,9 @@ from refcompat.model.resources import Resource, ResourceKind
 
 _POSITIVE_INTEGER_RE = re.compile(r"^[0-9]+$")
 _GFF3_RAW_SEQID_RE = re.compile(r"^(?:[A-Za-z0-9.:^*$@!+_?\-|]|%[0-9A-Fa-f]{2})+$")
+_GFF3_UNESCAPED_SEQID_BYTES = frozenset(
+    b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.:^*$@!+_?-|"
+)
 _NCBI_PROVENANCE_KEYS = {
     "genome-build",
     "genome-build-accession",
@@ -397,7 +400,13 @@ def _decode_gff3_seqid(raw_value: str, *, line_number: int, path: Path) -> str:
     index = 0
     while index < len(raw_value):
         if raw_value[index] == "%":
-            decoded_bytes.append(int(raw_value[index + 1 : index + 3], 16))
+            encoded_byte = int(raw_value[index + 1 : index + 3], 16)
+            if encoded_byte in _GFF3_UNESCAPED_SEQID_BYTES:
+                raise AnnotationParseError(
+                    "GFF3 seqid percent-encodes a character that must remain unescaped "
+                    f"at line {line_number}: {path}"
+                )
+            decoded_bytes.append(encoded_byte)
             index += 3
         else:
             decoded_bytes.append(ord(raw_value[index]))

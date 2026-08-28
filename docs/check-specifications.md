@@ -511,7 +511,7 @@ The standards-derived implementation invariants are also summarized in [`annotat
 
 GTF and GFF3 feature columns 4 and 5 are interpreted as positive one-based closed coordinates. RefCompat preserves those native values in observations. Any zero-based/half-open conversion needed for FASTA access is an explicit validation-layer operation rather than a change to the observed annotation coordinates.
 
-GFF3 seqids obey the format's percent-encoding rules. Preserve the raw field for traceability, but use the decoded logical seqid for comparison with the FASTA namespace and for matching the same seqid across feature/directive records. A literal percent sign in an identifier therefore remains distinct from an encoded reserved character. Invalid required escaping is an input-validity issue rather than a reason to guess the intended name.
+GFF3 seqids obey the format's percent-encoding rules. Preserve the raw field for traceability, but use the decoded logical seqid for comparison with the FASTA namespace and for matching the same seqid across feature/directive records. Characters permitted unescaped by the GFF3 seqid grammar must not be percent-encoded; invalid, missing, or disallowed escaping is an input-validity issue rather than a reason to guess the intended name.
 
 GFF3 additionally defines an origin-crossing representation for features on an explicitly circular landmark. That exception is format-specific and is resolved before generic coordinate-bounds evidence is produced. Coordinates in the GFF3 `Target` attribute describe the aligned target sequence, not the column-1 landmark, and must not participate in RCHECK-060 anchor-coordinate bounds.
 
@@ -547,9 +547,11 @@ Scope can exclude sequences only when the caller explicitly requests that scope.
 
 For each distinct in-scope seqid actually used by a feature, project a mandatory `SequencePresenceRequirement`. Name resolution uses an exact local name or an explicit verified `SequenceBinding`; a missing candidate capability by itself is not proof that the biological sequence is absent.
 
-Project feature-coordinate validation through one scalable, resource-level `CoordinateBoundsRequirement` that names the selected FASTA anchor and the number of in-scope feature rows checked. Do not create one generic requirement per annotation feature. The corresponding anchor-owned `CoordinateBoundsValidationCapability` summarizes representable, conflicting, and unresolved feature counts while the annotation-specific validation result retains per-seqid summaries and enough local detail to explain every conflict/unresolved case.
+Project feature-coordinate validation through one scalable, resource-level `CoordinateBoundsRequirement` that names the selected FASTA anchor and the number of in-scope feature rows checked. Do not create one generic requirement per annotation feature. The corresponding anchor-owned `CoordinateBoundsValidationCapability` summarizes representable, conflicting, and unresolved feature counts while the annotation-specific validation result retains per-seqid summaries plus one representative local check for each non-match category on each seqid, so diagnostics remain bounded even when millions of features share the same problem.
 
 The pair-derived capability can satisfy only a coordinate requirement for the same annotation resource and the same selected FASTA anchor. Peer resources cannot provide coordinate capability for one another or vote on the anchor.
+
+The ordinary exact-name implementation now follows this projection end to end. Exact local seqids are checked against the selected/scoped FASTA sequence lengths; FASTA sequences absent from the sparse annotation create no requirement; unfamiliar annotation seqids remain unresolved; and proven ordinary out-of-bounds intervals populate the capability conflict count. Potential circular GFF3 bounds remain unresolved until the circular-specific semantics are implemented.
 
 ### Name resolution and missing sequences
 

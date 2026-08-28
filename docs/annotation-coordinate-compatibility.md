@@ -1,6 +1,6 @@
 # GTF/GFF3 annotation coordinate compatibility
 
-**Status:** Milestone 5 contract pinned before implementation.
+**Status:** Milestone 5 implementation in progress; ordinary exact-name bounds path complete.
 
 RCHECK-060 asks a directional question: can the reference-coordinate statements
 made by this annotation be represented against the explicitly selected FASTA
@@ -12,7 +12,7 @@ The normative check contract remains in
 standards-derived invariants that should remain visible while Milestone 5 is
 implemented.
 
-The first implementation slice now provides the narrow streaming observation boundary: feature rows remain iterable in file order while compact snapshots retain only per-seqid coordinate summaries and small reference-relevant GFF3/GTF metadata. Compatibility requirements, anchor validation, and verdict reasoning remain separate later slices.
+The streaming observation boundary, format-neutral coordinate-bounds reasoning layer, and ordinary exact-name annotation-to-FASTA validation path are now implemented. Feature rows remain iterable in file order while compact snapshots retain per-seqid summaries and small reference-relevant GFF3/GTF metadata. Used seqids create mandatory presence requirements, exhaustive feature bounds project through one anchor-owned coordinate capability, and normal bundle reasoning reaches compatible, incompatible, or indeterminate outcomes without creating one generic requirement per feature. Verified cross-name binding and GFF3-specific sequence-region, embedded-FASTA identity, and circular-origin semantics remain later slices.
 
 ## Native coordinate model
 
@@ -31,8 +31,10 @@ GFF3's defined circular-origin representation is the exception described below.
 
 GFF3 seqids use the format's percent-encoding rules. RefCompat should preserve
 the raw field for traceability while comparing the decoded logical identifier
-to the FASTA namespace and to `##sequence-region` seqids. Invalid required
-escaping is malformed input; it is not an invitation to guess a name.
+to the FASTA namespace and to `##sequence-region` seqids. Characters allowed
+unescaped by the GFF3 seqid grammar must remain unescaped rather than being
+percent-encoded. Invalid, missing, or disallowed escaping is malformed input;
+it is not an invitation to guess a name.
 
 Coordinates carried by the GFF3 `Target` attribute belong to the aligned target
 sequence rather than the column-1 landmark. They are not anchor-coordinate
@@ -63,16 +65,19 @@ absence.
 ## Scalable coordinate evidence
 
 Milestone 5 does not expand a large annotation into one generic requirement
-object per feature. The annotation-specific validation result retains per-seqid
-counts plus local conflict/unresolved details, while generic bundle reasoning
-uses one resource-level `CoordinateBoundsRequirement` and one anchor-owned
+object per feature. The annotation-specific validation result retains exhaustive per-seqid counts
+plus the first representative local check for each non-match category on each
+seqid, while generic bundle reasoning uses one resource-level
+`CoordinateBoundsRequirement` and one anchor-owned
 `CoordinateBoundsValidationCapability` for the exhaustive in-scope feature set.
+This keeps memory bounded by seqid/outcome categories rather than by the number
+of problematic feature rows.
 
 This mirrors the existing VCF direct-validation bridge: pair-derived evidence
 can satisfy only the requirement for the same subject resource and selected
 FASTA anchor. Peer resources never provide candidate anchor facts.
 
-The generic coordinate-bounds requirement/capability, evaluation, evidence, finding, and bundle-supplemental machinery is implemented independently of annotation policy. A proven ordinary out-of-bounds feature will therefore project as a hard Tier-B structural conflict once the annotation-specific validator is connected. The number of in-bounds features is descriptive and cannot cancel it. An unresolved feature count likewise remains unresolved rather than being averaged into a positive conclusion.
+The generic coordinate-bounds requirement/capability, evaluation, evidence, finding, and bundle-supplemental machinery is implemented independently of annotation policy. The ordinary exact-name annotation validator is now connected to that bridge: a proven ordinary out-of-bounds feature projects as a hard Tier-B structural conflict, while an unfamiliar seqid remains unresolved and a sparse annotation can be structurally compatible with a FASTA superset. The number of in-bounds features is descriptive and cannot cancel a conflict. An unresolved feature count likewise remains unresolved rather than being averaged into a positive conclusion. Until the dedicated circular slice establishes the GFF3 exception, an otherwise out-of-bounds feature on a seqid with observed circular evidence is conservatively counted as unresolved rather than contradicted.
 
 ## GFF3 `##sequence-region`
 

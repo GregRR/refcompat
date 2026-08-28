@@ -74,15 +74,15 @@ def test_inspect_gff3_observes_directives_decoded_seqids_and_circular_feature(
     path = tmp_path / "genes.gff3"
     path.write_text(
         "##gff-version 3\n"
-        "##sequence-region chr%3A1 1 100\n"
+        "##sequence-region chr%2F1 1 100\n"
         "##species https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=9606\n"
         "##genome-build NCBI GRCh38\n"
         "#!genome-build-accession GCF_000001405.40\n"
         "#!annotation-source RefSeq GCF_000001405.40-RS_2025_08\n"
-        "chr%3A1\tGenBank\tregion\t1\t100\t.\t+\t.\tID=chr1;Is_circular=true\n"
-        "chr%3A1\tGenBank\tgene\t90\t120\t.\t+\t.\tID=g1;Target=tx1%201 1 31 +\n"
+        "chr%2F1\tGenBank\tregion\t1\t100\t.\t+\t.\tID=chr1;Is_circular=true\n"
+        "chr%2F1\tGenBank\tgene\t90\t120\t.\t+\t.\tID=g1;Target=tx1%201 1 31 +\n"
         "##FASTA\n"
-        ">chr:1\n"
+        ">chr/1\n"
         "ACGT\n",
         encoding="utf-8",
     )
@@ -91,13 +91,13 @@ def test_inspect_gff3_observes_directives_decoded_seqids_and_circular_feature(
 
     assert snapshot.gff_version == "3"
     assert snapshot.feature_count == 2
-    assert snapshot.used_sequence_names == ("chr:1",)
-    assert snapshot.sequence_usage[0].first_raw_sequence_name == "chr%3A1"
+    assert snapshot.used_sequence_names == ("chr/1",)
+    assert snapshot.sequence_usage[0].first_raw_sequence_name == "chr%2F1"
     assert not snapshot.sequence_usage[0].has_multiple_raw_sequence_names
     assert snapshot.sequence_usage[0].minimum_start == 1
     assert snapshot.sequence_usage[0].maximum_end == 120
-    assert snapshot.sequence_regions[0].raw_sequence_name == "chr%3A1"
-    assert snapshot.sequence_regions[0].sequence_name == "chr:1"
+    assert snapshot.sequence_regions[0].raw_sequence_name == "chr%2F1"
+    assert snapshot.sequence_regions[0].sequence_name == "chr/1"
     assert [(claim.name, claim.value) for claim in snapshot.provenance_claims] == [
         (
             "##species",
@@ -117,7 +117,7 @@ def test_inspect_gff3_observes_directives_decoded_seqids_and_circular_feature(
 def test_gff3_aggregates_distinct_raw_encodings_of_same_logical_seqid(tmp_path: Path) -> None:
     path = tmp_path / "encoded.gff3"
     path.write_text(
-        "chr%3A1\tsrc\tgene\t1\t2\t.\t+\t.\tID=g1\nchr%3a1\tsrc\texon\t3\t4\t.\t+\t.\tID=e1\n",
+        "chr%2F1\tsrc\tgene\t1\t2\t.\t+\t.\tID=g1\nchr%2f1\tsrc\texon\t3\t4\t.\t+\t.\tID=e1\n",
         encoding="utf-8",
     )
 
@@ -125,11 +125,11 @@ def test_gff3_aggregates_distinct_raw_encodings_of_same_logical_seqid(tmp_path: 
     snapshot = inspect_annotation_context(resource)
     records = tuple(iter_annotation_features(resource))
 
-    assert snapshot.used_sequence_names == ("chr:1",)
-    assert snapshot.sequence_usage[0].first_raw_sequence_name == "chr%3A1"
+    assert snapshot.used_sequence_names == ("chr/1",)
+    assert snapshot.sequence_usage[0].first_raw_sequence_name == "chr%2F1"
     assert snapshot.sequence_usage[0].has_multiple_raw_sequence_names
     assert snapshot.sequence_usage[0].feature_count == 2
-    assert tuple(record.raw_sequence_name for record in records) == ("chr%3A1", "chr%3a1")
+    assert tuple(record.raw_sequence_name for record in records) == ("chr%2F1", "chr%2f1")
 
 
 def test_gff3_implicit_fasta_boundary_stops_feature_parsing(tmp_path: Path) -> None:
@@ -234,6 +234,11 @@ def test_gtf_does_not_treat_gff3_fasta_header_as_a_boundary(tmp_path: Path) -> N
             ResourceKind.GFF3,
             "chr%ZZ\tsrc\tgene\t1\t2\t.\t+\t.\tID=g1\n",
             "seqid escaping",
+        ),
+        (
+            ResourceKind.GFF3,
+            "chr%3A1\tsrc\tgene\t1\t2\t.\t+\t.\tID=g1\n",
+            "must remain unescaped",
         ),
         (
             ResourceKind.GFF3,
