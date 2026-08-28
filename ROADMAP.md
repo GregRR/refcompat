@@ -76,7 +76,9 @@ The roadmap intentionally avoids turning RefCompat into a universal genomics val
 - [x] Distinguish exact identity, verified naming-only differences, order differences, subset/superset relationships, and content conflicts.
 - [x] Keep header-only completeness limitations explicit.
 - [x] Define conservative CRAM behavior when required reference content is unavailable offline.
-- [ ] Do not reheader or realign data.
+- [x] Do not reheader or realign data.
+
+**Exit criteria:** complete. BAM/CRAM support observes declared header facts, projects generic requirements, derives only evidence-backed cross-name bindings, classifies dictionary relationships without creating a second verdict system, and defines deterministic offline CRAM reference deferral. The alignment path is diagnostic-only: it opens resources for reading, never rewrites headers or sequence names, and never remaps or realigns records.
 
 ## Milestone 5 — GTF/GFF3
 

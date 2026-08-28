@@ -262,9 +262,9 @@ Cross-name local names now resolve only through verified M5-backed sequence bind
 
 The descriptive relationship layer separately reports declared membership (`EXACT`, `ALIGNMENT_SUBSET`, `ALIGNMENT_SUPERSET`, `OVERLAP`, `DISJOINT`, `UNRESOLVED`), verified naming differences, relative shared-sequence order, M5 verification/conflict state, length conflicts, unresolved names, and non-bijective local-to-anchor mappings. An unfamiliar name is not promoted to an extra sequence merely from string difference; M5-distinct extra classification requires complete anchor MD5 coverage and a declared M5 absent from the complete anchor. `AN` never establishes a binding, and an `AN` value that names an anchor sequence blocks M5-distinct-extra classification because the header contains a competing, unresolved naming claim. These summaries do not replace generic constraint evaluation or the bundle verdict.
 
-Still required in later Milestone 4 slices:
+Order remains a policy boundary rather than a universal hard requirement:
 
-- order is represented separately and becomes mandatory only when scope/profile requires it.
+- relative shared-sequence order is described here and becomes mandatory only when an explicit scope/profile requires it.
 
 ### CRAM offline reference policy
 
@@ -294,7 +294,14 @@ A BAM declaring primary+decoy sequences against a primary-only FASTA should ther
 
 ### Safety
 
+The Milestone 4 alignment path is diagnostic-only. RefCompat may describe a
+verified name correspondence, a dictionary relationship, or a safe local FASTA
+for a future CRAM decode, but those conclusions are not mutation instructions.
+The implementation does not rewrite `@SQ`, rename references, reheader BAM/CRAM,
+remap records, or realign reads.
+
 Do not recommend blind `samtools reheader` or equivalent solely from familiar-looking naming patterns.
+See [`alignment-non-mutation-boundary.md`](alignment-non-mutation-boundary.md).
 
 ---
 

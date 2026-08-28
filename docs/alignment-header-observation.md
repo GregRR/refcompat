@@ -117,6 +117,9 @@ The combined Milestone 4 implementation still does not:
 - decode CRAM records that require external reference content;
 - reheader, realign, rename, or otherwise modify the alignment resource.
 
+The Milestone 4 non-mutation boundary is consolidated in
+[`alignment-non-mutation-boundary.md`](alignment-non-mutation-boundary.md).
+
 ## Standards
 
 - SAM v1: <https://samtools.github.io/hts-specs/SAMv1.pdf>

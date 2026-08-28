@@ -134,3 +134,4 @@ used if future CRAM record decoding genuinely requires reference bases.
 - [`alignment-sequence-binding.md`](alignment-sequence-binding.md)
 - [`reference-context-bundle.md`](reference-context-bundle.md)
 - [`cram-offline-reference.md`](cram-offline-reference.md)
+- [`alignment-non-mutation-boundary.md`](alignment-non-mutation-boundary.md)

@@ -105,6 +105,7 @@ This slice does not:
 - [`alignment-contract-projection.md`](alignment-contract-projection.md)
 - [`alignment-sequence-binding.md`](alignment-sequence-binding.md)
 - [`alignment-dictionary-relationships.md`](alignment-dictionary-relationships.md)
+- [`alignment-non-mutation-boundary.md`](alignment-non-mutation-boundary.md)
 - [`adr/0007-offline-capable-core.md`](adr/0007-offline-capable-core.md)
 
 ## Standards and provider references

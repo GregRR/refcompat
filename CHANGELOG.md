@@ -6,6 +6,8 @@ The project is currently pre-release; entries under `Unreleased` describe ongoin
 
 ## Unreleased
 
+- Close Milestone 4 with an explicit BAM/CRAM non-mutation boundary: alignment inspection and reasoning are read-only diagnostics, verified sequence bindings do not rename data, CRAM reference plans do not rewrite files, and RefCompat does not reheader or realign alignments.
+
 - Define deterministic offline CRAM reference planning: header-only reasoning never requires reference retrieval, while future reference-dependent decoding may use only an explicitly selected readable FASTA anchor with exact-name, M5-verified, length-consistent header coverage; otherwise decoding is deferred without ambient or network lookup.
 
 - Add descriptive BAM/CRAM header-dictionary relationship reasoning that separates exact identity, verified naming differences, shared-sequence order, subset/superset/overlap membership, M5 conflicts, length conflicts, and unresolved cases without introducing an alignment-specific verdict.
