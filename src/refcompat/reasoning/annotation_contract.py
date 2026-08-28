@@ -39,6 +39,7 @@ def build_annotation_contract(
     if snapshot.resource_id not in reference_context.scope.resource_ids:
         raise ValueError("annotation resource must be inside the reference-context scope")
 
+    presence_names = _required_sequence_names(snapshot)
     presence_requirements = tuple(
         SequencePresenceRequirement(
             id=_requirement_id("presence", snapshot.resource_id, sequence_name),
@@ -47,19 +48,20 @@ def build_annotation_contract(
             level=RequirementLevel.MANDATORY,
             sequence_name=sequence_name,
         )
-        for sequence_name in snapshot.used_sequence_names
+        for sequence_name in presence_names
     )
     bounds_requirement = CoordinateBoundsRequirement(
         id=_requirement_id(
             "coordinate-bounds",
             snapshot.resource_id,
-            f"{reference_context.anchor_resource_id}:{snapshot.feature_count}",
+            f"{reference_context.anchor_resource_id}:"
+            f"{snapshot.feature_count + len(snapshot.sequence_regions)}",
         ),
         resource_id=snapshot.resource_id,
         anchor_resource_id=reference_context.anchor_resource_id,
         origin=RequirementOrigin.CORE_FORMAT,
         level=RequirementLevel.MANDATORY,
-        coordinate_count=snapshot.feature_count,
+        coordinate_count=snapshot.feature_count + len(snapshot.sequence_regions),
     )
     return ResourceContract(
         resource_id=snapshot.resource_id,
@@ -91,10 +93,10 @@ def project_annotation_contract(
         id=_coordinate_capability_id(validation),
         resource_id=validation.fasta_resource_id,
         subject_resource_id=validation.annotation_resource_id,
-        checked_count=validation.feature_count,
-        representable_count=validation.representable_count,
-        conflict_count=validation.out_of_bounds_count,
-        unresolved_count=validation.unresolved_count,
+        checked_count=validation.coordinate_count,
+        representable_count=validation.coordinate_representable_count,
+        conflict_count=validation.coordinate_conflict_count,
+        unresolved_count=validation.coordinate_unresolved_count,
     )
 
     constraints: list[CompatibilityConstraint] = []
@@ -136,11 +138,44 @@ def _validate_inputs(
         raise ValueError("annotation resource must be inside the reference-context scope")
     if snapshot.feature_count != validation.feature_count:
         raise ValueError("annotation context and validation feature counts must match")
+    region_validation = validation.sequence_region_validation
+    if snapshot.sequence_regions:
+        if region_validation is None:
+            raise ValueError("GFF3 sequence-region observations require sequence-region validation")
+        observed_regions = tuple(
+            (region.sequence_name, region.start, region.end, region.line_number)
+            for region in snapshot.sequence_regions
+        )
+        validated_regions = tuple(
+            (
+                check.region.sequence_name,
+                check.region.start,
+                check.region.end,
+                check.region.line_number,
+            )
+            for check in region_validation.checks
+        )
+        if observed_regions != validated_regions:
+            raise ValueError("GFF3 sequence-region validation must match inspected directives")
+    elif region_validation is not None and region_validation.region_count:
+        raise ValueError("sequence-region validation cannot invent directives")
 
     usage = {item.sequence_name: item.feature_count for item in snapshot.sequence_usage}
     summaries = {item.sequence_name: item.feature_count for item in validation.sequence_summaries}
     if usage != summaries:
         raise ValueError("annotation seqid usage must match coordinate validation coverage")
+
+
+def _required_sequence_names(snapshot: AnnotationContextSnapshot) -> tuple[str, ...]:
+    """Feature-used seqids followed by any sequence-region-only seqids."""
+
+    names = list(snapshot.used_sequence_names)
+    seen = set(names)
+    for region in snapshot.sequence_regions:
+        if region.sequence_name not in seen:
+            names.append(region.sequence_name)
+            seen.add(region.sequence_name)
+    return tuple(names)
 
 
 def _constraint(
@@ -183,6 +218,21 @@ def _coordinate_capability_id(validation: AnnotationCoordinateValidationResult) 
                 validation.out_of_bounds_count,
                 validation.unresolved_sequence_count,
                 validation.circular_bounds_unresolved_count,
+                [
+                    [
+                        check.region.sequence_name,
+                        check.region.start,
+                        check.region.end,
+                        check.state.value,
+                        check.anchor_sequence_name,
+                        check.anchor_sequence_length,
+                    ]
+                    for check in (
+                        validation.sequence_region_validation.checks
+                        if validation.sequence_region_validation is not None
+                        else ()
+                    )
+                ],
                 problems,
             ]
         )

@@ -8,7 +8,9 @@ import pytest
 from refcompat.model.annotation import (
     AnnotationContextSnapshot,
     AnnotationFeatureRecord,
+    AnnotationProvenanceClaim,
     AnnotationSequenceUsage,
+    Gff3SequenceRegion,
 )
 from refcompat.model.annotation_contract import AnnotationContractProjection
 from refcompat.model.constraints import ConstraintState
@@ -71,10 +73,15 @@ def _feature(ordinal: int, name: str, start: int, end: int) -> AnnotationFeature
     )
 
 
-def _snapshot(*usage: tuple[str, int, int, int]) -> AnnotationContextSnapshot:
+def _snapshot(
+    *usage: tuple[str, int, int, int],
+    kind: ResourceKind = ResourceKind.GTF,
+    regions: tuple[Gff3SequenceRegion, ...] = (),
+    provenance: tuple[AnnotationProvenanceClaim, ...] = (),
+) -> AnnotationContextSnapshot:
     return AnnotationContextSnapshot(
         _ANNOTATION,
-        ResourceKind.GTF,
+        kind,
         feature_count=sum(item[1] for item in usage),
         sequence_usage=tuple(
             AnnotationSequenceUsage(
@@ -87,6 +94,8 @@ def _snapshot(*usage: tuple[str, int, int, int]) -> AnnotationContextSnapshot:
             )
             for index, (name, count, minimum_start, maximum_end) in enumerate(usage)
         ),
+        sequence_regions=regions,
+        provenance_claims=provenance,
     )
 
 
@@ -255,3 +264,117 @@ def test_projection_ids_are_deterministic() -> None:
     assert tuple(item.id for item in first.constraints) == tuple(
         item.id for item in second.constraints
     )
+
+
+def test_sequence_region_adds_presence_and_coordinate_statement() -> None:
+    _request_value, _anchor, context = _request(("chr1", 100), ("chr2", 100))
+    snapshot = _snapshot(
+        ("chr1", 1, 1, 10),
+        kind=ResourceKind.GFF3,
+        regions=(Gff3SequenceRegion("chr2", "chr2", 1, 50, 1),),
+    )
+
+    contract = build_annotation_contract(snapshot, context)
+
+    presence = tuple(
+        item for item in contract.requirements if isinstance(item, SequencePresenceRequirement)
+    )
+    bounds = tuple(
+        item for item in contract.requirements if isinstance(item, CoordinateBoundsRequirement)
+    )
+    assert tuple(item.sequence_name for item in presence) == ("chr1", "chr2")
+    assert bounds[0].coordinate_count == 2
+
+
+def test_sequence_region_outside_anchor_makes_bundle_incompatible() -> None:
+    request, anchor, context = _request(("chr1", 100))
+    snapshot = _snapshot(
+        ("chr1", 1, 1, 10),
+        kind=ResourceKind.GFF3,
+        regions=(Gff3SequenceRegion("chr1", "chr1", 1, 101, 1),),
+    )
+    validation = evaluate_annotation_coordinates(
+        snapshot,
+        (_feature(0, "chr1", 1, 10),),
+        context,
+    )
+    projection = project_annotation_contract(snapshot, validation, context)
+
+    bundle = reason_bundle(
+        request,
+        anchor,
+        (ResourceContract(_FASTA), projection.contract),
+        supplemental_capabilities=(projection.coordinate_bounds_capability,),
+    )
+
+    assert projection.coordinate_bounds_capability.checked_count == 2
+    assert projection.coordinate_bounds_capability.conflict_count == 1
+    assert aggregate_bundle_verdict(bundle).verdict is CompatibilityVerdict.INCOMPATIBLE
+
+
+def test_sequence_region_only_unfamiliar_seqid_keeps_bundle_indeterminate() -> None:
+    request, anchor, context = _request(("chr1", 100))
+    snapshot = _snapshot(
+        kind=ResourceKind.GFF3,
+        regions=(Gff3SequenceRegion("1", "1", 1, 100, 1),),
+    )
+    validation = evaluate_annotation_coordinates(snapshot, (), context)
+    projection = project_annotation_contract(snapshot, validation, context)
+
+    bundle = reason_bundle(
+        request,
+        anchor,
+        (ResourceContract(_FASTA), projection.contract),
+        supplemental_capabilities=(projection.coordinate_bounds_capability,),
+    )
+
+    assert tuple(item.state for item in bundle.evaluations) == (
+        ConstraintState.UNRESOLVED,
+        ConstraintState.UNRESOLVED,
+    )
+    assert aggregate_bundle_verdict(bundle).verdict is CompatibilityVerdict.INDETERMINATE
+
+
+def test_provenance_claims_do_not_change_annotation_contract() -> None:
+    _request_value, _anchor, context = _request(("chr1", 100))
+    plain = _snapshot(("chr1", 1, 1, 10), kind=ResourceKind.GFF3)
+    claimed = _snapshot(
+        ("chr1", 1, 1, 10),
+        kind=ResourceKind.GFF3,
+        provenance=(
+            AnnotationProvenanceClaim("##genome-build", "NCBI GRCh38", 1),
+            AnnotationProvenanceClaim("#!genome-build-accession", "GCF_000001405.40", 2),
+        ),
+    )
+
+    assert build_annotation_contract(plain, context) == build_annotation_contract(claimed, context)
+
+
+def test_projection_rejects_stale_sequence_region_validation() -> None:
+    _request_value, _anchor, context = _request(("chr1", 100))
+    snapshot = _snapshot(
+        ("chr1", 1, 1, 10),
+        kind=ResourceKind.GFF3,
+        regions=(Gff3SequenceRegion("chr1", "chr1", 1, 100, 1),),
+    )
+    validation = evaluate_annotation_coordinates(
+        snapshot,
+        (_feature(0, "chr1", 1, 10),),
+        context,
+    )
+    assert validation.sequence_region_validation is not None
+    stale_check = replace(
+        validation.sequence_region_validation.checks[0],
+        region=Gff3SequenceRegion("chr1", "chr1", 1, 99, 1),
+    )
+    stale_regions = replace(
+        validation.sequence_region_validation,
+        checks=(stale_check,),
+    )
+
+    with pytest.raises(ValueError, match="match inspected directives"):
+        project_annotation_contract(
+            snapshot,
+            replace(validation, sequence_region_validation=stale_regions),
+            context,
+        )

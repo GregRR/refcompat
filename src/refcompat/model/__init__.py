@@ -30,6 +30,9 @@ from refcompat.model.annotation_bounds import (
     AnnotationCoordinateCheckState,
     AnnotationCoordinateSequenceSummary,
     AnnotationCoordinateValidationResult,
+    Gff3SequenceRegionCheck,
+    Gff3SequenceRegionCheckState,
+    Gff3SequenceRegionValidationResult,
 )
 from refcompat.model.annotation_contract import AnnotationContractProjection
 from refcompat.model.bundle import BundleReasoningResult
@@ -234,6 +237,9 @@ __all__ = [
     "FindingKind",
     "Gff3FastaBoundary",
     "Gff3SequenceRegion",
+    "Gff3SequenceRegionCheck",
+    "Gff3SequenceRegionCheckState",
+    "Gff3SequenceRegionValidationResult",
     "IdentityProviderInfo",
     "InterpretationResult",
     "Md5Digest",

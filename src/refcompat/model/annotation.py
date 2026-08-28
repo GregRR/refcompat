@@ -161,6 +161,9 @@ class AnnotationContextSnapshot:
             raise ValueError("annotation sequence usage counts must sum to feature count")
         if self.feature_count == 0 and self.sequence_usage:
             raise ValueError("empty annotation feature stream cannot have sequence usage")
+        region_names = tuple(region.sequence_name for region in self.sequence_regions)
+        if len(set(region_names)) != len(region_names):
+            raise ValueError("GFF3 sequence-region seqids must be unique")
         if self.resource_kind is ResourceKind.GTF and (
             self.gff_version is not None or self.sequence_regions or self.fasta_boundary is not None
         ):

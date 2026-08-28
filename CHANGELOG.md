@@ -6,6 +6,8 @@ The project is currently pre-release; entries under `Unreleased` describe ongoin
 
 ## Unreleased
 
+- Add Milestone 5 GFF3 sequence-region validation and provenance boundaries: enforce unique logical `##sequence-region` declarations, check declared segments against the selected FASTA, reject ordinary feature/region self-contradiction as invalid input, fold region statements into the scalable coordinate capability, and keep build/provider/species claims non-authoritative.
+
 - Add ordinary Milestone 5 GTF/GFF3-to-FASTA coordinate validation: sparse used-seqid presence requirements, exact-name anchor resolution, exhaustive one-based closed bounds checks, bounded representative problem diagnostics, Tier-B coordinate capability projection, unresolved unfamiliar names, strict GFF3 seqid escaping, and conservative deferral of possible circular GFF3 bounds.
 
 - Add the format-neutral Milestone 5 coordinate-bounds reasoning dimension: scalable anchor-named requirements, anchor-owned exhaustive validation capabilities, Tier-B structural evidence, bundle supplemental-capability integration, coordinate-conflict findings, and verdict/conflict-core propagation without annotation-specific policy.

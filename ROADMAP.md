@@ -92,11 +92,11 @@ The roadmap intentionally avoids turning RefCompat into a universal genomics val
 - Project used seqids into generic sequence-presence requirements and annotation coordinates into a scalable generic `CoordinateBoundsRequirement` evaluated against the selected FASTA anchor.
 - Distinguish an unresolved local sequence name from a sequence that is actually proven absent; insufficient name-resolution evidence remains `INDETERMINATE` rather than becoming a false incompatibility.
 - Treat an ordinary feature interval that is proven outside a resolved anchor sequence as a hard coordinate conflict and quantify affected features without allowing counts to vote away contradictions.
-- Interpret GFF3 `##sequence-region` as a declared annotated segment, not an exact whole-sequence length, and keep malformed self-contradictory annotation input separate from biological incompatibility.
-- Observe GFF3 build/provider directives and recognizable GTF provider/release metadata as provenance claims only; they do not establish sequence identity.
+- Interpret GFF3 `##sequence-region` as a declared annotated segment, not an exact whole-sequence length; validate unique declared regions against the anchor, include region-only seqids in presence requirements, and keep malformed self-contradictory annotation input separate from biological incompatibility. **Implemented.**
+- Observe GFF3 build/provider directives and recognizable GTF provider/release metadata as provenance claims only; they do not establish sequence identity or alter compatibility by themselves. **Implemented.**
 - Recognize the GFF3 `##FASTA` boundary. When embedded sequence content is used for binding evidence, treat identity derived from those bases as content-derived resource evidence without displacing the explicitly selected FASTA anchor.
 - Apply the GFF3 circular-origin exception only when the file supplies the standard evidence needed to justify it; otherwise preserve an unresolved state rather than suppressing an apparent bounds conflict.
-- Hold an internal review after the streaming observation, generic coordinate-bounds, and ordinary exact-name anchor-validation slices are integrated, before building verified annotation binding and circular semantics on top.
+- Hold an internal review after the streaming observation, generic coordinate-bounds, and ordinary exact-name anchor-validation slices are integrated, before building verified annotation binding and circular semantics on top. **Completed after Slice 4.**
 - Hold an external milestone-boundary review after the complete GTF/GFF3 integration and adversarial coverage, before Milestone 6 depends on annotation semantics.
 - Keep annotation biology, hierarchy repair, broad format conformance, and consumer-specific dialect requirements out of core scope.
 

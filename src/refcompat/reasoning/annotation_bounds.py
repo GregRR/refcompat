@@ -3,20 +3,28 @@
 The evaluator consumes RefCompat-owned annotation observations plus the explicit
 FASTA reference context. It resolves names exactly in this slice and never
 infers aliases. GFF3 seqids carrying observed circular evidence are held
-unresolved when ordinary bounds fail until the dedicated circular semantics
-slice can establish whether the standard exception actually applies.
+unresolved when ordinary anchor or ``##sequence-region`` bounds fail until the
+dedicated circular semantics slice can establish whether the standard exception
+actually applies.
 """
 
 from __future__ import annotations
 
 from collections.abc import Iterable
 
-from refcompat.model.annotation import AnnotationContextSnapshot, AnnotationFeatureRecord
+from refcompat.model.annotation import (
+    AnnotationContextSnapshot,
+    AnnotationFeatureRecord,
+    Gff3SequenceRegion,
+)
 from refcompat.model.annotation_bounds import (
     AnnotationCoordinateCheck,
     AnnotationCoordinateCheckState,
     AnnotationCoordinateSequenceSummary,
     AnnotationCoordinateValidationResult,
+    Gff3SequenceRegionCheck,
+    Gff3SequenceRegionCheckState,
+    Gff3SequenceRegionValidationResult,
 )
 from refcompat.model.identity import SnapshotSequence
 from refcompat.model.reference_context import ReferenceContext
@@ -32,14 +40,19 @@ def evaluate_annotation_coordinates(
     features: Iterable[AnnotationFeatureRecord],
     reference_context: ReferenceContext,
 ) -> AnnotationCoordinateValidationResult:
-    """Exhaustively validate ordinary annotation coordinates against the FASTA anchor.
+    """Exhaustively validate annotation coordinates against the FASTA anchor.
 
-    This slice uses exact seqid resolution only. A missing exact name remains
-    ``UNRESOLVED_SEQUENCE`` rather than proving biological absence. Ordinary
-    resolved intervals beyond the selected anchor sequence are hard conflicts.
-    GFF3 sequences with any observed ``Is_circular=true`` feature are held
-    unresolved when an interval exceeds ordinary bounds; Slice 7 will decide
-    whether the standard circular-origin exception is actually established.
+    Exact seqid resolution only is used here. Missing exact names remain
+    unresolved rather than proving biological absence. Ordinary resolved
+    feature intervals and GFF3 ``##sequence-region`` declarations beyond the
+    selected anchor are hard structural conflicts.
+
+    A non-circular GFF3 feature outside its own declared ``##sequence-region``
+    makes the annotation semantically invalid, so evaluation raises rather than
+    converting malformed input into biological incompatibility. If the seqid
+    carries any observed ``Is_circular=true`` evidence, that self-consistency
+    question is deferred and the affected feature remains unresolved until the
+    dedicated circular-semantics slice establishes the required landmark.
     """
 
     if snapshot.resource_id == reference_context.anchor_resource_id:
@@ -57,12 +70,23 @@ def evaluate_annotation_coordinates(
         if snapshot.resource_kind is ResourceKind.GFF3
         else set()
     )
+    region_by_name = {region.sequence_name: region for region in snapshot.sequence_regions}
+    if len(region_by_name) != len(snapshot.sequence_regions):
+        raise AnnotationCoordinateEvaluationError(
+            "GFF3 sequence-region declarations must have unique logical seqids"
+        )
+    region_validation = _evaluate_sequence_regions(
+        snapshot,
+        anchor_by_name=anchor_by_name,
+        reference_context=reference_context,
+    )
 
     state_counts = {state: 0 for state in AnnotationCoordinateCheckState}
     sequence_counts: dict[str, dict[AnnotationCoordinateCheckState, int]] = {}
     stream_usage: dict[str, list[int]] = {}
     problem_checks: list[AnnotationCoordinateCheck] = []
     retained_problem_keys: set[tuple[str, AnnotationCoordinateCheckState]] = set()
+    region_violation: tuple[AnnotationFeatureRecord, Gff3SequenceRegion] | None = None
     feature_count = 0
 
     for expected_ordinal, feature in enumerate(features):
@@ -75,10 +99,23 @@ def evaluate_annotation_coordinates(
                 "annotation features must be exhaustive, contiguous, and zero-based in file order"
             )
 
+        declared_region = region_by_name.get(feature.sequence_name)
+        outside_declared_region = declared_region is not None and not _contained_in_region(
+            feature,
+            declared_region,
+        )
+        circular_region_unresolved = (
+            outside_declared_region and feature.sequence_name in potential_circular_names
+        )
+        if outside_declared_region and not circular_region_unresolved and region_violation is None:
+            assert declared_region is not None
+            region_violation = (feature, declared_region)
+
         check = _evaluate_feature(
             feature,
             anchor_by_name=anchor_by_name,
             potential_circular_names=potential_circular_names,
+            circular_region_unresolved=circular_region_unresolved,
         )
         feature_count += 1
         state_counts[check.state] += 1
@@ -123,6 +160,13 @@ def evaluate_annotation_coordinates(
         raise AnnotationCoordinateEvaluationError(
             "annotation feature stream must match inspected seqid/bounds/circular usage"
         )
+    if region_violation is not None:
+        feature, declared_region = region_violation
+        raise AnnotationCoordinateEvaluationError(
+            "GFF3 feature lies outside its declared sequence-region without circular "
+            f"landmark evidence: feature line {feature.line_number}, "
+            f"sequence-region line {declared_region.line_number}"
+        )
 
     sequence_summaries = tuple(
         AnnotationCoordinateSequenceSummary(
@@ -150,7 +194,79 @@ def evaluate_annotation_coordinates(
         ],
         sequence_summaries=sequence_summaries,
         problem_checks=tuple(problem_checks),
+        sequence_region_validation=region_validation,
     )
+
+
+def _evaluate_sequence_regions(
+    snapshot: AnnotationContextSnapshot,
+    *,
+    anchor_by_name: dict[str, SnapshotSequence],
+    reference_context: ReferenceContext,
+) -> Gff3SequenceRegionValidationResult | None:
+    if snapshot.resource_kind is not ResourceKind.GFF3:
+        if snapshot.sequence_regions:
+            raise AnnotationCoordinateEvaluationError(
+                "non-GFF3 annotation cannot carry sequence-region declarations"
+            )
+        return None
+
+    checks = tuple(
+        _evaluate_sequence_region(region, anchor_by_name=anchor_by_name)
+        for region in snapshot.sequence_regions
+    )
+    return Gff3SequenceRegionValidationResult(
+        annotation_resource_id=snapshot.resource_id,
+        fasta_resource_id=reference_context.anchor_resource_id,
+        region_count=len(checks),
+        representable_count=sum(
+            check.state is Gff3SequenceRegionCheckState.REPRESENTABLE for check in checks
+        ),
+        out_of_bounds_count=sum(
+            check.state is Gff3SequenceRegionCheckState.OUT_OF_BOUNDS for check in checks
+        ),
+        unresolved_sequence_count=sum(
+            check.state is Gff3SequenceRegionCheckState.UNRESOLVED_SEQUENCE for check in checks
+        ),
+        checks=checks,
+    )
+
+
+def _evaluate_sequence_region(
+    region: Gff3SequenceRegion,
+    *,
+    anchor_by_name: dict[str, SnapshotSequence],
+) -> Gff3SequenceRegionCheck:
+    anchor_sequence = anchor_by_name.get(region.sequence_name)
+    if anchor_sequence is None:
+        return Gff3SequenceRegionCheck(
+            region,
+            Gff3SequenceRegionCheckState.UNRESOLVED_SEQUENCE,
+        )
+
+    sequence_length = anchor_sequence.length
+    if sequence_length is None:
+        raise AnnotationCoordinateEvaluationError(
+            "reference context exposed unknown sequence length"
+        )
+    state = (
+        Gff3SequenceRegionCheckState.REPRESENTABLE
+        if region.end <= sequence_length
+        else Gff3SequenceRegionCheckState.OUT_OF_BOUNDS
+    )
+    return Gff3SequenceRegionCheck(
+        region,
+        state,
+        anchor_sequence_name=anchor_sequence.local_name,
+        anchor_sequence_length=sequence_length,
+    )
+
+
+def _contained_in_region(
+    feature: AnnotationFeatureRecord,
+    region: Gff3SequenceRegion,
+) -> bool:
+    return region.start <= feature.start and feature.end <= region.end
 
 
 def _evaluate_feature(
@@ -158,6 +274,7 @@ def _evaluate_feature(
     *,
     anchor_by_name: dict[str, SnapshotSequence],
     potential_circular_names: set[str],
+    circular_region_unresolved: bool,
 ) -> AnnotationCoordinateCheck:
     anchor_sequence = anchor_by_name.get(feature.sequence_name)
     if anchor_sequence is None:
@@ -174,7 +291,9 @@ def _evaluate_feature(
             "reference context exposed unknown sequence length"
         )
 
-    if feature.end <= sequence_length:
+    if circular_region_unresolved:
+        state = AnnotationCoordinateCheckState.CIRCULAR_BOUNDS_UNRESOLVED
+    elif feature.end <= sequence_length:
         state = AnnotationCoordinateCheckState.REPRESENTABLE
     elif feature.sequence_name in potential_circular_names:
         state = AnnotationCoordinateCheckState.CIRCULAR_BOUNDS_UNRESOLVED

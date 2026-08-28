@@ -1,6 +1,6 @@
 # GTF/GFF3 annotation coordinate compatibility
 
-**Status:** Milestone 5 implementation in progress; ordinary exact-name bounds path complete.
+**Status:** Milestone 5 implementation in progress; sequence-region/provenance slice complete.
 
 RCHECK-060 asks a directional question: can the reference-coordinate statements
 made by this annotation be represented against the explicitly selected FASTA
@@ -12,7 +12,7 @@ The normative check contract remains in
 standards-derived invariants that should remain visible while Milestone 5 is
 implemented.
 
-The streaming observation boundary, format-neutral coordinate-bounds reasoning layer, and ordinary exact-name annotation-to-FASTA validation path are now implemented. Feature rows remain iterable in file order while compact snapshots retain per-seqid summaries and small reference-relevant GFF3/GTF metadata. Used seqids create mandatory presence requirements, exhaustive feature bounds project through one anchor-owned coordinate capability, and normal bundle reasoning reaches compatible, incompatible, or indeterminate outcomes without creating one generic requirement per feature. Verified cross-name binding and GFF3-specific sequence-region, embedded-FASTA identity, and circular-origin semantics remain later slices.
+The streaming observation boundary, format-neutral coordinate-bounds reasoning layer, ordinary exact-name annotation-to-FASTA validation, and GFF3 sequence-region/provenance slice are now implemented. Feature rows remain iterable in file order while compact snapshots retain per-seqid summaries and small reference-relevant GFF3/GTF metadata. Feature-used seqids plus any sequence-region-only seqids create mandatory presence requirements. Feature intervals and declared GFF3 regions project together through one anchor-owned coordinate capability, so normal bundle reasoning reaches compatible, incompatible, or indeterminate outcomes without creating one generic requirement per coordinate statement. Verified cross-name binding, embedded-FASTA identity, and final circular-origin semantics remain later slices.
 
 ## Native coordinate model
 
@@ -69,9 +69,11 @@ object per feature. The annotation-specific validation result retains exhaustive
 plus the first representative local check for each non-match category on each
 seqid, while generic bundle reasoning uses one resource-level
 `CoordinateBoundsRequirement` and one anchor-owned
-`CoordinateBoundsValidationCapability` for the exhaustive in-scope feature set.
-This keeps memory bounded by seqid/outcome categories rather than by the number
-of problematic feature rows.
+`CoordinateBoundsValidationCapability` for the exhaustive in-scope coordinate
+set. For GFF3 that set includes both feature rows and `##sequence-region`
+declarations while retaining their counts separately in annotation-specific
+results. This keeps memory bounded by seqid/outcome categories plus declared
+regions rather than by the number of problematic feature rows.
 
 This mirrors the existing VCF direct-validation bridge: pair-derived evidence
 can satisfy only the requirement for the same subject resource and selected
@@ -86,12 +88,22 @@ end` as the sequence segment referred to by the file. The directive may cover a
 partial segment, so its `end` value is not automatically the length of the full
 biological sequence and must not become an exact `SequenceLengthRequirement`.
 
-When its seqid resolves, the declared segment can be checked for
-representability against the anchor. Separately, GFF3 requires features on a
-landmark with a supplied `##sequence-region` to stay within that region unless
-the standard circular-landmark exception applies. A file that contradicts its
-own required region semantics is malformed input; input validity must remain
-separate from a biological incompatibility verdict.
+Only one `##sequence-region` declaration is accepted for each decoded/logical
+seqid. A directive also creates a sequence-presence requirement even when that
+seqid has no feature rows, because the directive itself is a reference-coordinate
+statement. When its seqid resolves, the declared segment is checked for
+representability against the anchor and contributes to the same aggregate
+coordinate-bounds capability as feature rows. An unfamiliar region seqid remains
+unresolved rather than being guessed.
+
+Separately, GFF3 requires features on a landmark with a supplied
+`##sequence-region` to stay within that region unless the standard
+circular-landmark exception applies. Ordinary self-contradiction stops
+coordinate evaluation as invalid annotation input rather than producing a
+biological `INCOMPATIBLE` verdict. If any `Is_circular=true` evidence exists on
+that seqid, Slice 5 defers the exception question and keeps the affected feature
+unresolved; Slice 7 must still prove that the circular feature is the relevant
+landmark before accepting wrapping.
 
 ## GFF3 circular-origin features
 
@@ -115,9 +127,11 @@ sequence bounds check.
 ## Provenance claims and embedded FASTA
 
 Assembly names, assembly accessions, provider/release comments, species labels,
-and similar metadata remain provenance claims. They may be reported and may
-help a user diagnose a problem, but they do not become content-derived sequence
-identity or prove aliases.
+and similar metadata remain provenance claims. The implemented contract ignores
+those claims when building presence/coordinate requirements and capabilities, so
+changing a claim such as `##genome-build` cannot change compatibility by itself.
+Claims may be reported and may help a user diagnose a problem, but they do not
+become content-derived sequence identity or prove aliases.
 
 GFF3 `##FASTA` is different from metadata because it begins actual embedded
 sequence content. The streaming parser must recognize that boundary so FASTA

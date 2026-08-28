@@ -113,6 +113,7 @@ def inspect_annotation_context(resource: Resource) -> AnnotationContextSnapshot:
     feature_count = 0
     usage: dict[str, _UsageAccumulator] = {}
     sequence_regions: list[Gff3SequenceRegion] = []
+    sequence_region_names: set[str] = set()
     provenance_claims: list[AnnotationProvenanceClaim] = []
     gff_version: str | None = None
     fasta_boundary: Gff3FastaBoundary | None = None
@@ -148,6 +149,13 @@ def inspect_annotation_context(resource: Resource) -> AnnotationContextSnapshot:
             if gff_version is None:
                 gff_version = event.value
         elif isinstance(event, _SequenceRegionEvent):
+            if event.value.sequence_name in sequence_region_names:
+                raise AnnotationParseError(
+                    "duplicate GFF3 sequence-region seqid "
+                    f"{event.value.sequence_name!r} at line {event.value.line_number}: "
+                    f"{resource.artifact.path}"
+                )
+            sequence_region_names.add(event.value.sequence_name)
             sequence_regions.append(event.value)
         elif isinstance(event, _ProvenanceEvent):
             provenance_claims.append(event.value)

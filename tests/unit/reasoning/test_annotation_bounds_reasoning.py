@@ -8,8 +8,12 @@ from refcompat.model.annotation import (
     AnnotationContextSnapshot,
     AnnotationFeatureRecord,
     AnnotationSequenceUsage,
+    Gff3SequenceRegion,
 )
-from refcompat.model.annotation_bounds import AnnotationCoordinateCheckState
+from refcompat.model.annotation_bounds import (
+    AnnotationCoordinateCheckState,
+    Gff3SequenceRegionCheckState,
+)
 from refcompat.model.evaluation import EvaluationRequest, EvaluationScope
 from refcompat.model.identity import (
     CollectionCompleteness,
@@ -76,6 +80,7 @@ def _feature(
 def _snapshot(
     *usage: tuple[str, int, int, int, int],
     kind: ResourceKind = ResourceKind.GTF,
+    regions: tuple[Gff3SequenceRegion, ...] = (),
 ) -> AnnotationContextSnapshot:
     """Build usage as name, count, min start, max end, circular count."""
 
@@ -96,6 +101,7 @@ def _snapshot(
             )
             for index, (name, count, minimum_start, maximum_end, circular_count) in enumerate(usage)
         ),
+        sequence_regions=regions,
     )
 
 
@@ -260,4 +266,113 @@ def test_evaluator_rejects_stale_snapshot_circular_usage() -> None:
             snapshot,
             (_feature(0, "chrM", 90, 120, circular=True),),
             _context(("chrM", 100)),
+        )
+
+
+def test_gff3_sequence_region_is_checked_against_anchor() -> None:
+    region = Gff3SequenceRegion("chr1", "chr1", 10, 90, 1)
+    snapshot = _snapshot(
+        ("chr1", 1, 20, 30, 0),
+        kind=ResourceKind.GFF3,
+        regions=(region,),
+    )
+
+    result = evaluate_annotation_coordinates(
+        snapshot,
+        (_feature(0, "chr1", 20, 30),),
+        _context(("chr1", 100)),
+    )
+
+    assert result.sequence_region_validation is not None
+    assert result.sequence_region_validation.region_count == 1
+    assert result.sequence_region_validation.representable_count == 1
+    assert result.sequence_region_validation.checks[0].state is (
+        Gff3SequenceRegionCheckState.REPRESENTABLE
+    )
+    assert result.coordinate_count == 2
+    assert result.coordinate_representable_count == 2
+
+
+def test_gff3_sequence_region_outside_anchor_is_coordinate_conflict() -> None:
+    region = Gff3SequenceRegion("chr1", "chr1", 1, 101, 1)
+    snapshot = _snapshot(
+        ("chr1", 1, 1, 10, 0),
+        kind=ResourceKind.GFF3,
+        regions=(region,),
+    )
+
+    result = evaluate_annotation_coordinates(
+        snapshot,
+        (_feature(0, "chr1", 1, 10),),
+        _context(("chr1", 100)),
+    )
+
+    assert result.sequence_region_validation is not None
+    assert result.sequence_region_validation.out_of_bounds_count == 1
+    assert result.coordinate_conflict_count == 1
+
+
+def test_gff3_sequence_region_only_unfamiliar_seqid_remains_unresolved() -> None:
+    region = Gff3SequenceRegion("1", "1", 1, 100, 1)
+    snapshot = _snapshot(kind=ResourceKind.GFF3, regions=(region,))
+
+    result = evaluate_annotation_coordinates(
+        snapshot,
+        (),
+        _context(("chr1", 100)),
+    )
+
+    assert result.sequence_region_validation is not None
+    assert result.sequence_region_validation.unresolved_sequence_count == 1
+    assert result.coordinate_count == 1
+    assert result.coordinate_unresolved_count == 1
+
+
+def test_gff3_feature_outside_declared_region_is_invalid_without_circular_evidence() -> None:
+    region = Gff3SequenceRegion("chr1", "chr1", 1, 80, 1)
+    snapshot = _snapshot(
+        ("chr1", 1, 70, 90, 0),
+        kind=ResourceKind.GFF3,
+        regions=(region,),
+    )
+
+    with pytest.raises(AnnotationCoordinateEvaluationError, match="outside its declared"):
+        evaluate_annotation_coordinates(
+            snapshot,
+            (_feature(0, "chr1", 70, 90),),
+            _context(("chr1", 100)),
+        )
+
+
+def test_gff3_feature_outside_declared_region_defers_with_circular_evidence() -> None:
+    region = Gff3SequenceRegion("chr1", "chr1", 1, 80, 1)
+    snapshot = _snapshot(
+        ("chr1", 1, 70, 90, 1),
+        kind=ResourceKind.GFF3,
+        regions=(region,),
+    )
+
+    result = evaluate_annotation_coordinates(
+        snapshot,
+        (_feature(0, "chr1", 70, 90, circular=True),),
+        _context(("chr1", 100)),
+    )
+
+    assert result.circular_bounds_unresolved_count == 1
+    assert result.out_of_bounds_count == 0
+
+
+def test_stale_feature_stream_is_rejected_before_sequence_region_semantic_error() -> None:
+    region = Gff3SequenceRegion("chr1", "chr1", 1, 80, 1)
+    snapshot = _snapshot(
+        ("chr1", 1, 1, 10, 0),
+        kind=ResourceKind.GFF3,
+        regions=(region,),
+    )
+
+    with pytest.raises(AnnotationCoordinateEvaluationError, match="seqid/bounds/circular usage"):
+        evaluate_annotation_coordinates(
+            snapshot,
+            (_feature(0, "chr1", 70, 90),),
+            _context(("chr1", 100)),
         )

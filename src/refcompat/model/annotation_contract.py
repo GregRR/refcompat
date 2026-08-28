@@ -45,16 +45,22 @@ class AnnotationContractProjection:
             raise ValueError("annotation coordinate capability must belong to the FASTA anchor")
         if self.coordinate_bounds_capability.subject_resource_id != self.annotation_resource_id:
             raise ValueError("annotation coordinate capability must describe the annotation")
-        if self.coordinate_bounds_capability.checked_count != self.validation.feature_count:
-            raise ValueError("annotation coordinate capability must cover validation features")
+        if self.coordinate_bounds_capability.checked_count != self.validation.coordinate_count:
+            raise ValueError("annotation coordinate capability must cover validation statements")
         if (
             self.coordinate_bounds_capability.representable_count
-            != self.validation.representable_count
+            != self.validation.coordinate_representable_count
         ):
             raise ValueError("annotation coordinate capability representable count must match")
-        if self.coordinate_bounds_capability.conflict_count != self.validation.out_of_bounds_count:
+        if (
+            self.coordinate_bounds_capability.conflict_count
+            != self.validation.coordinate_conflict_count
+        ):
             raise ValueError("annotation coordinate capability conflict count must match")
-        if self.coordinate_bounds_capability.unresolved_count != self.validation.unresolved_count:
+        if (
+            self.coordinate_bounds_capability.unresolved_count
+            != self.validation.coordinate_unresolved_count
+        ):
             raise ValueError("annotation coordinate capability unresolved count must match")
 
         constraint_ids = tuple(constraint.id for constraint in self.constraints)

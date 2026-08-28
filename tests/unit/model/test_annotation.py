@@ -110,3 +110,15 @@ def test_annotation_usage_requires_consistent_circular_summary() -> None:
             first_feature_line=2,
             first_circular_feature_line=2,
         )
+
+
+def test_gff3_snapshot_rejects_duplicate_logical_sequence_regions() -> None:
+    region = Gff3SequenceRegion("chr1", "chr1", 1, 100, 1)
+
+    with pytest.raises(ValueError, match="sequence-region seqids must be unique"):
+        AnnotationContextSnapshot(
+            ResourceId("annotation"),
+            ResourceKind.GFF3,
+            feature_count=0,
+            sequence_regions=(region, region),
+        )

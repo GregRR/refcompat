@@ -262,6 +262,17 @@ def test_annotation_parser_rejects_invalid_required_coordinate_syntax(
         inspect_annotation_context(_resource(path, kind))
 
 
+def test_gff3_rejects_duplicate_sequence_region_for_logical_seqid(tmp_path: Path) -> None:
+    path = tmp_path / "duplicate-region.gff3"
+    path.write_text(
+        "##sequence-region chr%2F1 1 100\n##sequence-region chr%2f1 1 100\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(AnnotationParseError, match="duplicate GFF3 sequence-region seqid"):
+        inspect_annotation_context(_resource(path, ResourceKind.GFF3))
+
+
 def test_gff3_rejects_reversed_sequence_region_coordinates(tmp_path: Path) -> None:
     path = tmp_path / "invalid-region.gff3"
     path.write_text("##sequence-region chr1 10 5\n", encoding="utf-8")

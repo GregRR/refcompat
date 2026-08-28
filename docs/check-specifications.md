@@ -545,13 +545,13 @@ Scope can exclude sequences only when the caller explicitly requests that scope.
 
 ### Contract projection
 
-For each distinct in-scope seqid actually used by a feature, project a mandatory `SequencePresenceRequirement`. Name resolution uses an exact local name or an explicit verified `SequenceBinding`; a missing candidate capability by itself is not proof that the biological sequence is absent.
+For each distinct in-scope seqid actually used by a feature, and for any additional GFF3 seqid named only by `##sequence-region`, project a mandatory `SequencePresenceRequirement`. Name resolution uses an exact local name or an explicit verified `SequenceBinding`; a missing candidate capability by itself is not proof that the biological sequence is absent.
 
-Project feature-coordinate validation through one scalable, resource-level `CoordinateBoundsRequirement` that names the selected FASTA anchor and the number of in-scope feature rows checked. Do not create one generic requirement per annotation feature. The corresponding anchor-owned `CoordinateBoundsValidationCapability` summarizes representable, conflicting, and unresolved feature counts while the annotation-specific validation result retains per-seqid summaries plus one representative local check for each non-match category on each seqid, so diagnostics remain bounded even when millions of features share the same problem.
+Project annotation-coordinate validation through one scalable, resource-level `CoordinateBoundsRequirement` that names the selected FASTA anchor and counts all in-scope coordinate statements. GTF contributes feature rows; GFF3 also contributes `##sequence-region` declarations. Do not create one generic requirement per feature or directive. The corresponding anchor-owned `CoordinateBoundsValidationCapability` summarizes representable, conflicting, and unresolved statements while the annotation-specific validation result keeps feature/per-seqid counts, bounded representative feature problems, and the finite set of region checks.
 
 The pair-derived capability can satisfy only a coordinate requirement for the same annotation resource and the same selected FASTA anchor. Peer resources cannot provide coordinate capability for one another or vote on the anchor.
 
-The ordinary exact-name implementation now follows this projection end to end. Exact local seqids are checked against the selected/scoped FASTA sequence lengths; FASTA sequences absent from the sparse annotation create no requirement; unfamiliar annotation seqids remain unresolved; and proven ordinary out-of-bounds intervals populate the capability conflict count. Potential circular GFF3 bounds remain unresolved until the circular-specific semantics are implemented.
+The exact-name implementation now follows this projection end to end. Exact local seqids are checked against selected/scoped FASTA lengths; FASTA sequences absent from both feature usage and sequence-region declarations create no requirement; unfamiliar annotation seqids remain unresolved; and proven ordinary feature or region bounds conflicts populate the shared capability conflict count. Potential circular GFF3 feature/region-consistency questions remain unresolved until the circular-specific semantics are implemented.
 
 ### Name resolution and missing sequences
 
@@ -571,7 +571,7 @@ Unresolved-sequence features are not also labeled out of bounds because no ancho
 
 The GFF3 `##sequence-region seqid start end` directive declares the sequence segment referred to by the file. It is not an assertion that the full biological sequence has length `end`, so it must not be projected as an exact `SequenceLengthRequirement` merely because it ends at a particular coordinate.
 
-When the directive's seqid resolves to the selected FASTA anchor, its declared segment must itself be representable against that anchor. Independently, GFF3 requires ordinary features on that landmark to lie within a supplied `##sequence-region`, subject to its circular-landmark exception. A file that violates its own required region semantics is malformed input; where that prevents meaningful evaluation it affects analysis status (`INVALID_INPUT`) rather than becoming a biological `INCOMPATIBLE` verdict.
+Only one `##sequence-region` directive is valid for a given decoded/logical seqid. RefCompat rejects duplicates as malformed annotation input. A region-only seqid still creates a presence requirement because the directive itself refers to that coordinate system. When the directive seqid resolves to the selected FASTA anchor, its declared segment must itself be representable against that anchor and participates in the same exhaustive coordinate capability as feature rows; an unresolved region seqid remains unresolved. Independently, GFF3 requires ordinary features on that landmark to lie within the supplied region, subject to its circular-landmark exception. A non-circular feature/region contradiction stops coordinate evaluation as invalid input instead of becoming a biological `INCOMPATIBLE` verdict. If circular evidence is present but the landmark relationship has not yet been established, the affected feature remains unresolved pending the dedicated circular slice.
 
 ### GFF3 circular-origin semantics
 
@@ -583,7 +583,7 @@ GTF has no corresponding core circular-origin rule in the supported GFF2-derived
 
 ### Provenance and embedded GFF3 FASTA
 
-Provider/release/build/species metadata are provenance claims. `GRCh38`, `GRCm39`, a provider name, an assembly accession, or a familiar filename can support explanation but cannot independently establish sequence identity or an alias.
+Provider/release/build/species metadata are provenance claims. `GRCh38`, `GRCm39`, a provider name, an assembly accession, or a familiar filename can support explanation but cannot independently establish sequence identity or an alias. The annotation contract and coordinate capability are invariant to these claims; a claim change alone does not alter compatibility reasoning.
 
 `##FASTA` ends the GFF3 feature/directive portion and begins embedded sequence content. The parser must recognize this boundary so sequence lines are never interpreted as feature rows; the GFF3 backward-compatibility rule that a line beginning with `>` implies the FASTA section is handled at the same parser boundary. If Milestone 5 derives an identity from embedded bases for a used landmark, that identity is `CONTENT_DERIVED` evidence owned by the annotation resource. It may participate in conservative sequence binding only under the existing full-anchor uniqueness and conflict rules. Embedded content never replaces, selects, or outranks the explicitly selected FASTA anchor, and exact-name coordinate validation does not require embedded FASTA content to exist.
 

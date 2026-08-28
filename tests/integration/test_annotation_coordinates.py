@@ -16,7 +16,10 @@ from refcompat.model.reference_context import ReferenceContext
 from refcompat.model.resources import ArtifactIdentity, Resource, ResourceId, ResourceKind
 from refcompat.model.verdict import CompatibilityVerdict
 from refcompat.reasoning import aggregate_bundle_verdict, reason_bundle
-from refcompat.reasoning.annotation_bounds import evaluate_annotation_coordinates
+from refcompat.reasoning.annotation_bounds import (
+    AnnotationCoordinateEvaluationError,
+    evaluate_annotation_coordinates,
+)
 from refcompat.reasoning.annotation_contract import project_annotation_contract
 from refcompat.reasoning.reference_context import build_reference_context
 
@@ -117,3 +120,60 @@ def test_streamed_gff3_possible_circular_bounds_remain_indeterminate(tmp_path: P
     assert validation.out_of_bounds_count == 0
     assert validation.circular_bounds_unresolved_count == 1
     assert aggregate_bundle_verdict(bundle).verdict is CompatibilityVerdict.INDETERMINATE
+
+
+def test_streamed_gff3_sequence_region_participates_in_anchor_validation(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "region.gff3"
+    path.write_text(
+        "##gff-version 3\n"
+        "##sequence-region chr1 1 101\n"
+        "##genome-build NCBI GRCh38\n"
+        "chr1\tsrc\tgene\t1\t20\t.\t+\t.\tID=g1\n",
+        encoding="utf-8",
+    )
+    annotation = Resource(_ANNOTATION, ResourceKind.GFF3, ArtifactIdentity(path))
+    request, anchor, context = _context(annotation, ("chr1", 100))
+
+    snapshot = inspect_annotation_context(annotation)
+    validation = evaluate_annotation_coordinates(
+        snapshot,
+        iter_annotation_features(annotation),
+        context,
+    )
+    projection = project_annotation_contract(snapshot, validation, context)
+    bundle = reason_bundle(
+        request,
+        anchor,
+        (ResourceContract(_FASTA), projection.contract),
+        supplemental_capabilities=(projection.coordinate_bounds_capability,),
+    )
+
+    assert validation.feature_count == 1
+    assert validation.coordinate_count == 2
+    assert validation.coordinate_conflict_count == 1
+    assert aggregate_bundle_verdict(bundle).verdict is CompatibilityVerdict.INCOMPATIBLE
+
+
+def test_streamed_gff3_feature_outside_declared_region_is_invalid_input_boundary(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "invalid-region.gff3"
+    path.write_text(
+        "##gff-version 3\n##sequence-region chr1 1 80\nchr1\tsrc\tgene\t70\t90\t.\t+\t.\tID=g1\n",
+        encoding="utf-8",
+    )
+    annotation = Resource(_ANNOTATION, ResourceKind.GFF3, ArtifactIdentity(path))
+    _request_value, _anchor, context = _context(annotation, ("chr1", 100))
+    snapshot = inspect_annotation_context(annotation)
+
+    with pytest.raises(
+        AnnotationCoordinateEvaluationError,
+        match="outside its declared sequence-region",
+    ):
+        evaluate_annotation_coordinates(
+            snapshot,
+            iter_annotation_features(annotation),
+            context,
+        )

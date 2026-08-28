@@ -4,12 +4,15 @@ from dataclasses import replace
 
 import pytest
 
-from refcompat.model.annotation import AnnotationFeatureRecord
+from refcompat.model.annotation import AnnotationFeatureRecord, Gff3SequenceRegion
 from refcompat.model.annotation_bounds import (
     AnnotationCoordinateCheck,
     AnnotationCoordinateCheckState,
     AnnotationCoordinateSequenceSummary,
     AnnotationCoordinateValidationResult,
+    Gff3SequenceRegionCheck,
+    Gff3SequenceRegionCheckState,
+    Gff3SequenceRegionValidationResult,
 )
 from refcompat.model.resources import ResourceId
 
@@ -172,3 +175,70 @@ def test_unresolved_count_combines_name_and_circular_states() -> None:
     )
 
     assert result.unresolved_count == 2
+
+
+def test_sequence_region_validation_covers_every_directive() -> None:
+    region = Gff3SequenceRegion("chr1", "chr1", 1, 100, 1)
+    check = Gff3SequenceRegionCheck(
+        region,
+        Gff3SequenceRegionCheckState.REPRESENTABLE,
+        anchor_sequence_name="chr1",
+        anchor_sequence_length=100,
+    )
+
+    result = Gff3SequenceRegionValidationResult(
+        _ANNOTATION,
+        _FASTA,
+        region_count=1,
+        representable_count=1,
+        out_of_bounds_count=0,
+        unresolved_sequence_count=0,
+        checks=(check,),
+    )
+
+    assert result.unresolved_count == 0
+
+    with pytest.raises(ValueError, match="cover every directive"):
+        replace(result, representable_count=0)
+
+
+def test_coordinate_totals_include_sequence_region_validation() -> None:
+    region = Gff3SequenceRegion("chr1", "chr1", 1, 101, 1)
+    region_validation = Gff3SequenceRegionValidationResult(
+        _ANNOTATION,
+        _FASTA,
+        region_count=1,
+        representable_count=0,
+        out_of_bounds_count=1,
+        unresolved_sequence_count=0,
+        checks=(
+            Gff3SequenceRegionCheck(
+                region,
+                Gff3SequenceRegionCheckState.OUT_OF_BOUNDS,
+                anchor_sequence_name="chr1",
+                anchor_sequence_length=100,
+            ),
+        ),
+    )
+    result = AnnotationCoordinateValidationResult(
+        _ANNOTATION,
+        _FASTA,
+        feature_count=1,
+        representable_count=1,
+        out_of_bounds_count=0,
+        unresolved_sequence_count=0,
+        circular_bounds_unresolved_count=0,
+        sequence_summaries=(
+            AnnotationCoordinateSequenceSummary(
+                "chr1",
+                feature_count=1,
+                representable_count=1,
+            ),
+        ),
+        sequence_region_validation=region_validation,
+    )
+
+    assert result.coordinate_count == 2
+    assert result.coordinate_representable_count == 1
+    assert result.coordinate_conflict_count == 1
+    assert result.coordinate_unresolved_count == 0
