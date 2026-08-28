@@ -8,6 +8,15 @@ from refcompat.model.alignment import (
     AlignmentHeaderSnapshot,
     AlignmentProgramRecord,
 )
+from refcompat.model.alignment_relationship import (
+    AlignmentContentRelationship,
+    AlignmentDictionaryRelationshipSummary,
+    AlignmentMembershipRelationship,
+    AlignmentNameResolutionMethod,
+    AlignmentNamingRelationship,
+    AlignmentOrderRelationship,
+    AlignmentSequenceResolution,
+)
 from refcompat.model.bundle import BundleReasoningResult
 from refcompat.model.conflict_core import (
     ConflictCore,
@@ -140,9 +149,16 @@ from refcompat.model.vcf_ref_pattern import (
 from refcompat.model.verdict import CompatibilityVerdict, VerdictAggregation
 
 __all__ = [
+    "AlignmentContentRelationship",
+    "AlignmentDictionaryRelationshipSummary",
     "AlignmentHeaderData",
     "AlignmentHeaderSnapshot",
+    "AlignmentMembershipRelationship",
+    "AlignmentNameResolutionMethod",
+    "AlignmentNamingRelationship",
+    "AlignmentOrderRelationship",
     "AlignmentProgramRecord",
+    "AlignmentSequenceResolution",
     "ArtifactDigest",
     "ArtifactDigestAlgorithm",
     "ArtifactIdentity",

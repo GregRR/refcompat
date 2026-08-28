@@ -1,7 +1,7 @@
 # BAM/CRAM contract projection
 
-**Status:** Milestone 4 core header-contract projection and verified M5-backed
-cross-name binding implemented; relationship classification remains later.
+**Status:** Milestone 4 core header-contract projection, verified M5-backed
+cross-name binding, and descriptive dictionary relationship classification implemented.
 
 RefCompat projects the declared BAM/CRAM SAM reference dictionary into the same
 format-neutral requirement vocabulary used by the rest of the reasoner. This

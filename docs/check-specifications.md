@@ -234,7 +234,7 @@ RefCompat does not automatically rename dictionary sequences, rewrite `@SQ` meta
 
 ## RCHECK-040 — BAM/CRAM ↔ FASTA reference context
 
-**Implementation status:** header observation, core `@SQ` contract projection, and conservative M5-backed cross-name binding are implemented for BAM and CRAM; relationship reasoning and CRAM reference-dependent behavior remain later Milestone 4 slices.
+**Implementation status:** header observation, core `@SQ` contract projection, conservative M5-backed cross-name binding, and descriptive dictionary relationship reasoning are implemented for BAM and CRAM; CRAM reference-dependent behavior remains a later Milestone 4 slice.
 
 ### Purpose
 
@@ -260,6 +260,8 @@ For each declared reference sequence, the implemented core contract creates mand
 
 Cross-name local names now resolve only through verified M5-backed sequence binding with complete-anchor uniqueness, scope, and length-consistency checks. `AN` remains observational rather than binding authority.
 
+The descriptive relationship layer separately reports declared membership (`EXACT`, `ALIGNMENT_SUBSET`, `ALIGNMENT_SUPERSET`, `OVERLAP`, `DISJOINT`, `UNRESOLVED`), verified naming differences, relative shared-sequence order, M5 verification/conflict state, length conflicts, unresolved names, and non-bijective local-to-anchor mappings. An unfamiliar name is not promoted to an extra sequence merely from string difference; M5-distinct extra classification requires complete anchor MD5 coverage and a declared M5 absent from the complete anchor. `AN` never establishes a binding, and an `AN` value that names an anchor sequence blocks M5-distinct-extra classification because the header contains a competing, unresolved naming claim. These summaries do not replace generic constraint evaluation or the bundle verdict.
+
 Still required in later Milestone 4 slices:
 
 - order is represented separately and becomes mandatory only when scope/profile requires it.
@@ -272,9 +274,11 @@ A BAM declaring primary+decoy sequences against a primary-only FASTA should ther
 
 ### Representative outcomes
 
-- same name, conflicting content checksum -> `UNSATISFIED` hard conflict;
-- same content identity, different local name -> `SATISFIED` via verified sequence identity/alias;
-- same name+length without content checksum -> strong structural compatibility, not exact proof;
+- same name, conflicting content checksum -> `UNSATISFIED` hard conflict plus `M5_CONFLICT` relationship content;
+- same content identity, different local name -> `SATISFIED` via verified sequence identity/alias and, when all other dictionary dimensions agree, a verified naming-only difference;
+- same complete set and M5 identities in different order -> exact membership with `DIFFERENT` shared-sequence order;
+- strict resolved shared set -> `ALIGNMENT_SUBSET`; complete shared set plus M5-distinct declared records -> `ALIGNMENT_SUPERSET`; partial shared set plus M5-distinct declared records -> `OVERLAP`;
+- same name+length without content checksum -> strong structural compatibility, not exact identity proof;
 - different names, same length, no identity/alias evidence -> `UNRESOLVED`.
 
 ### Safety

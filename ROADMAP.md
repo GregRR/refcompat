@@ -73,8 +73,8 @@ The roadmap intentionally avoids turning RefCompat into a universal genomics val
 - [x] Inspect `@SQ` names, lengths, order, M5, aliases, assembly, URI, and species metadata where available.
 - [x] Project declared `@SQ` names, lengths, and M5 values into mandatory core-format presence, length, and identity requirements without promoting M5 to anchor authority.
 - [x] Use `@SQ M5` only as explicitly declared metadata when deriving conservative cross-name sequence bindings.
-- [ ] Distinguish exact identity, verified naming-only differences, order differences, subset/superset relationships, and content conflicts.
-- [ ] Keep header-only completeness limitations explicit.
+- [x] Distinguish exact identity, verified naming-only differences, order differences, subset/superset relationships, and content conflicts.
+- [x] Keep header-only completeness limitations explicit.
 - [ ] Define conservative CRAM behavior when required reference content is unavailable offline.
 - [ ] Do not reheader or realign data.
 

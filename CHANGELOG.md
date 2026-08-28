@@ -6,6 +6,8 @@ The project is currently pre-release; entries under `Unreleased` describe ongoin
 
 ## Unreleased
 
+- Add descriptive BAM/CRAM header-dictionary relationship reasoning that separates exact identity, verified naming differences, shared-sequence order, subset/superset/overlap membership, M5 conflicts, length conflicts, and unresolved cases without introducing an alignment-specific verdict.
+
 - Add conservative BAM/CRAM cross-name sequence binding from uniquely matched `@SQ M5` identity with full-anchor uniqueness, scope, length-consistency, declared-metadata provenance, and generic whole-bundle reuse while leaving `AN` non-authoritative.
 
 - Project BAM/CRAM `@SQ` names, lengths, and M5 declarations into mandatory format-neutral presence, length, and identity requirements while keeping order policy deferred.

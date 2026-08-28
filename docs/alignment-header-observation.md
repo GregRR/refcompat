@@ -66,9 +66,11 @@ This slice does **not** iterate alignment records. Therefore:
 
 Milestone 4 contract projection maps the declared header dictionary into core
 reference requirements, and a separate binding bridge may resolve safe
-cross-name M5 identity while keeping these header-only limits explicit; see
-[`alignment-contract-projection.md`](alignment-contract-projection.md) and
-[`alignment-sequence-binding.md`](alignment-sequence-binding.md).
+cross-name M5 identity and a descriptive relationship layer can classify the
+declared dictionary while keeping these header-only limits explicit; see
+[`alignment-contract-projection.md`](alignment-contract-projection.md),
+[`alignment-sequence-binding.md`](alignment-sequence-binding.md), and
+[`alignment-dictionary-relationships.md`](alignment-dictionary-relationships.md).
 
 ## CRAM and reference availability
 
@@ -108,7 +110,6 @@ This observation slice remains separate from the contract and binding bridges.
 The combined Milestone 4 implementation still does not:
 
 - derive sequence bindings from `AN` or familiar name patterns;
-- classify exact/subset/superset/order relationships;
 - scan reads to determine actual reference usage;
 - decode CRAM records that require external reference content;
 - reheader, realign, rename, or otherwise modify the alignment resource.

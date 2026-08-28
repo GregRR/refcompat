@@ -58,6 +58,12 @@ the complete FASTA anchor. Uniqueness applies to the **target identified by the
 content**, not to a requirement that every resource use one canonical local
 label.
 
+## Relationship reasoning
+
+Verified bindings are also the only cross-name mappings consumed by
+[`alignment-dictionary-relationships.md`](alignment-dictionary-relationships.md).
+That layer remains descriptive and does not promote `AN` or name resemblance.
+
 ## Contract and bundle integration
 
 `build_alignment_contract()` retains safe cross-name M5 binding capabilities in

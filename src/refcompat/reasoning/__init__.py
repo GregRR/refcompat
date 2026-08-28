@@ -5,6 +5,7 @@ from refcompat.reasoning.alignment_binding import (
     derive_alignment_sequence_bindings,
 )
 from refcompat.reasoning.alignment_contract import build_alignment_contract
+from refcompat.reasoning.alignment_relationship import classify_alignment_dictionary_relationship
 from refcompat.reasoning.bundle import reason_bundle
 from refcompat.reasoning.conflict_core import extract_conflict_cores
 from refcompat.reasoning.constraints import build_constraint, evaluate_constraint
@@ -31,6 +32,7 @@ __all__ = [
     "build_constraint",
     "build_reference_context",
     "build_vcf_contract",
+    "classify_alignment_dictionary_relationship",
     "classify_vcf_ref_conflicts",
     "derive_alignment_sequence_bindings",
     "derive_constraint_evidence",
