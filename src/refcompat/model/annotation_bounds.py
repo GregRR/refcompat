@@ -12,6 +12,7 @@ from dataclasses import dataclass
 
 from refcompat._compat import StrEnum
 from refcompat.model.annotation import AnnotationFeatureRecord, Gff3SequenceRegion
+from refcompat.model.reference_context import SequenceBindingId
 from refcompat.model.resources import ResourceId
 
 
@@ -192,6 +193,7 @@ class AnnotationCoordinateValidationResult:
     sequence_summaries: tuple[AnnotationCoordinateSequenceSummary, ...] = ()
     problem_checks: tuple[AnnotationCoordinateCheck, ...] = ()
     sequence_region_validation: Gff3SequenceRegionValidationResult | None = None
+    sequence_binding_ids: tuple[SequenceBindingId, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.annotation_resource_id:
@@ -277,6 +279,11 @@ class AnnotationCoordinateValidationResult:
             raise ValueError("annotation validation problem checks must preserve feature order")
         if len(set(ordinals)) != len(ordinals):
             raise ValueError("annotation validation problem-check ordinals must be unique")
+
+        if len(set(self.sequence_binding_ids)) != len(self.sequence_binding_ids):
+            raise ValueError("annotation validation sequence binding IDs must be unique")
+        if self.sequence_binding_ids != tuple(sorted(self.sequence_binding_ids, key=str)):
+            raise ValueError("annotation validation sequence binding IDs must be sorted")
 
         region_validation = self.sequence_region_validation
         if region_validation is not None:

@@ -122,3 +122,34 @@ def test_gff3_snapshot_rejects_duplicate_logical_sequence_regions() -> None:
             feature_count=0,
             sequence_regions=(region, region),
         )
+
+
+def test_embedded_fasta_sequence_requires_nonempty_name_and_positive_length() -> None:
+    from refcompat.model.annotation import Gff3EmbeddedFastaSequence
+    from refcompat.model.identity import Md5Digest
+
+    md5 = Md5Digest("f1f8f4bf413b16ad135722aa4591043e")
+    with pytest.raises(ValueError, match="name"):
+        Gff3EmbeddedFastaSequence("", 4, md5, 1)
+    with pytest.raises(ValueError, match="length"):
+        Gff3EmbeddedFastaSequence("chr1", -1, md5, 1)
+
+
+def test_annotation_snapshot_rejects_embedded_fasta_without_boundary() -> None:
+    from refcompat.model.annotation import Gff3EmbeddedFastaSequence
+    from refcompat.model.identity import Md5Digest
+
+    with pytest.raises(ValueError, match="require a FASTA boundary"):
+        AnnotationContextSnapshot(
+            ResourceId("annotation"),
+            ResourceKind.GFF3,
+            0,
+            embedded_fasta_sequences=(
+                Gff3EmbeddedFastaSequence(
+                    "chr1",
+                    4,
+                    Md5Digest("f1f8f4bf413b16ad135722aa4591043e"),
+                    2,
+                ),
+            ),
+        )

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from refcompat.model.identity import Md5Digest
 from refcompat.model.resources import ResourceId, ResourceKind
 
 
@@ -106,6 +107,24 @@ class Gff3SequenceRegion:
 
 
 @dataclass(frozen=True, slots=True)
+class Gff3EmbeddedFastaSequence:
+    """One embedded GFF3 FASTA sequence summarized from content."""
+
+    sequence_name: str
+    length: int
+    md5: Md5Digest
+    header_line: int
+
+    def __post_init__(self) -> None:
+        if not self.sequence_name:
+            raise ValueError("embedded GFF3 FASTA sequence name must not be empty")
+        if self.length < 1:
+            raise ValueError("embedded GFF3 FASTA sequence length must be positive")
+        if self.header_line < 1:
+            raise ValueError("embedded GFF3 FASTA header line must be positive")
+
+
+@dataclass(frozen=True, slots=True)
 class AnnotationProvenanceClaim:
     """One parser-recognized annotation provenance/header claim."""
 
@@ -146,6 +165,7 @@ class AnnotationContextSnapshot:
     sequence_regions: tuple[Gff3SequenceRegion, ...] = ()
     provenance_claims: tuple[AnnotationProvenanceClaim, ...] = ()
     fasta_boundary: Gff3FastaBoundary | None = None
+    embedded_fasta_sequences: tuple[Gff3EmbeddedFastaSequence, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.resource_id:
@@ -164,8 +184,16 @@ class AnnotationContextSnapshot:
         region_names = tuple(region.sequence_name for region in self.sequence_regions)
         if len(set(region_names)) != len(region_names):
             raise ValueError("GFF3 sequence-region seqids must be unique")
+        embedded_names = tuple(sequence.sequence_name for sequence in self.embedded_fasta_sequences)
+        if len(set(embedded_names)) != len(embedded_names):
+            raise ValueError("embedded GFF3 FASTA sequence names must be unique")
+        if self.embedded_fasta_sequences and self.fasta_boundary is None:
+            raise ValueError("embedded GFF3 FASTA sequences require a FASTA boundary")
         if self.resource_kind is ResourceKind.GTF and (
-            self.gff_version is not None or self.sequence_regions or self.fasta_boundary is not None
+            self.gff_version is not None
+            or self.sequence_regions
+            or self.fasta_boundary is not None
+            or self.embedded_fasta_sequences
         ):
             raise ValueError("GTF snapshot cannot contain GFF3-only observations")
         if self.resource_kind is ResourceKind.GTF and any(

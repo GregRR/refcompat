@@ -530,12 +530,12 @@ For GFF3, where present, also observe:
 - `##sequence-region`;
 - standard genome-build/species/provenance directives relevant to reference context;
 - useful provider-specific provenance directives such as NCBI's `#!genome-build` and `#!genome-build-accession` without treating them as standard GFF3 identity evidence;
-- the `##FASTA` boundary and embedded landmark sequence content needed by later binding evidence;
+- the `##FASTA` boundary plus streaming name/length/content-MD5 summaries for embedded FASTA sequences;
 - explicit `Is_circular=true` landmark evidence needed to interpret circular-origin coordinates.
 
 The narrow parser does not need to construct transcript/gene hierarchy merely to perform these observations.
 
-**Implementation status:** the streaming GTF/GFF3 observation boundary is implemented. It exposes a compact per-seqid snapshot plus exhaustive feature iteration, preserves raw and decoded GFF3 seqids, recognizes gzip content without relying on filename suffixes, records the reference-relevant directives above, and stops annotation parsing at explicit or backward-compatible implied GFF3 FASTA boundaries. Coordinate requirement projection and FASTA-anchor validation remain later RCHECK-060 slices.
+**Implementation status:** the streaming GTF/GFF3 observation boundary is implemented. It exposes a compact per-seqid snapshot plus exhaustive feature iteration, preserves raw and decoded GFF3 seqids, recognizes gzip content without relying on filename suffixes, records the reference-relevant directives above, stops annotation parsing at explicit or backward-compatible implied GFF3 FASTA boundaries, and streams embedded FASTA sequence summaries without retaining complete bases in memory.
 
 ### Sparse annotation semantics
 
@@ -551,7 +551,7 @@ Project annotation-coordinate validation through one scalable, resource-level `C
 
 The pair-derived capability can satisfy only a coordinate requirement for the same annotation resource and the same selected FASTA anchor. Peer resources cannot provide coordinate capability for one another or vote on the anchor.
 
-The exact-name implementation now follows this projection end to end. Exact local seqids are checked against selected/scoped FASTA lengths; FASTA sequences absent from both feature usage and sequence-region declarations create no requirement; unfamiliar annotation seqids remain unresolved; and proven ordinary feature or region bounds conflicts populate the shared capability conflict count. Potential circular GFF3 feature/region-consistency questions remain unresolved until the circular-specific semantics are implemented.
+The implementation now follows this projection end to end using exact names or explicit verified `SequenceBinding` values. Bound local seqids are projected into the verified anchor namespace before feature and sequence-region bounds checks; FASTA sequences absent from both feature usage and sequence-region declarations create no requirement; unfamiliar annotation seqids without content-backed binding remain unresolved; and proven ordinary feature or region bounds conflicts populate the shared capability conflict count. Potential circular GFF3 feature/region-consistency questions remain unresolved until the circular-specific semantics are implemented.
 
 ### Name resolution and missing sequences
 
@@ -585,7 +585,11 @@ GTF has no corresponding core circular-origin rule in the supported GFF2-derived
 
 Provider/release/build/species metadata are provenance claims. `GRCh38`, `GRCm39`, a provider name, an assembly accession, or a familiar filename can support explanation but cannot independently establish sequence identity or an alias. The annotation contract and coordinate capability are invariant to these claims; a claim change alone does not alter compatibility reasoning.
 
-`##FASTA` ends the GFF3 feature/directive portion and begins embedded sequence content. The parser must recognize this boundary so sequence lines are never interpreted as feature rows; the GFF3 backward-compatibility rule that a line beginning with `>` implies the FASTA section is handled at the same parser boundary. If Milestone 5 derives an identity from embedded bases for a used landmark, that identity is `CONTENT_DERIVED` evidence owned by the annotation resource. It may participate in conservative sequence binding only under the existing full-anchor uniqueness and conflict rules. Embedded content never replaces, selects, or outranks the explicitly selected FASTA anchor, and exact-name coordinate validation does not require embedded FASTA content to exist.
+`##FASTA` ends the GFF3 feature/directive portion and begins embedded sequence content. The parser recognizes this boundary so sequence lines are never interpreted as feature rows; the GFF3 backward-compatibility rule that a line beginning with `>` implies the FASTA section is handled at the same parser boundary. Embedded FASTA sequence content is normalized for MD5 identity using the refget checksum rule: non-sequence formatting is discarded and letters are uppercased before hashing. An embedded record with no normalized sequence content is invalid rather than being assigned an empty-sequence identity. Only an embedded FASTA identifier that exactly matches a feature-used or `##sequence-region` logical seqid contributes RCHECK-060 identity; other bundled sequences remain observationally irrelevant to the reference-coordinate check.
+
+Each relevant embedded sequence projects a mandatory `SequenceIdentityRequirement` plus an annotation-owned `SequenceIdentityCapability` with `CONTENT_DERIVED` provenance. The existing sequence-binding reasoner may use that capability to establish a cross-name mapping only when the matching identity scheme is available for every sequence in the complete FASTA anchor, the identity is unique across that complete anchor, and the target remains in explicit scope. Missing anchor identity or scope must not create uniqueness by hiding a possible duplicate. The resulting verified binding is supplied to feature/region coordinate validation. `project_annotation_contract()` independently derives the expected bindings for the same snapshot/context and rejects stale validation that did not use exactly those bindings before projecting presence/identity constraints; no string alias heuristic is added. An exact-name embedded-content mismatch against the anchor is a Tier-A sequence-identity contradiction. Embedded content never replaces, selects, or outranks the explicitly selected FASTA anchor, and annotations without embedded FASTA remain eligible for structural coordinate compatibility.
+
+When an embedded FASTA identifier exactly matches a logical annotation seqid, its normalized sequence length also constrains the GFF3 document itself. An ordinary feature or `##sequence-region` extending beyond that matching embedded sequence is invalid annotation input, not evidence that the selected external FASTA is incompatible. A feature that could require the GFF3 circular-landmark exception remains unresolved until the dedicated circular slice proves that exception; `##sequence-region` itself does not use the wraparound feature encoding.
 
 ### Evidence and verdict effect
 

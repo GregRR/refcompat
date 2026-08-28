@@ -78,11 +78,12 @@ def derive_sequence_bindings(
     Peer resources never vote on the anchor. Resource-local identity evidence
     may be content-derived or an explicitly marked metadata declaration, but the
     anchor side is always reconstructed from content-derived FASTA identities. A
-    binding exists only when the local identity resolves to exactly one sequence
-    in the complete FASTA anchor snapshot and that target is inside the selected
-    evaluation scope. Anchor-sequence scope may hide usable targets, but it must
-    never manufacture uniqueness by hiding an otherwise ambiguous duplicate.
-    Conflicting local identities remain unbound.
+    binding exists only when the local identity scheme is available for every
+    sequence in the complete FASTA anchor snapshot, the identity resolves to
+    exactly one sequence there, and that target is inside the selected evaluation
+    scope. Anchor-sequence scope may hide usable targets, but it must never
+    manufacture uniqueness by hiding an otherwise ambiguous or unobserved
+    duplicate. Conflicting local identities remain unbound.
     """
 
     contracts_by_id = _contracts_by_id(context, contracts)
@@ -99,13 +100,18 @@ def derive_sequence_bindings(
     if any(_has_scheme_conflict(values) for values in anchor_by_name.values()):
         raise ValueError("anchor identity capabilities conflict for one local sequence")
 
+    anchor_names = {sequence.local_name for sequence in context.anchor_snapshot.sequences}
+    anchor_names_by_scheme: dict[str, set[str]] = defaultdict(set)
     identity_index: dict[tuple[str, SequenceIdentityValue], list[SequenceIdentityCapability]] = (
         defaultdict(list)
     )
     for capability in anchor_identities:
-        identity_index[(_identity_scheme(capability.identity), capability.identity)].append(
-            capability
-        )
+        scheme = _identity_scheme(capability.identity)
+        anchor_names_by_scheme[scheme].add(capability.sequence_name)
+        identity_index[(scheme, capability.identity)].append(capability)
+    complete_identity_schemes = {
+        scheme for scheme, names in anchor_names_by_scheme.items() if names == anchor_names
+    }
 
     bindings: list[SequenceBinding] = []
     for resource_id in context.scope.resource_ids:
@@ -128,8 +134,11 @@ def derive_sequence_bindings(
                 list[tuple[SequenceIdentityCapability, SequenceIdentityCapability]],
             ] = defaultdict(list)
             for local_capability in capabilities:
+                scheme = _identity_scheme(local_capability.identity)
+                if scheme not in complete_identity_schemes:
+                    continue
                 matches = identity_index.get(
-                    (_identity_scheme(local_capability.identity), local_capability.identity),
+                    (scheme, local_capability.identity),
                     [],
                 )
                 for anchor_capability in matches:

@@ -17,20 +17,23 @@ References:
 from __future__ import annotations
 
 import gzip
+import hashlib
 import re
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TypeAlias
+from typing import Protocol, TypeAlias
 
 from refcompat.model.annotation import (
     AnnotationContextSnapshot,
     AnnotationFeatureRecord,
     AnnotationProvenanceClaim,
     AnnotationSequenceUsage,
+    Gff3EmbeddedFastaSequence,
     Gff3FastaBoundary,
     Gff3SequenceRegion,
 )
+from refcompat.model.identity import Md5Digest
 from refcompat.model.resources import Resource, ResourceKind
 
 _POSITIVE_INTEGER_RE = re.compile(r"^[0-9]+$")
@@ -61,6 +64,12 @@ class AnnotationUnreadableError(AnnotationInspectionError):
 
 class AnnotationParseError(AnnotationInspectionError):
     """The supplied annotation cannot be parsed by the narrow RCHECK-060 parser."""
+
+
+class _Md5Hash(Protocol):
+    def update(self, data: bytes) -> None: ...
+
+    def hexdigest(self) -> str: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -185,7 +194,122 @@ def inspect_annotation_context(resource: Resource) -> AnnotationContextSnapshot:
         sequence_regions=tuple(sequence_regions),
         provenance_claims=tuple(provenance_claims),
         fasta_boundary=fasta_boundary,
+        embedded_fasta_sequences=(
+            _inspect_embedded_fasta(resource, fasta_boundary) if fasta_boundary is not None else ()
+        ),
     )
+
+
+def _inspect_embedded_fasta(
+    resource: Resource,
+    boundary: Gff3FastaBoundary,
+) -> tuple[Gff3EmbeddedFastaSequence, ...]:
+    """Summarize embedded GFF3 FASTA sequence content without materializing bases."""
+
+    if resource.kind is not ResourceKind.GFF3:
+        raise AnnotationParseError("embedded FASTA is only valid for GFF3")
+
+    sequences: list[Gff3EmbeddedFastaSequence] = []
+    seen_names: set[str] = set()
+    current_name: str | None = None
+    current_header_line: int | None = None
+    current_length = 0
+    current_md5: _Md5Hash | None = None
+    in_fasta = False
+
+    def finish_current() -> None:
+        nonlocal current_name, current_header_line, current_length, current_md5
+        if current_name is None:
+            return
+        assert current_header_line is not None
+        assert current_md5 is not None
+        if current_length == 0:
+            raise AnnotationParseError(
+                f"embedded GFF3 FASTA sequence {current_name!r} has no sequence content "
+                f"after header line {current_header_line}: {resource.artifact.path}"
+            )
+        digest = current_md5.hexdigest()
+        sequences.append(
+            Gff3EmbeddedFastaSequence(
+                sequence_name=current_name,
+                length=current_length,
+                md5=Md5Digest(digest),
+                header_line=current_header_line,
+            )
+        )
+        current_name = None
+        current_header_line = None
+        current_length = 0
+        current_md5 = None
+
+    for line_number, line in _iter_source_lines(resource.artifact.path):
+        if line_number < boundary.line_number:
+            continue
+        if line_number == boundary.line_number and boundary.explicit_directive:
+            in_fasta = True
+            continue
+        if not in_fasta:
+            in_fasta = True
+
+        if not line:
+            continue
+        if line.startswith("#"):
+            raise AnnotationParseError(
+                f"GFF3 content after FASTA boundary is not FASTA at line {line_number}: "
+                f"{resource.artifact.path}"
+            )
+        if line.startswith(";"):
+            raise AnnotationParseError(
+                f"GFF3 embedded FASTA uses unsupported semicolon-comment syntax "
+                f"at line {line_number}: {resource.artifact.path}"
+            )
+        if line.startswith(">"):
+            finish_current()
+            body = line[1:].strip()
+            if not body:
+                raise AnnotationParseError(
+                    f"embedded GFF3 FASTA header has no identifier at line {line_number}: "
+                    f"{resource.artifact.path}"
+                )
+            sequence_name = body.split(maxsplit=1)[0]
+            if sequence_name in seen_names:
+                raise AnnotationParseError(
+                    f"embedded GFF3 FASTA has duplicate sequence identifier {sequence_name!r} "
+                    f"at line {line_number}: {resource.artifact.path}"
+                )
+            seen_names.add(sequence_name)
+            current_name = sequence_name
+            current_header_line = line_number
+            current_length = 0
+            current_md5 = hashlib.md5(usedforsecurity=False)
+            continue
+        if current_name is None:
+            raise AnnotationParseError(
+                f"embedded GFF3 FASTA sequence data precedes a header at line {line_number}: "
+                f"{resource.artifact.path}"
+            )
+        try:
+            raw = line.encode("ascii")
+        except UnicodeEncodeError as exc:
+            raise AnnotationParseError(
+                f"embedded GFF3 FASTA sequence is not ASCII at line {line_number}: "
+                f"{resource.artifact.path}"
+            ) from exc
+        canonical = bytes(
+            byte - 32 if 97 <= byte <= 122 else byte
+            for byte in raw
+            if 65 <= byte <= 90 or 97 <= byte <= 122
+        )
+        assert current_md5 is not None
+        current_md5.update(canonical)
+        current_length += len(canonical)
+
+    finish_current()
+    if not sequences:
+        raise AnnotationParseError(
+            f"GFF3 FASTA boundary is not followed by a sequence record: {resource.artifact.path}"
+        )
+    return tuple(sequences)
 
 
 def iter_annotation_features(resource: Resource) -> Iterator[AnnotationFeatureRecord]:

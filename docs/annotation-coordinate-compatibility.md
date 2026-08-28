@@ -1,6 +1,6 @@
 # GTF/GFF3 annotation coordinate compatibility
 
-**Status:** Milestone 5 implementation in progress; sequence-region/provenance slice complete.
+**Status:** Milestone 5 implementation in progress; embedded-FASTA identity/binding slice complete.
 
 RCHECK-060 asks a directional question: can the reference-coordinate statements
 made by this annotation be represented against the explicitly selected FASTA
@@ -12,7 +12,7 @@ The normative check contract remains in
 standards-derived invariants that should remain visible while Milestone 5 is
 implemented.
 
-The streaming observation boundary, format-neutral coordinate-bounds reasoning layer, ordinary exact-name annotation-to-FASTA validation, and GFF3 sequence-region/provenance slice are now implemented. Feature rows remain iterable in file order while compact snapshots retain per-seqid summaries and small reference-relevant GFF3/GTF metadata. Feature-used seqids plus any sequence-region-only seqids create mandatory presence requirements. Feature intervals and declared GFF3 regions project together through one anchor-owned coordinate capability, so normal bundle reasoning reaches compatible, incompatible, or indeterminate outcomes without creating one generic requirement per coordinate statement. Verified cross-name binding, embedded-FASTA identity, and final circular-origin semantics remain later slices.
+The streaming observation boundary, format-neutral coordinate-bounds reasoning layer, ordinary annotation-to-FASTA validation, GFF3 sequence-region/provenance handling, and embedded-FASTA identity/binding slice are now implemented. Feature rows remain iterable in file order while compact snapshots retain per-seqid summaries and small reference-relevant GFF3/GTF metadata. Feature-used seqids plus any sequence-region-only seqids create mandatory presence requirements. Feature intervals and declared GFF3 regions project together through one anchor-owned coordinate capability, while relevant embedded GFF3 FASTA sequences can add content-derived identity requirements/capabilities and verified cross-name bindings. Final landmark-aware circular-origin semantics remain the principal unfinished Milestone 5 reasoning slice.
 
 ## Native coordinate model
 
@@ -79,7 +79,7 @@ This mirrors the existing VCF direct-validation bridge: pair-derived evidence
 can satisfy only the requirement for the same subject resource and selected
 FASTA anchor. Peer resources never provide candidate anchor facts.
 
-The generic coordinate-bounds requirement/capability, evaluation, evidence, finding, and bundle-supplemental machinery is implemented independently of annotation policy. The ordinary exact-name annotation validator is now connected to that bridge: a proven ordinary out-of-bounds feature projects as a hard Tier-B structural conflict, while an unfamiliar seqid remains unresolved and a sparse annotation can be structurally compatible with a FASTA superset. The number of in-bounds features is descriptive and cannot cancel a conflict. An unresolved feature count likewise remains unresolved rather than being averaged into a positive conclusion. Until the dedicated circular slice establishes the GFF3 exception, an otherwise out-of-bounds feature on a seqid with observed circular evidence is conservatively counted as unresolved rather than contradicted.
+The generic coordinate-bounds requirement/capability, evaluation, evidence, finding, and bundle-supplemental machinery is implemented independently of annotation policy. Annotation coordinate validation now resolves a local seqid either exactly or through an explicit verified `SequenceBinding`; no heuristic alias path exists. A proven ordinary out-of-bounds feature projects as a hard Tier-B structural conflict, while a local name without exact or verified resolution remains unresolved and a sparse annotation can be structurally compatible with a FASTA superset. The number of in-bounds features is descriptive and cannot cancel a conflict. An unresolved feature count likewise remains unresolved rather than being averaged into a positive conclusion. Until the dedicated circular slice establishes the GFF3 exception, an otherwise out-of-bounds feature on a seqid with observed circular evidence is conservatively counted as unresolved rather than contradicted.
 
 ## GFF3 `##sequence-region`
 
@@ -134,17 +134,46 @@ Claims may be reported and may help a user diagnose a problem, but they do not
 become content-derived sequence identity or prove aliases.
 
 GFF3 `##FASTA` is different from metadata because it begins actual embedded
-sequence content. The streaming parser must recognize that boundary so FASTA
-lines are never parsed as annotation features. The GFF3 backward-compatibility
-rule that a line beginning with `>` implies the FASTA section belongs at this
-same parser boundary. When RefCompat derives sequence identity from embedded
-bases for binding evidence, that identity is `CONTENT_DERIVED` evidence owned by
-the annotation resource and remains subject to the existing full-anchor
-uniqueness safeguards. It never selects, replaces, or outranks the explicitly
-supplied FASTA anchor.
+sequence content. The streaming parser recognizes that boundary so FASTA lines
+are never parsed as annotation features; the GFF3 backward-compatibility rule
+that a line beginning with `>` implies the FASTA section is handled at the same
+boundary. Embedded sequence bases are summarized without materializing complete
+sequences in memory. MD5 identity uses the refget checksum normalization:
+non-sequence formatting is removed, letters are uppercased, and the normalized
+sequence is hashed. Embedded records with no normalized sequence content are invalid.
+Legacy semicolon-comment syntax is rejected rather than risking comment text being
+normalized into sequence identity.
 
-Exact-name coordinate compatibility does not require an annotation to contain
-embedded sequence and does not prove which named genome build produced it.
+An embedded sequence contributes identity only when its FASTA identifier exactly
+matches a feature-used or `##sequence-region` logical annotation seqid. Extra
+bundled target/protein sequences do not become RCHECK-060 reference evidence,
+and FASTA header resemblance to an external anchor name is never treated as an
+alias. Relevant embedded identities are `CONTENT_DERIVED` evidence owned by the
+annotation resource. They become mandatory sequence-identity requirements and
+may establish a cross-name `SequenceBinding` only through the existing complete-
+anchor identity reasoner. The matching identity scheme must be available for
+every sequence in the complete anchor before uniqueness can be claimed; missing
+anchor identity, duplicate identity, or explicit scope cannot manufacture a
+binding. Annotation projection independently derives the expected bindings and
+rejects stale coordinate validation that did not use exactly those bindings.
+The verified binding is then used consistently for presence, identity, feature
+bounds, and sequence-region bounds.
+
+When a relevant embedded FASTA identifier exactly matches a logical annotation
+seqid, its normalized sequence length also constrains the GFF3 document itself.
+An ordinary feature or `##sequence-region` extending beyond that embedded
+sequence is invalid annotation input, not evidence that the selected external
+FASTA is incompatible. A feature that could require the circular-landmark
+exception remains unresolved until the dedicated circular slice proves that
+exception.
+
+Because embedded bases are actual content, an exact-name identity contradiction
+against the selected FASTA is Tier-A evidence and can make the bundle
+`INCOMPATIBLE`. Matching embedded content or a verified cross-name binding can
+support compatibility, but embedded content never selects, replaces, or
+outranks the explicitly supplied FASTA anchor. Exact-name coordinate
+compatibility does not require embedded sequence and does not prove which named
+genome build produced the annotation.
 
 ## Deliberate non-goals
 

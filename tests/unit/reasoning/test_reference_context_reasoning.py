@@ -126,6 +126,37 @@ def test_duplicate_anchor_content_does_not_guess_binding() -> None:
     )
 
 
+def test_incomplete_anchor_identity_scheme_does_not_manufacture_binding() -> None:
+    md5 = Md5Digest("0" * 32)
+    snapshot = SequenceCollectionSnapshot(
+        _REFERENCE,
+        CollectionCompleteness.COMPLETE,
+        sequences=(
+            SnapshotSequence("chr1", 10, 0, md5=md5),
+            SnapshotSequence("unknown", 10, 1),
+        ),
+    )
+    context = build_reference_context(_request(), snapshot)
+    local = SequenceIdentityCapability(
+        CapabilityId("local-md5"),
+        _CONSUMER,
+        "1",
+        md5,
+        provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
+    )
+
+    assert (
+        derive_sequence_bindings(
+            context,
+            (
+                ResourceContract(_REFERENCE),
+                ResourceContract(_CONSUMER, capabilities=(local,)),
+            ),
+        )
+        == ()
+    )
+
+
 def test_sequence_scope_does_not_turn_duplicate_content_into_verified_binding() -> None:
     snapshot = SequenceCollectionSnapshot(
         _REFERENCE,

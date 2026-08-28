@@ -1,8 +1,9 @@
 """Pure exhaustive GTF/GFF3 coordinate-bounds reasoning.
 
 The evaluator consumes RefCompat-owned annotation observations plus the explicit
-FASTA reference context. It resolves names exactly in this slice and never
-infers aliases. GFF3 seqids carrying observed circular evidence are held
+FASTA reference context. It resolves seqids by exact name or explicit verified
+sequence binding and never infers aliases. GFF3 seqids carrying observed circular
+evidence are held
 unresolved when ordinary anchor or ``##sequence-region`` bounds fail until the
 dedicated circular semantics slice can establish whether the standard exception
 actually applies.
@@ -27,7 +28,7 @@ from refcompat.model.annotation_bounds import (
     Gff3SequenceRegionValidationResult,
 )
 from refcompat.model.identity import SnapshotSequence
-from refcompat.model.reference_context import ReferenceContext
+from refcompat.model.reference_context import ReferenceContext, SequenceBinding
 from refcompat.model.resources import ResourceKind
 
 
@@ -39,11 +40,13 @@ def evaluate_annotation_coordinates(
     snapshot: AnnotationContextSnapshot,
     features: Iterable[AnnotationFeatureRecord],
     reference_context: ReferenceContext,
+    sequence_bindings: tuple[SequenceBinding, ...] = (),
 ) -> AnnotationCoordinateValidationResult:
     """Exhaustively validate annotation coordinates against the FASTA anchor.
 
-    Exact seqid resolution only is used here. Missing exact names remain
-    unresolved rather than proving biological absence. Ordinary resolved
+    Seqids resolve by exact name or explicit verified sequence binding. Names
+    with neither remain unresolved rather than proving biological absence.
+    Ordinary resolved
     feature intervals and GFF3 ``##sequence-region`` declarations beyond the
     selected anchor are hard structural conflicts.
 
@@ -61,6 +64,7 @@ def evaluate_annotation_coordinates(
         raise ValueError("annotation resource must be inside the reference-context scope")
 
     anchor_by_name = {sequence.local_name: sequence for sequence in reference_context.sequences}
+    bindings_by_name = _binding_map(snapshot, reference_context, sequence_bindings)
     potential_circular_names: set[str] = (
         {
             usage.sequence_name
@@ -75,9 +79,25 @@ def evaluate_annotation_coordinates(
         raise AnnotationCoordinateEvaluationError(
             "GFF3 sequence-region declarations must have unique logical seqids"
         )
+    embedded_length_by_name = {
+        sequence.sequence_name: sequence.length for sequence in snapshot.embedded_fasta_sequences
+    }
+    if len(embedded_length_by_name) != len(snapshot.embedded_fasta_sequences):
+        raise AnnotationCoordinateEvaluationError(
+            "embedded GFF3 FASTA sequences must have unique identifiers"
+        )
+    for region in snapshot.sequence_regions:
+        embedded_length = embedded_length_by_name.get(region.sequence_name)
+        if embedded_length is not None and region.end > embedded_length:
+            raise AnnotationCoordinateEvaluationError(
+                "GFF3 sequence-region exceeds its matching embedded FASTA sequence: "
+                f"sequence-region line {region.line_number}"
+            )
+
     region_validation = _evaluate_sequence_regions(
         snapshot,
         anchor_by_name=anchor_by_name,
+        bindings_by_name=bindings_by_name,
         reference_context=reference_context,
     )
 
@@ -87,6 +107,7 @@ def evaluate_annotation_coordinates(
     problem_checks: list[AnnotationCoordinateCheck] = []
     retained_problem_keys: set[tuple[str, AnnotationCoordinateCheckState]] = set()
     region_violation: tuple[AnnotationFeatureRecord, Gff3SequenceRegion] | None = None
+    embedded_violation: AnnotationFeatureRecord | None = None
     feature_count = 0
 
     for expected_ordinal, feature in enumerate(features):
@@ -111,11 +132,26 @@ def evaluate_annotation_coordinates(
             assert declared_region is not None
             region_violation = (feature, declared_region)
 
+        embedded_length = embedded_length_by_name.get(feature.sequence_name)
+        outside_embedded_sequence = embedded_length is not None and feature.end > embedded_length
+        circular_embedded_unresolved = (
+            outside_embedded_sequence and feature.sequence_name in potential_circular_names
+        )
+        if (
+            outside_embedded_sequence
+            and not circular_embedded_unresolved
+            and embedded_violation is None
+        ):
+            embedded_violation = feature
+
         check = _evaluate_feature(
             feature,
             anchor_by_name=anchor_by_name,
+            bindings_by_name=bindings_by_name,
             potential_circular_names=potential_circular_names,
-            circular_region_unresolved=circular_region_unresolved,
+            circular_internal_unresolved=(
+                circular_region_unresolved or circular_embedded_unresolved
+            ),
         )
         feature_count += 1
         state_counts[check.state] += 1
@@ -167,6 +203,11 @@ def evaluate_annotation_coordinates(
             f"landmark evidence: feature line {feature.line_number}, "
             f"sequence-region line {declared_region.line_number}"
         )
+    if embedded_violation is not None:
+        raise AnnotationCoordinateEvaluationError(
+            "GFF3 feature lies outside its matching embedded FASTA sequence without "
+            f"circular landmark evidence: feature line {embedded_violation.line_number}"
+        )
 
     sequence_summaries = tuple(
         AnnotationCoordinateSequenceSummary(
@@ -195,6 +236,7 @@ def evaluate_annotation_coordinates(
         sequence_summaries=sequence_summaries,
         problem_checks=tuple(problem_checks),
         sequence_region_validation=region_validation,
+        sequence_binding_ids=tuple(sorted((binding.id for binding in sequence_bindings), key=str)),
     )
 
 
@@ -202,6 +244,7 @@ def _evaluate_sequence_regions(
     snapshot: AnnotationContextSnapshot,
     *,
     anchor_by_name: dict[str, SnapshotSequence],
+    bindings_by_name: dict[str, SequenceBinding],
     reference_context: ReferenceContext,
 ) -> Gff3SequenceRegionValidationResult | None:
     if snapshot.resource_kind is not ResourceKind.GFF3:
@@ -212,7 +255,11 @@ def _evaluate_sequence_regions(
         return None
 
     checks = tuple(
-        _evaluate_sequence_region(region, anchor_by_name=anchor_by_name)
+        _evaluate_sequence_region(
+            region,
+            anchor_by_name=anchor_by_name,
+            bindings_by_name=bindings_by_name,
+        )
         for region in snapshot.sequence_regions
     )
     return Gff3SequenceRegionValidationResult(
@@ -236,8 +283,13 @@ def _evaluate_sequence_region(
     region: Gff3SequenceRegion,
     *,
     anchor_by_name: dict[str, SnapshotSequence],
+    bindings_by_name: dict[str, SequenceBinding],
 ) -> Gff3SequenceRegionCheck:
-    anchor_sequence = anchor_by_name.get(region.sequence_name)
+    anchor_sequence = _resolved_anchor_sequence(
+        region.sequence_name,
+        anchor_by_name=anchor_by_name,
+        bindings_by_name=bindings_by_name,
+    )
     if anchor_sequence is None:
         return Gff3SequenceRegionCheck(
             region,
@@ -273,10 +325,15 @@ def _evaluate_feature(
     feature: AnnotationFeatureRecord,
     *,
     anchor_by_name: dict[str, SnapshotSequence],
+    bindings_by_name: dict[str, SequenceBinding],
     potential_circular_names: set[str],
-    circular_region_unresolved: bool,
+    circular_internal_unresolved: bool,
 ) -> AnnotationCoordinateCheck:
-    anchor_sequence = anchor_by_name.get(feature.sequence_name)
+    anchor_sequence = _resolved_anchor_sequence(
+        feature.sequence_name,
+        anchor_by_name=anchor_by_name,
+        bindings_by_name=bindings_by_name,
+    )
     if anchor_sequence is None:
         return AnnotationCoordinateCheck(
             feature,
@@ -291,7 +348,7 @@ def _evaluate_feature(
             "reference context exposed unknown sequence length"
         )
 
-    if circular_region_unresolved:
+    if circular_internal_unresolved:
         state = AnnotationCoordinateCheckState.CIRCULAR_BOUNDS_UNRESOLVED
     elif feature.end <= sequence_length:
         state = AnnotationCoordinateCheckState.REPRESENTABLE
@@ -306,3 +363,43 @@ def _evaluate_feature(
         anchor_sequence_name=sequence_name,
         anchor_sequence_length=sequence_length,
     )
+
+
+def _binding_map(
+    snapshot: AnnotationContextSnapshot,
+    reference_context: ReferenceContext,
+    sequence_bindings: tuple[SequenceBinding, ...],
+) -> dict[str, SequenceBinding]:
+    relevant_names = set(snapshot.used_sequence_names) | {
+        region.sequence_name for region in snapshot.sequence_regions
+    }
+    bindings_by_name: dict[str, SequenceBinding] = {}
+    scoped_anchor_names = {sequence.local_name for sequence in reference_context.sequences}
+    seen_ids = set()
+    for binding in sequence_bindings:
+        if binding.id in seen_ids:
+            raise ValueError("annotation sequence binding IDs must be unique")
+        seen_ids.add(binding.id)
+        if binding.resource_id != snapshot.resource_id:
+            raise ValueError("annotation sequence binding must belong to the annotation")
+        if binding.anchor_resource_id != reference_context.anchor_resource_id:
+            raise ValueError("annotation sequence binding must target the selected FASTA anchor")
+        if binding.local_sequence_name not in relevant_names:
+            raise ValueError("annotation sequence binding local name must be reference-relevant")
+        if binding.anchor_sequence_name not in scoped_anchor_names:
+            raise ValueError("annotation sequence binding target must be inside anchor scope")
+        if binding.local_sequence_name in bindings_by_name:
+            raise ValueError("annotation sequence bindings must be unique per local seqid")
+        bindings_by_name[binding.local_sequence_name] = binding
+    return bindings_by_name
+
+
+def _resolved_anchor_sequence(
+    local_sequence_name: str,
+    *,
+    anchor_by_name: dict[str, SnapshotSequence],
+    bindings_by_name: dict[str, SequenceBinding],
+) -> SnapshotSequence | None:
+    binding = bindings_by_name.get(local_sequence_name)
+    target_name = binding.anchor_sequence_name if binding is not None else local_sequence_name
+    return anchor_by_name.get(target_name)

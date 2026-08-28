@@ -6,6 +6,10 @@ from refcompat.reasoning.alignment_binding import (
 )
 from refcompat.reasoning.alignment_contract import build_alignment_contract
 from refcompat.reasoning.alignment_relationship import classify_alignment_dictionary_relationship
+from refcompat.reasoning.annotation_binding import (
+    annotation_embedded_identity_capabilities,
+    derive_annotation_sequence_bindings,
+)
 from refcompat.reasoning.annotation_bounds import (
     AnnotationCoordinateEvaluationError,
     evaluate_annotation_coordinates,
@@ -38,6 +42,7 @@ __all__ = [
     "aggregate_bundle_verdict",
     "aggregate_constraint_evidence",
     "alignment_binding_identity_capabilities",
+    "annotation_embedded_identity_capabilities",
     "build_alignment_contract",
     "build_annotation_contract",
     "build_constraint",
@@ -46,6 +51,7 @@ __all__ = [
     "classify_alignment_dictionary_relationship",
     "classify_vcf_ref_conflicts",
     "derive_alignment_sequence_bindings",
+    "derive_annotation_sequence_bindings",
     "derive_constraint_evidence",
     "derive_sequence_bindings",
     "derive_vcf_sequence_bindings",

@@ -10,6 +10,8 @@ from refcompat.model.annotation import (
     AnnotationFeatureRecord,
     AnnotationProvenanceClaim,
     AnnotationSequenceUsage,
+    Gff3EmbeddedFastaSequence,
+    Gff3FastaBoundary,
     Gff3SequenceRegion,
 )
 from refcompat.model.annotation_contract import AnnotationContractProjection
@@ -17,12 +19,14 @@ from refcompat.model.constraints import ConstraintState
 from refcompat.model.contracts import (
     CoordinateBoundsRequirement,
     ResourceContract,
+    SequenceIdentityRequirement,
     SequencePresenceRequirement,
 )
 from refcompat.model.evaluation import EvaluationRequest, EvaluationScope
 from refcompat.model.evidence import EvidenceMethod, EvidenceStrength
 from refcompat.model.identity import (
     CollectionCompleteness,
+    Md5Digest,
     SequenceCollectionSnapshot,
     SnapshotSequence,
 )
@@ -30,6 +34,7 @@ from refcompat.model.reference_context import ReferenceContext
 from refcompat.model.resources import ArtifactIdentity, Resource, ResourceId, ResourceKind
 from refcompat.model.verdict import CompatibilityVerdict
 from refcompat.reasoning import aggregate_bundle_verdict, reason_bundle
+from refcompat.reasoning.annotation_binding import derive_annotation_sequence_bindings
 from refcompat.reasoning.annotation_bounds import evaluate_annotation_coordinates
 from refcompat.reasoning.annotation_contract import (
     build_annotation_contract,
@@ -378,3 +383,161 @@ def test_projection_rejects_stale_sequence_region_validation() -> None:
             replace(validation, sequence_region_validation=stale_regions),
             context,
         )
+
+
+_MD5_ACGT = Md5Digest("f1f8f4bf413b16ad135722aa4591043e")
+_MD5_TTTT = Md5Digest("2f803268a6367d0943978eb5f84cc62e")
+
+
+def _gff3_identity_case(
+    local_name: str,
+    embedded_md5: Md5Digest,
+    *anchor_sequences: SnapshotSequence,
+) -> tuple[
+    EvaluationRequest,
+    SequenceCollectionSnapshot,
+    ReferenceContext,
+    AnnotationContextSnapshot,
+]:
+    fasta = Resource(_FASTA, ResourceKind.FASTA, ArtifactIdentity(Path("anchor.fa")))
+    annotation = Resource(
+        _ANNOTATION,
+        ResourceKind.GFF3,
+        ArtifactIdentity(Path("genes.gff3")),
+    )
+    request = EvaluationRequest(
+        (fasta, annotation),
+        _FASTA,
+        EvaluationScope((_FASTA, _ANNOTATION)),
+    )
+    anchor = SequenceCollectionSnapshot(
+        _FASTA,
+        CollectionCompleteness.COMPLETE,
+        sequences=anchor_sequences,
+    )
+    context = build_reference_context(request, anchor)
+    snapshot = AnnotationContextSnapshot(
+        _ANNOTATION,
+        ResourceKind.GFF3,
+        feature_count=1,
+        sequence_usage=(AnnotationSequenceUsage(local_name, local_name, 1, 1, 4, 1),),
+        fasta_boundary=Gff3FastaBoundary(2, True),
+        embedded_fasta_sequences=(Gff3EmbeddedFastaSequence(local_name, 4, embedded_md5, 3),),
+    )
+    return request, anchor, context, snapshot
+
+
+def test_embedded_reference_sequence_adds_content_identity_requirement() -> None:
+    _request_value, _anchor, context, snapshot = _gff3_identity_case(
+        "chr1",
+        _MD5_ACGT,
+        SnapshotSequence("chr1", 4, 0, md5=_MD5_ACGT),
+    )
+
+    contract = build_annotation_contract(snapshot, context)
+
+    identity_requirements = tuple(
+        item for item in contract.requirements if isinstance(item, SequenceIdentityRequirement)
+    )
+    assert len(identity_requirements) == 1
+    assert identity_requirements[0].sequence_name == "chr1"
+    assert identity_requirements[0].identity == _MD5_ACGT
+    assert len(contract.capabilities) == 1
+
+
+def test_embedded_content_binding_makes_cross_name_annotation_compatible() -> None:
+    request, anchor, context, snapshot = _gff3_identity_case(
+        "1",
+        _MD5_ACGT,
+        SnapshotSequence("chr1", 4, 0, md5=_MD5_ACGT),
+    )
+    bindings = derive_annotation_sequence_bindings(snapshot, context)
+    validation = evaluate_annotation_coordinates(
+        snapshot,
+        (_feature(0, "1", 1, 4),),
+        context,
+        bindings,
+    )
+    projection = project_annotation_contract(snapshot, validation, context)
+
+    bundle = reason_bundle(
+        request,
+        anchor,
+        (ResourceContract(_FASTA), projection.contract),
+        supplemental_capabilities=(projection.coordinate_bounds_capability,),
+    )
+
+    assert len(bindings) == 1
+    assert all(item.state is ConstraintState.SATISFIED for item in projection.evaluations)
+    assert aggregate_bundle_verdict(bundle).verdict is CompatibilityVerdict.COMPATIBLE
+    binding_evidence = tuple(item for item in bundle.evidence.evidence if item.sequence_binding_ids)
+    assert binding_evidence
+    assert all(item.method is EvidenceMethod.VERIFIED_SEQUENCE_BINDING for item in binding_evidence)
+
+
+def test_same_name_embedded_content_keeps_projection_exact() -> None:
+    request, anchor, context, snapshot = _gff3_identity_case(
+        "chr1",
+        _MD5_ACGT,
+        SnapshotSequence("chr1", 4, 0, md5=_MD5_ACGT),
+    )
+    validation = evaluate_annotation_coordinates(
+        snapshot,
+        (_feature(0, "chr1", 1, 4),),
+        context,
+    )
+    projection = project_annotation_contract(snapshot, validation, context)
+
+    bundle = reason_bundle(
+        request,
+        anchor,
+        (ResourceContract(_FASTA), projection.contract),
+        supplemental_capabilities=(projection.coordinate_bounds_capability,),
+    )
+
+    assert projection.sequence_bindings == ()
+    assert all(not constraint.sequence_bindings for constraint in projection.constraints)
+    assert len(bundle.sequence_bindings) == 1
+    assert aggregate_bundle_verdict(bundle).verdict is CompatibilityVerdict.COMPATIBLE
+
+
+def test_same_name_embedded_content_conflict_is_tier_a_incompatible() -> None:
+    request, anchor, context, snapshot = _gff3_identity_case(
+        "chr1",
+        _MD5_TTTT,
+        SnapshotSequence("chr1", 4, 0, md5=_MD5_ACGT),
+    )
+    validation = evaluate_annotation_coordinates(
+        snapshot,
+        (_feature(0, "chr1", 1, 4),),
+        context,
+    )
+    projection = project_annotation_contract(snapshot, validation, context)
+
+    bundle = reason_bundle(
+        request,
+        anchor,
+        (ResourceContract(_FASTA), projection.contract),
+        supplemental_capabilities=(projection.coordinate_bounds_capability,),
+    )
+
+    assert aggregate_bundle_verdict(bundle).verdict is CompatibilityVerdict.INCOMPATIBLE
+    assert len(bundle.evidence.conclusive_contradictions) == 1
+    contradiction = bundle.evidence.conclusive_contradictions[0]
+    assert contradiction.strength is EvidenceStrength.TIER_A_CONCLUSIVE_CONTENT
+
+
+def test_projection_rejects_stale_exact_name_validation_when_binding_exists() -> None:
+    _request_value, _anchor, context, snapshot = _gff3_identity_case(
+        "1",
+        _MD5_ACGT,
+        SnapshotSequence("chr1", 4, 0, md5=_MD5_ACGT),
+    )
+    validation = evaluate_annotation_coordinates(
+        snapshot,
+        (_feature(0, "1", 1, 4),),
+        context,
+    )
+
+    with pytest.raises(ValueError, match="exactly the verified sequence bindings"):
+        project_annotation_contract(snapshot, validation, context)

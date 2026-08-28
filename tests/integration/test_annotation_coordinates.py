@@ -9,6 +9,7 @@ from refcompat.model.contracts import ResourceContract
 from refcompat.model.evaluation import EvaluationRequest, EvaluationScope
 from refcompat.model.identity import (
     CollectionCompleteness,
+    Md5Digest,
     SequenceCollectionSnapshot,
     SnapshotSequence,
 )
@@ -16,6 +17,7 @@ from refcompat.model.reference_context import ReferenceContext
 from refcompat.model.resources import ArtifactIdentity, Resource, ResourceId, ResourceKind
 from refcompat.model.verdict import CompatibilityVerdict
 from refcompat.reasoning import aggregate_bundle_verdict, reason_bundle
+from refcompat.reasoning.annotation_binding import derive_annotation_sequence_bindings
 from refcompat.reasoning.annotation_bounds import (
     AnnotationCoordinateEvaluationError,
     evaluate_annotation_coordinates,
@@ -172,6 +174,132 @@ def test_streamed_gff3_feature_outside_declared_region_is_invalid_input_boundary
         AnnotationCoordinateEvaluationError,
         match="outside its declared sequence-region",
     ):
+        evaluate_annotation_coordinates(
+            snapshot,
+            iter_annotation_features(annotation),
+            context,
+        )
+
+
+def test_streamed_gff3_embedded_fasta_supports_verified_cross_name_binding(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "embedded-binding.gff3"
+    path.write_text(
+        "##gff-version 3\nchr%2F1\tsrc\tgene\t1\t4\t.\t+\t.\tID=g1\n##FASTA\n>chr/1\nacgt\n",
+        encoding="utf-8",
+    )
+    annotation = Resource(_ANNOTATION, ResourceKind.GFF3, ArtifactIdentity(path))
+    fasta = Resource(_FASTA, ResourceKind.FASTA, ArtifactIdentity(Path("anchor.fa")))
+    request = EvaluationRequest(
+        (fasta, annotation),
+        _FASTA,
+        EvaluationScope((_FASTA, _ANNOTATION)),
+    )
+    md5 = Md5Digest("f1f8f4bf413b16ad135722aa4591043e")
+    anchor = SequenceCollectionSnapshot(
+        _FASTA,
+        CollectionCompleteness.COMPLETE,
+        sequences=(SnapshotSequence("chr1", 4, 0, md5=md5),),
+    )
+    context = build_reference_context(request, anchor)
+
+    snapshot = inspect_annotation_context(annotation)
+    bindings = derive_annotation_sequence_bindings(snapshot, context)
+    validation = evaluate_annotation_coordinates(
+        snapshot,
+        iter_annotation_features(annotation),
+        context,
+        bindings,
+    )
+    projection = project_annotation_contract(snapshot, validation, context)
+    bundle = reason_bundle(
+        request,
+        anchor,
+        (ResourceContract(_FASTA), projection.contract),
+        supplemental_capabilities=(projection.coordinate_bounds_capability,),
+    )
+
+    assert len(bindings) == 1
+    assert snapshot.used_sequence_names == ("chr/1",)
+    assert snapshot.embedded_fasta_sequences[0].sequence_name == "chr/1"
+    assert bindings[0].local_sequence_name == "chr/1"
+    assert bindings[0].anchor_sequence_name == "chr1"
+    assert validation.representable_count == 1
+    assert aggregate_bundle_verdict(bundle).verdict is CompatibilityVerdict.COMPATIBLE
+
+
+def test_streamed_gff3_embedded_fasta_content_conflict_is_incompatible(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "embedded-conflict.gff3"
+    path.write_text(
+        "##gff-version 3\nchr1\tsrc\tgene\t1\t4\t.\t+\t.\tID=g1\n##FASTA\n>chr1\nTTTT\n",
+        encoding="utf-8",
+    )
+    annotation = Resource(_ANNOTATION, ResourceKind.GFF3, ArtifactIdentity(path))
+    fasta = Resource(_FASTA, ResourceKind.FASTA, ArtifactIdentity(Path("anchor.fa")))
+    request = EvaluationRequest(
+        (fasta, annotation),
+        _FASTA,
+        EvaluationScope((_FASTA, _ANNOTATION)),
+    )
+    anchor = SequenceCollectionSnapshot(
+        _FASTA,
+        CollectionCompleteness.COMPLETE,
+        sequences=(
+            SnapshotSequence(
+                "chr1",
+                4,
+                0,
+                md5=Md5Digest("f1f8f4bf413b16ad135722aa4591043e"),
+            ),
+        ),
+    )
+    context = build_reference_context(request, anchor)
+
+    snapshot = inspect_annotation_context(annotation)
+    validation = evaluate_annotation_coordinates(
+        snapshot,
+        iter_annotation_features(annotation),
+        context,
+    )
+    projection = project_annotation_contract(snapshot, validation, context)
+    bundle = reason_bundle(
+        request,
+        anchor,
+        (ResourceContract(_FASTA), projection.contract),
+        supplemental_capabilities=(projection.coordinate_bounds_capability,),
+    )
+
+    assert aggregate_bundle_verdict(bundle).verdict is CompatibilityVerdict.INCOMPATIBLE
+    assert len(bundle.evidence.conclusive_contradictions) == 1
+
+
+def test_streamed_gff3_rejects_feature_beyond_matching_embedded_fasta(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "embedded-short.gff3"
+    path.write_text(
+        "##gff-version 3\nchr1\tsrc\tgene\t1\t5\t.\t+\t.\tID=g1\n##FASTA\n>chr1\nACGT\n",
+        encoding="utf-8",
+    )
+    annotation = Resource(_ANNOTATION, ResourceKind.GFF3, ArtifactIdentity(path))
+    fasta = Resource(_FASTA, ResourceKind.FASTA, ArtifactIdentity(Path("anchor.fa")))
+    request = EvaluationRequest(
+        (fasta, annotation),
+        _FASTA,
+        EvaluationScope((_FASTA, _ANNOTATION)),
+    )
+    anchor = SequenceCollectionSnapshot(
+        _FASTA,
+        CollectionCompleteness.COMPLETE,
+        sequences=(SnapshotSequence("chr1", 10, 0),),
+    )
+    context = build_reference_context(request, anchor)
+    snapshot = inspect_annotation_context(annotation)
+
+    with pytest.raises(AnnotationCoordinateEvaluationError, match="matching embedded FASTA"):
         evaluate_annotation_coordinates(
             snapshot,
             iter_annotation_features(annotation),

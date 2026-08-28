@@ -8,19 +8,28 @@ from refcompat.model.annotation import (
     AnnotationContextSnapshot,
     AnnotationFeatureRecord,
     AnnotationSequenceUsage,
+    Gff3EmbeddedFastaSequence,
+    Gff3FastaBoundary,
     Gff3SequenceRegion,
 )
 from refcompat.model.annotation_bounds import (
     AnnotationCoordinateCheckState,
     Gff3SequenceRegionCheckState,
 )
+from refcompat.model.contracts import CapabilityId
 from refcompat.model.evaluation import EvaluationRequest, EvaluationScope
 from refcompat.model.identity import (
     CollectionCompleteness,
+    Md5Digest,
     SequenceCollectionSnapshot,
     SnapshotSequence,
 )
-from refcompat.model.reference_context import ReferenceContext
+from refcompat.model.reference_context import (
+    ReferenceContext,
+    SequenceBinding,
+    SequenceBindingId,
+    SequenceBindingMethod,
+)
 from refcompat.model.resources import ArtifactIdentity, Resource, ResourceId, ResourceKind
 from refcompat.reasoning.annotation_bounds import (
     AnnotationCoordinateEvaluationError,
@@ -81,6 +90,7 @@ def _snapshot(
     *usage: tuple[str, int, int, int, int],
     kind: ResourceKind = ResourceKind.GTF,
     regions: tuple[Gff3SequenceRegion, ...] = (),
+    embedded: tuple[Gff3EmbeddedFastaSequence, ...] = (),
 ) -> AnnotationContextSnapshot:
     """Build usage as name, count, min start, max end, circular count."""
 
@@ -102,6 +112,21 @@ def _snapshot(
             for index, (name, count, minimum_start, maximum_end, circular_count) in enumerate(usage)
         ),
         sequence_regions=regions,
+        fasta_boundary=(Gff3FastaBoundary(100, True) if embedded else None),
+        embedded_fasta_sequences=embedded,
+    )
+
+
+def _binding(local_name: str, anchor_name: str) -> SequenceBinding:
+    return SequenceBinding(
+        SequenceBindingId(f"binding:{local_name}:{anchor_name}"),
+        _ANNOTATION,
+        local_name,
+        _FASTA,
+        anchor_name,
+        SequenceBindingMethod.VERIFIED_SEQUENCE_IDENTITY,
+        (Md5Digest("f1f8f4bf413b16ad135722aa4591043e"),),
+        (CapabilityId("local-capability"), CapabilityId("anchor-capability")),
     )
 
 
@@ -375,4 +400,138 @@ def test_stale_feature_stream_is_rejected_before_sequence_region_semantic_error(
             snapshot,
             (_feature(0, "chr1", 70, 90),),
             _context(("chr1", 100)),
+        )
+
+
+def test_gff3_feature_beyond_matching_embedded_fasta_is_invalid() -> None:
+    embedded = Gff3EmbeddedFastaSequence(
+        "chr1",
+        80,
+        Md5Digest("0" * 32),
+        100,
+    )
+    snapshot = _snapshot(
+        ("chr1", 1, 70, 90, 0),
+        kind=ResourceKind.GFF3,
+        embedded=(embedded,),
+    )
+
+    with pytest.raises(AnnotationCoordinateEvaluationError, match="matching embedded FASTA"):
+        evaluate_annotation_coordinates(
+            snapshot,
+            (_feature(0, "chr1", 70, 90),),
+            _context(("chr1", 100)),
+        )
+
+
+def test_gff3_feature_beyond_embedded_fasta_defers_with_circular_evidence() -> None:
+    embedded = Gff3EmbeddedFastaSequence(
+        "chr1",
+        80,
+        Md5Digest("0" * 32),
+        100,
+    )
+    snapshot = _snapshot(
+        ("chr1", 1, 70, 90, 1),
+        kind=ResourceKind.GFF3,
+        embedded=(embedded,),
+    )
+
+    result = evaluate_annotation_coordinates(
+        snapshot,
+        (_feature(0, "chr1", 70, 90, circular=True),),
+        _context(("chr1", 100)),
+    )
+
+    assert result.circular_bounds_unresolved_count == 1
+    assert result.out_of_bounds_count == 0
+
+
+def test_gff3_sequence_region_beyond_matching_embedded_fasta_is_invalid() -> None:
+    region = Gff3SequenceRegion("chr1", "chr1", 1, 90, 1)
+    embedded = Gff3EmbeddedFastaSequence(
+        "chr1",
+        80,
+        Md5Digest("0" * 32),
+        100,
+    )
+    snapshot = _snapshot(
+        ("chr1", 1, 1, 10, 0),
+        kind=ResourceKind.GFF3,
+        regions=(region,),
+        embedded=(embedded,),
+    )
+
+    with pytest.raises(AnnotationCoordinateEvaluationError, match="sequence-region exceeds"):
+        evaluate_annotation_coordinates(
+            snapshot,
+            (_feature(0, "chr1", 1, 10),),
+            _context(("chr1", 100)),
+        )
+
+
+def test_stale_stream_is_rejected_before_embedded_fasta_feature_semantic_error() -> None:
+    embedded = Gff3EmbeddedFastaSequence(
+        "chr1",
+        80,
+        Md5Digest("0" * 32),
+        100,
+    )
+    snapshot = _snapshot(
+        ("chr1", 1, 1, 10, 0),
+        kind=ResourceKind.GFF3,
+        embedded=(embedded,),
+    )
+
+    with pytest.raises(AnnotationCoordinateEvaluationError, match="seqid/bounds/circular usage"):
+        evaluate_annotation_coordinates(
+            snapshot,
+            (_feature(0, "chr1", 70, 90),),
+            _context(("chr1", 100)),
+        )
+
+
+def test_verified_binding_resolves_cross_name_feature_coordinates() -> None:
+    snapshot = _snapshot(("1", 1, 1, 10, 0))
+    binding = _binding("1", "chr1")
+
+    result = evaluate_annotation_coordinates(
+        snapshot,
+        (_feature(0, "1", 1, 10),),
+        _context(("chr1", 100)),
+        (binding,),
+    )
+
+    assert result.representable_count == 1
+    assert result.sequence_binding_ids == (binding.id,)
+    assert result.problem_checks == ()
+
+
+def test_verified_binding_resolves_cross_name_sequence_region() -> None:
+    region = Gff3SequenceRegion("1", "1", 1, 100, 1)
+    snapshot = _snapshot(kind=ResourceKind.GFF3, regions=(region,))
+    binding = _binding("1", "chr1")
+
+    result = evaluate_annotation_coordinates(
+        snapshot,
+        (),
+        _context(("chr1", 100)),
+        (binding,),
+    )
+
+    assert result.sequence_region_validation is not None
+    check = result.sequence_region_validation.checks[0]
+    assert check.state is Gff3SequenceRegionCheckState.REPRESENTABLE
+    assert check.anchor_sequence_name == "chr1"
+
+
+def test_annotation_evaluator_rejects_binding_for_irrelevant_local_seqid() -> None:
+    snapshot = _snapshot(("1", 1, 1, 10, 0))
+
+    with pytest.raises(ValueError, match="reference-relevant"):
+        evaluate_annotation_coordinates(
+            snapshot,
+            (_feature(0, "1", 1, 10),),
+            _context(("chr1", 100)),
+            (_binding("other", "chr1"),),
         )

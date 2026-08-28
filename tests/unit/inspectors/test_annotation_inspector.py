@@ -311,3 +311,69 @@ def test_inspect_annotation_rejects_invalid_utf8(tmp_path: Path) -> None:
 
     with pytest.raises(AnnotationParseError, match="UTF-8"):
         inspect_annotation_context(_resource(path, ResourceKind.GTF))
+
+
+def test_gff3_embedded_fasta_content_is_summarized_with_refget_md5_normalization(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "embedded-normalized.gff3"
+    path.write_text(
+        "##gff-version 3\n"
+        "chr1\tsrc\tgene\t1\t4\t.\t+\t.\tID=g1\n"
+        "##FASTA\n"
+        ">chr1 descriptive text\n"
+        "ac gt\n",
+        encoding="utf-8",
+    )
+
+    snapshot = inspect_annotation_context(_resource(path, ResourceKind.GFF3))
+
+    assert len(snapshot.embedded_fasta_sequences) == 1
+    sequence = snapshot.embedded_fasta_sequences[0]
+    assert sequence.sequence_name == "chr1"
+    assert sequence.length == 4
+    assert sequence.md5.value == "f1f8f4bf413b16ad135722aa4591043e"
+    assert sequence.header_line == 4
+
+
+def test_gff3_rejects_embedded_fasta_record_without_sequence_content(tmp_path: Path) -> None:
+    path = tmp_path / "empty-record.gff3"
+    path.write_text("##FASTA\n>chr1\n", encoding="utf-8")
+
+    with pytest.raises(AnnotationParseError, match="has no sequence content"):
+        inspect_annotation_context(_resource(path, ResourceKind.GFF3))
+
+
+def test_gff3_rejects_legacy_semicolon_comment_in_embedded_fasta(tmp_path: Path) -> None:
+    path = tmp_path / "semicolon-comment.gff3"
+    path.write_text("##FASTA\n>chr1\n; comment text\nACGT\n", encoding="utf-8")
+
+    with pytest.raises(AnnotationParseError, match="unsupported semicolon-comment syntax"):
+        inspect_annotation_context(_resource(path, ResourceKind.GFF3))
+
+
+def test_gff3_rejects_duplicate_embedded_fasta_identifiers(tmp_path: Path) -> None:
+    path = tmp_path / "duplicate-fasta.gff3"
+    path.write_text(
+        "##FASTA\n>chr1\nACGT\n>chr1 other\nACGT\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(AnnotationParseError, match="duplicate sequence identifier"):
+        inspect_annotation_context(_resource(path, ResourceKind.GFF3))
+
+
+def test_gff3_rejects_empty_embedded_fasta_section(tmp_path: Path) -> None:
+    path = tmp_path / "empty-fasta.gff3"
+    path.write_text("##FASTA\n", encoding="utf-8")
+
+    with pytest.raises(AnnotationParseError, match="not followed by a sequence record"):
+        inspect_annotation_context(_resource(path, ResourceKind.GFF3))
+
+
+def test_gff3_rejects_non_fasta_directive_after_fasta_boundary(tmp_path: Path) -> None:
+    path = tmp_path / "late-directive.gff3"
+    path.write_text("##FASTA\n##sequence-region chr1 1 4\n", encoding="utf-8")
+
+    with pytest.raises(AnnotationParseError, match="not FASTA"):
+        inspect_annotation_context(_resource(path, ResourceKind.GFF3))

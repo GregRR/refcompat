@@ -16,6 +16,7 @@ from refcompat.model.contracts import (
     ResourceContract,
 )
 from refcompat.model.evidence import EvidenceAggregate
+from refcompat.model.reference_context import SequenceBinding
 from refcompat.model.resources import ResourceId
 
 
@@ -26,6 +27,7 @@ class AnnotationContractProjection:
     annotation_resource_id: ResourceId
     fasta_resource_id: ResourceId
     contract: ResourceContract
+    sequence_bindings: tuple[SequenceBinding, ...]
     coordinate_bounds_capability: CoordinateBoundsValidationCapability
     constraints: tuple[CompatibilityConstraint, ...]
     evaluations: tuple[ConstraintEvaluation, ...]
@@ -41,6 +43,21 @@ class AnnotationContractProjection:
             raise ValueError("annotation projection validation must belong to the annotation")
         if self.validation.fasta_resource_id != self.fasta_resource_id:
             raise ValueError("annotation projection validation must use the FASTA anchor")
+        binding_ids = tuple(binding.id for binding in self.sequence_bindings)
+        if len(set(binding_ids)) != len(binding_ids):
+            raise ValueError("annotation projection sequence binding IDs must be unique")
+        if tuple(sorted(binding_ids, key=str)) != self.validation.sequence_binding_ids:
+            raise ValueError("annotation projection bindings must match coordinate validation")
+        if any(
+            binding.resource_id != self.annotation_resource_id for binding in self.sequence_bindings
+        ):
+            raise ValueError("annotation projection bindings must belong to the annotation")
+        if any(
+            binding.anchor_resource_id != self.fasta_resource_id
+            for binding in self.sequence_bindings
+        ):
+            raise ValueError("annotation projection bindings must target the FASTA anchor")
+
         if self.coordinate_bounds_capability.resource_id != self.fasta_resource_id:
             raise ValueError("annotation coordinate capability must belong to the FASTA anchor")
         if self.coordinate_bounds_capability.subject_resource_id != self.annotation_resource_id:

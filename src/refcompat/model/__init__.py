@@ -22,6 +22,7 @@ from refcompat.model.annotation import (
     AnnotationFeatureRecord,
     AnnotationProvenanceClaim,
     AnnotationSequenceUsage,
+    Gff3EmbeddedFastaSequence,
     Gff3FastaBoundary,
     Gff3SequenceRegion,
 )
@@ -235,6 +236,7 @@ __all__ = [
     "FastaIndexSnapshot",
     "FindingId",
     "FindingKind",
+    "Gff3EmbeddedFastaSequence",
     "Gff3FastaBoundary",
     "Gff3SequenceRegion",
     "Gff3SequenceRegionCheck",
