@@ -12,6 +12,8 @@ The normative check contract remains in
 standards-derived invariants that should remain visible while Milestone 5 is
 implemented.
 
+The first implementation slice now provides the narrow streaming observation boundary: feature rows remain iterable in file order while compact snapshots retain only per-seqid coordinate summaries and small reference-relevant GFF3/GTF metadata. Compatibility requirements, anchor validation, and verdict reasoning remain separate later slices.
+
 ## Native coordinate model
 
 Supported GTF and GFF3 feature coordinates are positive one-based closed

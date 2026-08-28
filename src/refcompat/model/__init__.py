@@ -17,6 +17,14 @@ from refcompat.model.alignment_relationship import (
     AlignmentOrderRelationship,
     AlignmentSequenceResolution,
 )
+from refcompat.model.annotation import (
+    AnnotationContextSnapshot,
+    AnnotationFeatureRecord,
+    AnnotationProvenanceClaim,
+    AnnotationSequenceUsage,
+    Gff3FastaBoundary,
+    Gff3SequenceRegion,
+)
 from refcompat.model.bundle import BundleReasoningResult
 from refcompat.model.conflict_core import (
     ConflictCore,
@@ -160,6 +168,10 @@ __all__ = [
     "AlignmentOrderRelationship",
     "AlignmentProgramRecord",
     "AlignmentSequenceResolution",
+    "AnnotationContextSnapshot",
+    "AnnotationFeatureRecord",
+    "AnnotationProvenanceClaim",
+    "AnnotationSequenceUsage",
     "ArtifactDigest",
     "ArtifactDigestAlgorithm",
     "ArtifactIdentity",
@@ -203,6 +215,8 @@ __all__ = [
     "FastaIndexSnapshot",
     "FindingId",
     "FindingKind",
+    "Gff3FastaBoundary",
+    "Gff3SequenceRegion",
     "IdentityProviderInfo",
     "InterpretationResult",
     "Md5Digest",

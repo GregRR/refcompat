@@ -535,6 +535,8 @@ For GFF3, where present, also observe:
 
 The narrow parser does not need to construct transcript/gene hierarchy merely to perform these observations.
 
+**Implementation status:** the streaming GTF/GFF3 observation boundary is implemented. It exposes a compact per-seqid snapshot plus exhaustive feature iteration, preserves raw and decoded GFF3 seqids, recognizes gzip content without relying on filename suffixes, records the reference-relevant directives above, and stops annotation parsing at explicit or backward-compatible implied GFF3 FASTA boundaries. Coordinate requirement projection and FASTA-anchor validation remain later RCHECK-060 slices.
+
 ### Sparse annotation semantics
 
 GTF/GFF3 are treated as sparse/partial coordinate-bearing resources. A file that uses only `chr1` does not assert that its underlying reference contains only `chr1`, and a FASTA containing additional chromosomes, ALT loci, decoys, patches, or unplaced sequences is not incompatible merely because the annotation has no features on them.

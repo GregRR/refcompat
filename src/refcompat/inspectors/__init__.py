@@ -8,6 +8,14 @@ from refcompat.inspectors.alignment import (
     UnsupportedAlignmentResourceError,
     inspect_alignment_header,
 )
+from refcompat.inspectors.annotation import (
+    AnnotationInspectionError,
+    AnnotationParseError,
+    AnnotationUnreadableError,
+    UnsupportedAnnotationResourceError,
+    inspect_annotation_context,
+    iter_annotation_features,
+)
 from refcompat.inspectors.fasta_index import (
     FastaIndexComputationError,
     FastaIndexError,
@@ -51,6 +59,9 @@ __all__ = [
     "AlignmentParseError",
     "AlignmentProviderIncompatibleError",
     "AlignmentUnreadableError",
+    "AnnotationInspectionError",
+    "AnnotationParseError",
+    "AnnotationUnreadableError",
     "FastaIndexComputationError",
     "FastaIndexError",
     "FastaIndexParseError",
@@ -65,6 +76,7 @@ __all__ = [
     "SequenceDictionaryParseError",
     "SequenceDictionaryUnreadableError",
     "UnsupportedAlignmentResourceError",
+    "UnsupportedAnnotationResourceError",
     "UnsupportedFastaIndexRepresentationError",
     "UnsupportedFastaIndexResourceError",
     "UnsupportedFastaSequenceResourceError",
@@ -77,7 +89,9 @@ __all__ = [
     "compute_expected_fasta_index",
     "expected_sequence_dictionary_from_snapshot",
     "inspect_alignment_header",
+    "inspect_annotation_context",
     "inspect_vcf_context",
+    "iter_annotation_features",
     "iter_vcf_ref_records",
     "open_fasta_sequence_reader",
     "read_fasta_index",

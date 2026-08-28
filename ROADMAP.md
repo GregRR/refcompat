@@ -84,6 +84,8 @@ The roadmap intentionally avoids turning RefCompat into a universal genomics val
 
 **Goal:** determine whether annotation coordinate requirements are satisfiable by the anchor reference.
 
+**Implementation status:** the first Milestone 5 slice is implemented: GTF/GFF3 feature rows can be streamed into compact sparse seqid/coordinate summaries, with GFF3 sequence-region/provenance/`Is_circular=true` observations and embedded-FASTA boundary detection. Generic coordinate requirements and FASTA-anchor validation remain the next slices.
+
 - Stream GTF/GFF3 feature rows and summarize used seqids, feature counts, and native one-based closed coordinate bounds without constructing a gene-model database.
 - Treat annotations as sparse/partial resources: an unmentioned anchor sequence is not evidence that the annotation's underlying reference lacks that sequence.
 - Resolve seqids by exact name or verified `SequenceBinding` evidence only; honor GFF3 percent-encoded seqid syntax while preserving raw identifiers, and leave familiar naming patterns such as `1` versus `chr1` unresolved without evidence.
