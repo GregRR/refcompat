@@ -44,6 +44,11 @@ one difference cannot hide another.
 - `UNRESOLVED` — unfamiliar/ambiguous names, scope exclusions, or a non-bijective
   local-to-anchor mapping prevent a complete membership statement.
 
+An empty `@SQ` dictionary is mathematically an `ALIGNMENT_SUBSET` of a non-empty
+selected anchor, but its naming, order, and M5-content dimensions remain
+`UNRESOLVED`. Consumers must not treat the membership dimension alone as proof
+that reference usage or provider addressability has been established.
+
 An unfamiliar local name is **not** automatically extra. RefCompat records it as
 M5-distinct only when:
 
@@ -115,6 +120,11 @@ but relationship classification does not call the resulting dictionary an
 exact subset/superset relationship because the local-to-anchor mapping is not
 bijective. `duplicate_anchor_target_names` records that condition and membership
 remains `UNRESOLVED`.
+
+Future BAM/CRAM reporting must surface this relationship context alongside any
+generic compatibility verdict rather than presenting the verdict alone. In
+particular, `duplicate_anchor_target_names` must remain visible when a
+non-bijective dictionary has individually satisfiable sequence requirements.
 
 ## Header-only completeness
 

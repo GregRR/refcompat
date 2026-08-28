@@ -6,6 +6,8 @@ The project is currently pre-release; entries under `Unreleased` describe ongoin
 
 ## Unreleased
 
+- Pin external Milestone 4 review conclusions with end-to-end many-to-one alignment binding coverage, explicit empty-`@SQ` relationship semantics, duplicate-target M5 assertions, and a reporting requirement to surface non-bijective dictionary context alongside future alignment verdicts.
+
 - Harden the Milestone 4 review boundary with stricter alignment-relationship result invariants, corrected CRAM provider-fallback semantics, an explicit FASTA artifact-stability caveat, and mapped-CRAM integration coverage proving an approved selected anchor can actually restore records.
 
 - Close Milestone 4 with an explicit BAM/CRAM non-mutation boundary: alignment inspection and reasoning are read-only diagnostics, verified sequence bindings do not rename data, CRAM reference plans do not rewrite files, and RefCompat does not reheader or realign alignments.

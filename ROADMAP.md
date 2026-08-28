@@ -114,6 +114,7 @@ A stable v1.0 should additionally include:
 - BCF support;
 - BED support;
 - stable machine-readable report schema;
+- alignment reporting that surfaces dictionary relationship context alongside generic verdicts, including non-bijective mappings;
 - portable reference/compatibility manifest;
 - reference-free comparison when evidence is sufficient;
 - stable profile interface;

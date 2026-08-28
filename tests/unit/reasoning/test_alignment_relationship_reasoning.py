@@ -136,6 +136,17 @@ def test_reordered_full_dictionary_is_distinguished_from_naming_only() -> None:
     assert not summary.verified_naming_only_difference
 
 
+def test_empty_sq_dictionary_is_vacuous_subset_with_unresolved_details() -> None:
+    summary = classify_alignment_dictionary_relationship(_alignment(), _context())
+
+    assert summary.membership is AlignmentMembershipRelationship.ALIGNMENT_SUBSET
+    assert summary.naming is AlignmentNamingRelationship.UNRESOLVED
+    assert summary.order is AlignmentOrderRelationship.UNRESOLVED
+    assert summary.content is AlignmentContentRelationship.UNRESOLVED
+    assert summary.resolutions == ()
+    assert not summary.exact_identity
+
+
 def test_verified_subset_preserves_relative_order() -> None:
     summary = classify_alignment_dictionary_relationship(
         _alignment(SequenceDictionaryRecord("chr1", 4, md5=_MD5_A)),
@@ -289,6 +300,7 @@ def test_duplicate_local_names_resolving_to_one_anchor_do_not_claim_exact_member
     )
 
     assert summary.membership is AlignmentMembershipRelationship.UNRESOLVED
+    assert summary.content is AlignmentContentRelationship.M5_VERIFIED
     assert summary.duplicate_anchor_target_names == ("chr1",)
     assert not summary.verified_naming_only_difference
 

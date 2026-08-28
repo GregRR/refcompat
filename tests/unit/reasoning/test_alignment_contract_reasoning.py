@@ -11,6 +11,7 @@ from refcompat.model import (
     AlignmentHeaderSnapshot,
     ArtifactIdentity,
     CollectionCompleteness,
+    CompatibilityVerdict,
     ConstraintState,
     EvaluationRequest,
     EvaluationScope,
@@ -34,6 +35,7 @@ from refcompat.model import (
     SnapshotSequence,
 )
 from refcompat.reasoning import (
+    aggregate_bundle_verdict,
     build_alignment_contract,
     build_reference_context,
     reason_bundle,
@@ -277,6 +279,31 @@ def test_verified_cross_name_m5_satisfies_alignment_requirements() -> None:
         SatisfactionMode.VERIFIED_ALIAS,
         SatisfactionMode.VERIFIED_SEQUENCE_IDENTITY,
     ]
+
+
+def test_many_to_one_verified_bindings_keep_individual_requirements_satisfied() -> None:
+    snapshot = _alignment_snapshot(
+        (
+            SequenceDictionaryRecord(name="1", length=4, md5=_MD5_A),
+            SequenceDictionaryRecord(name="chrOne", length=4, md5=_MD5_A),
+        )
+    )
+    contract = build_alignment_contract(snapshot, _context())
+
+    result = reason_bundle(
+        _request(),
+        _anchor_snapshot(),
+        (ResourceContract(_REFERENCE), contract),
+    )
+
+    assert tuple(
+        (binding.local_sequence_name, binding.anchor_sequence_name)
+        for binding in result.sequence_bindings
+    ) == (("1", "chr1"), ("chrOne", "chr1"))
+    assert len(result.evaluations) == 6
+    assert all(item.state is ConstraintState.SATISFIED for item in result.evaluations)
+    assert result.interpretation.findings == ()
+    assert aggregate_bundle_verdict(result).verdict is CompatibilityVerdict.COMPATIBLE
 
 
 def test_an_without_m5_remains_unresolved() -> None:
