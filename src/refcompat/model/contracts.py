@@ -184,6 +184,74 @@ class SequenceOrderCapability:
 
 
 @dataclass(frozen=True, slots=True)
+class CoordinateBoundsRequirement:
+    """Require exhaustive coordinate statements to be representable on one anchor.
+
+    ``anchor_resource_id`` names the selected reference authority against
+    which coordinates must be checked. ``coordinate_count`` identifies the
+    number of in-scope coordinate statements covered by the exhaustive direct
+    validation. Format-specific local details remain in the producing
+    validation result rather than becoming one generic requirement per record.
+    """
+
+    id: RequirementId
+    resource_id: ResourceId
+    anchor_resource_id: ResourceId
+    origin: RequirementOrigin
+    level: RequirementLevel
+    coordinate_count: int
+
+    def __post_init__(self) -> None:
+        _validate_requirement_header(self.id, self.resource_id)
+        if not self.anchor_resource_id:
+            raise ValueError("coordinate-bounds requirement anchor resource ID must not be empty")
+        if self.coordinate_count < 0:
+            raise ValueError("coordinate-bounds requirement count must not be negative")
+
+
+@dataclass(frozen=True, slots=True)
+class CoordinateBoundsValidationCapability:
+    """Exhaustive structural coordinate validation against one anchor.
+
+    The capability belongs to the anchor resource and names the subject
+    resource whose coordinate statements were checked. ``conflict_count``
+    records statements proven not representable in the anchor coordinate
+    context; ``unresolved_count`` records statements for which representability
+    could not be established.
+    """
+
+    id: CapabilityId
+    resource_id: ResourceId
+    subject_resource_id: ResourceId
+    checked_count: int
+    representable_count: int
+    conflict_count: int
+    unresolved_count: int
+    source_observation_ids: tuple[ObservationId, ...] = ()
+
+    def __post_init__(self) -> None:
+        _validate_capability_header(self.id, self.resource_id)
+        if not self.subject_resource_id:
+            raise ValueError("coordinate-bounds capability subject resource ID must not be empty")
+        counts = (
+            self.checked_count,
+            self.representable_count,
+            self.conflict_count,
+            self.unresolved_count,
+        )
+        if any(count < 0 for count in counts):
+            raise ValueError("coordinate-bounds capability counts must not be negative")
+        if (
+            self.representable_count + self.conflict_count + self.unresolved_count
+            != self.checked_count
+        ):
+            raise ValueError(
+                "coordinate-bounds capability outcomes must cover every checked record"
+            )
+        _validate_source_observation_ids(self.source_observation_ids)
+
+
+@dataclass(frozen=True, slots=True)
 class ReferenceBaseRequirement:
     """Require exhaustive reference-base assertions to agree with the anchor.
 
@@ -252,6 +320,7 @@ Requirement: TypeAlias = (
     | SequenceLengthRequirement
     | SequenceIdentityRequirement
     | SequenceOrderRequirement
+    | CoordinateBoundsRequirement
     | ReferenceBaseRequirement
 )
 Capability: TypeAlias = (
@@ -259,7 +328,11 @@ Capability: TypeAlias = (
     | SequenceLengthCapability
     | SequenceIdentityCapability
     | SequenceOrderCapability
+    | CoordinateBoundsValidationCapability
     | ReferenceBaseValidationCapability
+)
+SupplementalCapability: TypeAlias = (
+    CoordinateBoundsValidationCapability | ReferenceBaseValidationCapability
 )
 
 

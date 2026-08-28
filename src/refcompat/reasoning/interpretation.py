@@ -14,6 +14,7 @@ from refcompat.model.constraints import (
 )
 from refcompat.model.contracts import (
     CapabilityId,
+    CoordinateBoundsRequirement,
     ReferenceBaseRequirement,
     Requirement,
     RequirementId,
@@ -184,6 +185,8 @@ def _conflict_kind(requirement: Requirement) -> FindingKind:
         return FindingKind.SEQUENCE_IDENTITY_CONFLICT
     if isinstance(requirement, SequenceOrderRequirement):
         return FindingKind.SEQUENCE_ORDER_CONFLICT
+    if isinstance(requirement, CoordinateBoundsRequirement):
+        return FindingKind.COORDINATE_BOUNDS_CONFLICT
     if isinstance(requirement, ReferenceBaseRequirement):
         return FindingKind.REFERENCE_BASE_CONFLICT
     assert_never(requirement)

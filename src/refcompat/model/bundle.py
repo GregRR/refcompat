@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from refcompat.model.constraints import CompatibilityConstraint, ConstraintEvaluation
-from refcompat.model.contracts import ReferenceBaseValidationCapability, ResourceContract
+from refcompat.model.contracts import ResourceContract, SupplementalCapability
 from refcompat.model.evaluation import EvaluationRequest
 from refcompat.model.evidence import EvidenceAggregate
 from refcompat.model.interpretation import InterpretationResult
@@ -29,7 +29,7 @@ class BundleReasoningResult:
     evaluations: tuple[ConstraintEvaluation, ...]
     evidence: EvidenceAggregate
     interpretation: InterpretationResult
-    supplemental_capabilities: tuple[ReferenceBaseValidationCapability, ...] = ()
+    supplemental_capabilities: tuple[SupplementalCapability, ...] = ()
 
     def __post_init__(self) -> None:
         if self.reference_context.anchor_resource_id != self.request.anchor_resource_id:

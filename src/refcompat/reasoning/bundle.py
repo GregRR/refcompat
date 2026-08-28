@@ -10,6 +10,8 @@ from refcompat.model.bundle import BundleReasoningResult
 from refcompat.model.constraints import ConstraintId, capability_is_comparable
 from refcompat.model.contracts import (
     Capability,
+    CoordinateBoundsRequirement,
+    CoordinateBoundsValidationCapability,
     ReferenceBaseRequirement,
     ReferenceBaseValidationCapability,
     Requirement,
@@ -21,6 +23,7 @@ from refcompat.model.contracts import (
     SequenceOrderRequirement,
     SequencePresenceCapability,
     SequencePresenceRequirement,
+    SupplementalCapability,
 )
 from refcompat.model.evaluation import EvaluationRequest
 from refcompat.model.identity import SequenceCollectionSnapshot
@@ -37,13 +40,13 @@ def reason_bundle(
     anchor_snapshot: SequenceCollectionSnapshot,
     contracts: tuple[ResourceContract, ...],
     *,
-    supplemental_capabilities: tuple[ReferenceBaseValidationCapability, ...] = (),
+    supplemental_capabilities: tuple[SupplementalCapability, ...] = (),
 ) -> BundleReasoningResult:
     """Evaluate every scoped typed requirement against the explicit FASTA anchor.
 
     Peer-resource capabilities participate only in evidence-backed sequence
-    binding construction. Pair-derived exhaustive reference-base validation may
-    enter only through the explicit anchor-owned supplemental channel. Neither
+    binding construction. Pair-derived exhaustive validations may enter only
+    through the explicit anchor-owned supplemental channel. Neither
     path lets a peer outvote or replace the selected anchor.
     """
 
@@ -126,7 +129,7 @@ def _bindings_for_requirement(
         return tuple(
             binding for binding in resource_bindings if binding.local_sequence_name in names
         )
-    if isinstance(requirement, ReferenceBaseRequirement):
+    if isinstance(requirement, (CoordinateBoundsRequirement, ReferenceBaseRequirement)):
         return ()
     assert_never(requirement)
 
@@ -149,9 +152,9 @@ def _candidates_for_requirement(
     context: ReferenceContext,
     requirement: Requirement,
     bindings: tuple[SequenceBinding, ...],
-    supplemental_capabilities: tuple[ReferenceBaseValidationCapability, ...],
+    supplemental_capabilities: tuple[SupplementalCapability, ...],
 ) -> tuple[Capability, ...]:
-    if isinstance(requirement, ReferenceBaseRequirement):
+    if isinstance(requirement, (CoordinateBoundsRequirement, ReferenceBaseRequirement)):
         supplemental_candidates = tuple(
             capability
             for capability in supplemental_capabilities
@@ -159,7 +162,7 @@ def _candidates_for_requirement(
         )
         if len(supplemental_candidates) > 1:
             raise ValueError(
-                "reference-base requirement may use only one exhaustive supplemental capability"
+                "pair-derived requirement may use only one exhaustive supplemental capability"
             )
         return supplemental_candidates
 
@@ -197,12 +200,19 @@ def _candidates_for_requirement(
 def _validate_supplemental_capabilities(
     request: EvaluationRequest,
     contracts: tuple[ResourceContract, ...],
-    capabilities: tuple[ReferenceBaseValidationCapability, ...],
+    capabilities: tuple[SupplementalCapability, ...],
 ) -> None:
     if any(
-        not isinstance(capability, ReferenceBaseValidationCapability) for capability in capabilities
+        not isinstance(
+            capability,
+            (CoordinateBoundsValidationCapability, ReferenceBaseValidationCapability),
+        )
+        for capability in capabilities
     ):
-        raise TypeError("supplemental capabilities must be reference-base validations")
+        raise TypeError(
+            "supplemental capabilities must be reference-base validations "
+            "or coordinate-bounds validations"
+        )
 
     capability_ids = tuple(capability.id for capability in capabilities)
     if len(set(capability_ids)) != len(capability_ids):
@@ -219,12 +229,12 @@ def _validate_supplemental_capabilities(
         requirement
         for contract in contracts
         for requirement in contract.requirements
-        if isinstance(requirement, ReferenceBaseRequirement)
+        if isinstance(requirement, (CoordinateBoundsRequirement, ReferenceBaseRequirement))
     )
     if any(
         requirement.anchor_resource_id != request.anchor_resource_id for requirement in requirements
     ):
-        raise ValueError("reference-base requirements must name the selected FASTA anchor")
+        raise ValueError("pair-derived requirements must name the selected FASTA anchor")
 
     for capability in capabilities:
         matches = tuple(
@@ -233,9 +243,7 @@ def _validate_supplemental_capabilities(
             if capability_is_comparable(requirement, capability)
         )
         if not matches:
-            raise ValueError(
-                "supplemental reference-base capability must match a scoped requirement"
-            )
+            raise ValueError("supplemental pair-derived capability must match a scoped requirement")
 
 
 def _target_anchor_order(
@@ -253,7 +261,10 @@ def _target_anchor_name(
     requirement: Requirement,
     bindings: tuple[SequenceBinding, ...],
 ) -> str | None:
-    if isinstance(requirement, (SequenceOrderRequirement, ReferenceBaseRequirement)):
+    if isinstance(
+        requirement,
+        (SequenceOrderRequirement, CoordinateBoundsRequirement, ReferenceBaseRequirement),
+    ):
         return None
     if isinstance(
         requirement,

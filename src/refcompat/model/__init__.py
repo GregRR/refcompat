@@ -43,6 +43,8 @@ from refcompat.model.constraints import (
 from refcompat.model.contracts import (
     Capability,
     CapabilityId,
+    CoordinateBoundsRequirement,
+    CoordinateBoundsValidationCapability,
     ReferenceBaseRequirement,
     ReferenceBaseValidationCapability,
     Requirement,
@@ -60,6 +62,7 @@ from refcompat.model.contracts import (
     SequenceOrderRequirement,
     SequencePresenceCapability,
     SequencePresenceRequirement,
+    SupplementalCapability,
 )
 from refcompat.model.cram_reference import CramOfflineReferenceAction, CramOfflineReferencePlan
 from refcompat.model.evaluation import (
@@ -194,6 +197,8 @@ __all__ = [
     "ConstraintId",
     "ConstraintRule",
     "ConstraintState",
+    "CoordinateBoundsRequirement",
+    "CoordinateBoundsValidationCapability",
     "CramOfflineReferenceAction",
     "CramOfflineReferencePlan",
     "EvaluationPolicyId",
@@ -264,6 +269,7 @@ __all__ = [
     "SequencePresenceRequirement",
     "SnapshotSequence",
     "SourceLocation",
+    "SupplementalCapability",
     "VcfChromUsage",
     "VcfContextSnapshot",
     "VcfContigDeclaration",

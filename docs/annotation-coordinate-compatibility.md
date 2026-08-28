@@ -62,7 +62,7 @@ absence.
 
 ## Scalable coordinate evidence
 
-Milestone 5 should not expand a large annotation into one generic requirement
+Milestone 5 does not expand a large annotation into one generic requirement
 object per feature. The annotation-specific validation result retains per-seqid
 counts plus local conflict/unresolved details, while generic bundle reasoning
 uses one resource-level `CoordinateBoundsRequirement` and one anchor-owned
@@ -72,10 +72,7 @@ This mirrors the existing VCF direct-validation bridge: pair-derived evidence
 can satisfy only the requirement for the same subject resource and selected
 FASTA anchor. Peer resources never provide candidate anchor facts.
 
-A proven ordinary out-of-bounds feature is a hard Tier-B structural conflict.
-The number of in-bounds features is descriptive and cannot cancel it. An
-unresolved feature count likewise remains unresolved rather than being averaged
-into a positive conclusion.
+The generic coordinate-bounds requirement/capability, evaluation, evidence, finding, and bundle-supplemental machinery is implemented independently of annotation policy. A proven ordinary out-of-bounds feature will therefore project as a hard Tier-B structural conflict once the annotation-specific validator is connected. The number of in-bounds features is descriptive and cannot cancel it. An unresolved feature count likewise remains unresolved rather than being averaged into a positive conclusion.
 
 ## GFF3 `##sequence-region`
 

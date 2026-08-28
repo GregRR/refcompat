@@ -24,13 +24,15 @@ mode and is not represented by weakening the anchor-driven request invariant.
 
 ## Typed requirements and capabilities
 
-The current `ResourceContract` vocabulary supports five sequence/reference-oriented
+The current `ResourceContract` vocabulary supports six sequence/reference-oriented
 scientific dimensions:
 
 - sequence presence;
 - exact sequence length;
 - content identity (`RefgetSequenceId` or SAM-style `Md5Digest`);
 - exact local sequence order;
+- exhaustive resource-level coordinate representability (`CoordinateBoundsRequirement` /
+  `CoordinateBoundsValidationCapability`, added by Milestone 5);
 - exhaustive resource-level reference-base consistency (`ReferenceBaseRequirement` /
   `ReferenceBaseValidationCapability`, added by Milestone 3).
 
@@ -93,6 +95,8 @@ The original evaluator supports exact typed sequence comparisons for:
 - exact identity value for the same local name and identity scheme;
 - exact sequence order.
 
+Milestone 5 adds a parallel exhaustive resource-level `CoordinateBoundsRequirement` dimension. The requirement names its expected anchor resource and carries the number of in-scope coordinate statements checked. Only an anchor-owned `CoordinateBoundsValidationCapability` for the same subject and count is comparable. Any proven coordinate conflict is `UNSATISFIED`; otherwise unresolved statements yield `UNRESOLVED`, a non-empty fully representable validation is `SATISFIED` with `EXHAUSTIVE_DIRECT`, and an empty coordinate set is `NOT_APPLICABLE`. Resolved coordinate evidence is Tier-B structural evidence, never Tier-A sequence-content evidence. Format-specific parsing, alias resolution, and circular-coordinate policy stay outside this generic evaluator.
+
 Milestone 3 extends the same typed evaluator with exhaustive resource-level
 `ReferenceBaseRequirement` evaluation. The requirement names its expected anchor resource, and only a direct validation capability owned by that anchor is comparable. A direct validation capability with any
 proven mismatch is `UNSATISFIED`; otherwise unresolved direct comparisons are
@@ -108,7 +112,7 @@ content identities.
 
 Cross-name identity/verified alias reasoning is implemented only through the later `SequenceBinding` layer documented in `reference-context-bundle.md`. The base evaluator still manufactures no alias from string similarity; a same-content capability under another local name is usable only when an explicit verified binding is attached to the constraint.
 
-Pair-derived exhaustive reference-base capabilities remain outside resource contracts because they are produced by comparing a consumer against the selected FASTA. Whole-bundle orchestration accepts them through a separate supplemental-capability channel. That channel is anchor-scoped and rejects unused, out-of-scope, duplicate, or competing exhaustive validations instead of allowing peer contracts to supply reference authority.
+Pair-derived exhaustive validation capabilities remain outside resource contracts because they are produced by comparing a consumer against the selected FASTA. Whole-bundle orchestration accepts reference-base and coordinate-bounds validations through a separate supplemental-capability channel. That channel is typed and anchor-scoped and rejects unused, out-of-scope, duplicate, wrong-anchor, wrong-count, or competing exhaustive validations instead of allowing peer contracts to supply reference authority.
 
 If comparable candidate capabilities conflict with each other, the evaluator
 returns `UNRESOLVED` rather than choosing one or averaging them.

@@ -17,6 +17,8 @@ from refcompat.model.constraints import (
 )
 from refcompat.model.contracts import (
     Capability,
+    CoordinateBoundsRequirement,
+    CoordinateBoundsValidationCapability,
     ReferenceBaseRequirement,
     ReferenceBaseValidationCapability,
     Requirement,
@@ -232,6 +234,23 @@ def _classify_relationship(
             if binding_ids
             else EvidenceMethod.EXACT_TYPED_CONSTRAINT,
             binding_ids,
+        )
+
+    if isinstance(requirement, CoordinateBoundsRequirement):
+        if not isinstance(capability, CoordinateBoundsValidationCapability):
+            raise ValueError("coordinate-bounds evidence requires a validation capability")
+        if capability.conflict_count:
+            polarity = EvidencePolarity.CONTRADICTS
+        elif capability.unresolved_count == 0 and capability.checked_count > 0:
+            polarity = EvidencePolarity.SUPPORTS
+        else:
+            raise ValueError("unresolved coordinate-bounds validation cannot become evidence")
+        return (
+            EvidenceKind.COORDINATE_BOUNDS,
+            EvidenceStrength.TIER_B_DIRECT_STRUCTURAL,
+            polarity,
+            EvidenceMethod.EXHAUSTIVE_COORDINATE_BOUNDS_VALIDATION,
+            (),
         )
 
     if isinstance(requirement, ReferenceBaseRequirement):

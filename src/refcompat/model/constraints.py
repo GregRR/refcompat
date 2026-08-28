@@ -9,6 +9,8 @@ from refcompat._compat import StrEnum, assert_never
 from refcompat.model.contracts import (
     Capability,
     CapabilityId,
+    CoordinateBoundsRequirement,
+    CoordinateBoundsValidationCapability,
     ReferenceBaseRequirement,
     ReferenceBaseValidationCapability,
     Requirement,
@@ -37,6 +39,7 @@ class ConstraintRule(StrEnum):
     SEQUENCE_LENGTH = "sequence_length"
     SEQUENCE_IDENTITY = "sequence_identity"
     SEQUENCE_ORDER = "sequence_order"
+    COORDINATE_BOUNDS = "coordinate_bounds"
     REFERENCE_BASES = "reference_bases"
 
 
@@ -153,6 +156,8 @@ def constraint_rule_for_requirement(requirement: Requirement) -> ConstraintRule:
         return ConstraintRule.SEQUENCE_IDENTITY
     if isinstance(requirement, SequenceOrderRequirement):
         return ConstraintRule.SEQUENCE_ORDER
+    if isinstance(requirement, CoordinateBoundsRequirement):
+        return ConstraintRule.COORDINATE_BOUNDS
     if isinstance(requirement, ReferenceBaseRequirement):
         return ConstraintRule.REFERENCE_BASES
     assert_never(requirement)
@@ -177,6 +182,13 @@ def capability_is_comparable(requirement: Requirement, capability: Capability) -
         assert_never(requirement.identity)
     if isinstance(requirement, SequenceOrderRequirement):
         return isinstance(capability, SequenceOrderCapability)
+    if isinstance(requirement, CoordinateBoundsRequirement):
+        return (
+            isinstance(capability, CoordinateBoundsValidationCapability)
+            and capability.resource_id == requirement.anchor_resource_id
+            and capability.subject_resource_id == requirement.resource_id
+            and capability.checked_count == requirement.coordinate_count
+        )
     if isinstance(requirement, ReferenceBaseRequirement):
         return (
             isinstance(capability, ReferenceBaseValidationCapability)
@@ -248,6 +260,6 @@ def _binding_is_relevant_to_requirement(
         return binding.local_sequence_name == requirement.sequence_name
     if isinstance(requirement, SequenceOrderRequirement):
         return binding.local_sequence_name in requirement.sequence_names
-    if isinstance(requirement, ReferenceBaseRequirement):
+    if isinstance(requirement, (CoordinateBoundsRequirement, ReferenceBaseRequirement)):
         return False
     assert_never(requirement)
