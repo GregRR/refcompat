@@ -6,6 +6,8 @@ The project is currently pre-release; entries under `Unreleased` describe ongoin
 
 ## Unreleased
 
+- Pin the Milestone 5 GTF/GFF3 contract before implementation: sparse one-based closed annotation coordinates, exact-or-verified seqid resolution, scalable anchor-owned coordinate-bounds evidence, `##sequence-region` segment semantics, conservative circular-origin handling, provenance/embedded-FASTA boundaries, and staged review checkpoints.
+
 - Pin external Milestone 4 review conclusions with end-to-end many-to-one alignment binding coverage, explicit empty-`@SQ` relationship semantics, duplicate-target M5 assertions, and a reporting requirement to surface non-bijective dictionary context alongside future alignment verdicts.
 
 - Harden the Milestone 4 review boundary with stricter alignment-relationship result invariants, corrected CRAM provider-fallback semantics, an explicit FASTA artifact-stability caveat, and mapped-CRAM integration coverage proving an approved selected anchor can actually restore records.

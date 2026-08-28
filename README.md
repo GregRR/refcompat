@@ -121,6 +121,7 @@ Start with:
 - [`docs/alignment-dictionary-relationships.md`](docs/alignment-dictionary-relationships.md) — descriptive exact/naming/order/membership/M5 relationship classification for BAM/CRAM headers;
 - [`docs/cram-offline-reference.md`](docs/cram-offline-reference.md) — deterministic offline policy for any future CRAM operation that genuinely requires reference bases;
 - [`docs/alignment-non-mutation-boundary.md`](docs/alignment-non-mutation-boundary.md) — Milestone 4 read-only diagnostic boundary: no reheadering, renaming, remapping, or realignment;
+- [`docs/annotation-coordinate-compatibility.md`](docs/annotation-coordinate-compatibility.md) — pinned Milestone 5 GTF/GFF3 coordinate, seqid-resolution, sequence-region, circular, and provenance semantics;
 - [`docs/adr/`](docs/adr/) — architectural decisions.
 
 ## Project status

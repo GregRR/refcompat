@@ -410,7 +410,15 @@ Whole-bundle orchestration now accepts these pair-derived validation capabilitie
 
 ### RCHECK-060 — GTF/GFF3 ↔ FASTA
 
-Resolve in-scope seqids, verify coordinate bounds, inspect GFF3 sequence-region/provenance directives, quantify affected features, and conservatively handle circular-coordinate semantics. Do not become a gene-model validator.
+Treat GTF/GFF3 as sparse coordinate-bearing resources whose used seqids impose directional requirements on the explicitly selected FASTA anchor. Preserve native one-based closed coordinates in observations, project each used seqid into a mandatory sequence-presence requirement, and summarize feature-coordinate validation through one scalable `CoordinateBoundsRequirement` rather than one generic requirement per feature. Pair-derived coordinate validation is owned by the selected anchor and may use only exact-name or verified `SequenceBinding` resolution; familiar aliases are not inferred. A resolved ordinary interval outside the anchor sequence is a hard structural conflict, while an unresolved local name remains unresolved rather than being mislabeled as proven absence.
+
+For GFF3, `##sequence-region` describes the sequence segment referred to by the file and is not an exact whole-sequence length declaration. Its bounds may constrain features in the file and may themselves be checked for representability against a resolved anchor sequence, while self-contradictory/malformed annotation input remains an `INVALID_INPUT` concern rather than biological incompatibility. The GFF3 circular-origin rule is applied only when the file supplies the standard circular-landmark evidence needed to justify the extended coordinate representation; otherwise RefCompat fails closed to an unresolved result rather than hiding an apparent bounds problem. Relevant GFF3/GTF provider, release, assembly, and species metadata remain provenance claims.
+
+GFF3 `##FASTA` marks a parser boundary and may provide actual embedded sequence content. If Milestone 5 derives identity from those bases for sequence-binding evidence, that identity is content-derived evidence owned by the annotation resource and remains subject to the existing full-anchor uniqueness rules. It never replaces or competes with the explicitly selected FASTA anchor. Exact-name coordinate compatibility does not require embedded sequence identity and does not prove that an annotation came from a particular named assembly.
+
+RefCompat does not validate gene-model biology, repair feature hierarchy, normalize attributes, infer build aliases from naming conventions, or enforce consumer-specific GTF/GFF3 dialect rules.
+
+See [`docs/annotation-coordinate-compatibility.md`](docs/annotation-coordinate-compatibility.md) for the standards-derived Milestone 5 invariants that pin this implementation boundary.
 
 ### RCHECK-100 — whole-bundle coherence
 
@@ -546,7 +554,7 @@ Create small redistributable fixtures covering at least the 30 families in `docs
 - M5 conflict;
 - BAM/FASTA exact, alias, unresolved, and decoy-superset cases;
 - VCF exact plus isolated, localized, distributed, and systematic REF conflicts;
-- GTF/GFF exact, alias, missing-sequence, bounds, and circular cases;
+- GTF/GFF exact, verified-alias, unresolved-name, proven-absence, bounds, and circular cases;
 - contradicted provenance;
 - non-model/custom references;
 - negative controls;
@@ -649,12 +657,11 @@ See [`docs/development.md`](docs/development.md), ADR 0012, and ADR 0013.
 
 ## 17. Remaining implementation decisions
 
-No unresolved tooling choice blocks the first implementation slice. The remaining decisions are deliberately milestone-specific and should be resolved when their evidence exists, including:
+No unresolved tooling choice blocks the next implementation slice. The remaining decisions are deliberately milestone-specific and should be resolved when their evidence exists, including:
 
-1. exact CRAM offline behavior when required reference content is unavailable;
-2. exact first UCSC profile subset;
-3. the first stable machine-readable report schema/versioning commitment;
-4. whether later performance or format requirements justify additional parser/storage dependencies.
+1. exact first UCSC profile subset;
+2. the first stable machine-readable report schema/versioning commitment;
+3. whether later performance or format requirements justify additional parser/storage dependencies.
 
 ---
 
@@ -667,8 +674,10 @@ No unresolved tooling choice blocks the first implementation slice. The remainin
 5. produce human + minimal machine-readable reports (complete);
 6. implement the core requirements/capabilities reasoning slice (complete);
 7. implement generalized evidence aggregation, structured interpretation, FASTA-anchored reference-context/bundle reasoning, top-level verdict aggregation, and conflict-core extraction (complete);
-8. add VCF, BAM/CRAM, and GTF/GFF inspectors one at a time;
-9. incorporate implementation feedback into the design as concrete edge cases expose missing constraints or evidence types.
+8. implement exhaustive VCF reference reasoning, conservative sequence binding, and whole-bundle projection (complete);
+9. implement BAM/CRAM header observation, contract projection, sequence binding, dictionary relationships, and conservative offline CRAM planning (complete);
+10. implement GTF/GFF3 observation, generic coordinate-bounds reasoning, anchor validation, verified sequence binding where evidence exists, and GFF3-specific region/circular semantics in reviewable slices;
+11. incorporate implementation feedback into the design as concrete edge cases expose missing constraints or evidence types.
 
 ---
 
@@ -684,10 +693,14 @@ Primary/standards references should be preferred in implementation documentation
 - SAM specification: https://samtools.github.io/hts-specs/SAMv1.pdf
 - VCF v4.5 specification: https://samtools.github.io/hts-specs/VCFv4.5.pdf
 - Sequence Ontology GFF3 specification: https://github.com/The-Sequence-Ontology/Specifications/blob/master/gff3.md
+- Ensembl GFF/GTF format documentation: https://www.ensembl.org/info/website/upload/gff.html
+- GENCODE GTF format documentation: https://www.gencodegenes.org/pages/data_format.html
 - NCBI GFF3 format notes: https://www.ncbi.nlm.nih.gov/datasets/docs/v2/reference-docs/file-formats/annotation-files/about-ncbi-gff3/
 
 ---
 
 ## Design status
 
-The broad research, implementation-readiness, repository-tooling, Milestone 1 identity/derived-artifact work, and Milestone 2 reasoning foundation are complete. Milestone 3 core VCF reasoning now covers VCF/VCF.gz context observation, exhaustive REF validation, verified MD5-backed cross-name binding/revalidation, format-neutral projection, whole-bundle ingestion, and descriptive conflict-pattern interpretation. RefCompat now implements explicit anchor-driven evaluation scope; typed requirements/capabilities and constraint evaluations; qualitative evidence aggregation; structured findings/conditions; a complete-FASTA `ReferenceContext` with content-verified `SequenceBinding` and whole-bundle orchestration; categorical mandatory-constraint verdict aggregation; and compact decisive conflict-core extraction. Missing candidate evidence remains unresolved unless an explicit capability proves a contradiction, ambiguous sequence identity never manufactures a binding, peer resources do not vote on reference identity, advisory constraints do not veto mandatory compatibility, evidence is never converted into a numeric score, conditions qualify only otherwise-positive verdicts, and failure reporting excludes non-decisive mismatch noise. Analysis status and stable `CompatibilityReport` serialization remain later boundaries. Additional broad corpus collection is not currently justified unless implementation exposes a new unresolved category, a profile requires targeted evidence, or a separate prevalence study becomes a project goal.
+The broad research, implementation-readiness, repository-tooling, Milestone 1 identity/derived-artifact work, Milestone 2 reasoning foundation, Milestone 3 VCF reasoning, and Milestone 4 BAM/CRAM reasoning are complete. RefCompat now implements explicit anchor-driven evaluation scope; typed requirements/capabilities and constraint evaluations; qualitative evidence aggregation; structured findings/conditions; a complete-FASTA `ReferenceContext` with content-verified `SequenceBinding` and whole-bundle orchestration; categorical mandatory-constraint verdict aggregation; and compact decisive conflict-core extraction. VCF support adds exhaustive REF validation plus conservative MD5-backed cross-name binding. BAM/CRAM support adds declared dictionary projection, conservative M5-backed binding, multidimensional dictionary relationship classification, and deterministic offline-reference planning without reheadering or realignment.
+
+Milestone 5's annotation contract is now pinned before implementation: GTF/GFF3 are sparse one-based closed coordinate resources; used seqids create directional anchor requirements; unfamiliar names remain unresolved without verified binding evidence; ordinary proven out-of-bounds coordinates are hard structural conflicts; GFF3 `##sequence-region` is a declared segment rather than an exact sequence-length assertion; circular-origin semantics require explicit standard evidence; and annotation provenance claims or embedded content never displace the selected FASTA anchor. The next implementation work is the narrow streaming annotation-observation boundary followed by generic coordinate-bounds reasoning. Missing candidate evidence remains unresolved unless explicit evidence proves a contradiction, ambiguous sequence identity never manufactures a binding, peer resources do not vote on reference identity, advisory constraints do not veto mandatory compatibility, evidence is never converted into a numeric score, conditions qualify only otherwise-positive verdicts, and failure reporting excludes non-decisive mismatch noise. Analysis status and stable `CompatibilityReport` serialization remain later boundaries. Additional broad corpus collection is not currently justified unless implementation exposes a new unresolved category, a profile requires targeted evidence, or a separate prevalence study becomes a project goal.

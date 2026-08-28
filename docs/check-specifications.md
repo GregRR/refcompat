@@ -501,56 +501,110 @@ Do not automatically swap REF/ALT, flip strand, rewrite alleles, delete mismatch
 
 ### Purpose
 
-Determine whether every in-scope reference-coordinate statement made by the annotation can be represented against the supplied FASTA.
+Determine whether every in-scope reference-coordinate statement made by the annotation can be represented against the explicitly selected FASTA anchor.
 
-This is not a biological gene-model validator.
+A positive result establishes structural reference-coordinate compatibility for the statements the annotation actually makes. It does not establish that the annotation and FASTA have identical whole-reference membership, prove a named genome build, or validate gene-model biology.
+
+The standards-derived implementation invariants are also summarized in [`annotation-coordinate-compatibility.md`](annotation-coordinate-compatibility.md).
+
+### Coordinate convention
+
+GTF and GFF3 feature columns 4 and 5 are interpreted as positive one-based closed coordinates. RefCompat preserves those native values in observations. Any zero-based/half-open conversion needed for FASTA access is an explicit validation-layer operation rather than a change to the observed annotation coordinates.
+
+GFF3 seqids obey the format's percent-encoding rules. Preserve the raw field for traceability, but use the decoded logical seqid for comparison with the FASTA namespace and for matching the same seqid across feature/directive records. A literal percent sign in an identifier therefore remains distinct from an encoded reserved character. Invalid required escaping is an input-validity issue rather than a reason to guess the intended name.
+
+GFF3 additionally defines an origin-crossing representation for features on an explicitly circular landmark. That exception is format-specific and is resolved before generic coordinate-bounds evidence is produced. Coordinates in the GFF3 `Target` attribute describe the aligned target sequence, not the column-1 landmark, and must not participate in RCHECK-060 anchor-coordinate bounds.
 
 ### Observations
 
-Per resource:
+The annotation inspector streams feature rows and records, at minimum:
 
-- seqids used;
+- seqids actually used by features;
 - feature count by seqid;
-- minimum/maximum coordinates;
-- provider/release/assembly claims.
+- minimum start and maximum end by seqid;
+- enough source location/ordinal information to explain non-matching features;
+- recognizable provider/release/assembly claims without promoting them to verified identity.
 
-For GFF3, where present:
+For GFF3, where present, also observe:
 
 - `##sequence-region`;
-- genome-build/provenance directives.
+- standard genome-build/species/provenance directives relevant to reference context;
+- useful provider-specific provenance directives such as NCBI's `#!genome-build` and `#!genome-build-accession` without treating them as standard GFF3 identity evidence;
+- the `##FASTA` boundary and embedded landmark sequence content needed by later binding evidence;
+- explicit `Is_circular=true` landmark evidence needed to interpret circular-origin coordinates.
 
-### Requirements
+The narrow parser does not need to construct transcript/gene hierarchy merely to perform these observations.
 
-For each in-scope seqid/feature:
+### Sparse annotation semantics
 
-- sequence presence;
-- exact or verified alias/name resolution;
-- coordinate bounds;
-- annotation-declared region bounds where applicable.
+GTF/GFF3 are treated as sparse/partial coordinate-bearing resources. A file that uses only `chr1` does not assert that its underlying reference contains only `chr1`, and a FASTA containing additional chromosomes, ALT loci, decoys, patches, or unplaced sequences is not incompatible merely because the annotation has no features on them.
 
-### Alias handling
+Scope can exclude sequences only when the caller explicitly requests that scope. RefCompat does not infer that a patch, haplotype, ALT, decoy, mitochondrial, or unplaced sequence is irrelevant.
 
-`1` versus `chr1` can be satisfied through `SatisfactionMode.VERIFIED_ALIAS` only when evidence verifies the relationship. String resemblance is insufficient.
+### Contract projection
 
-### Missing sequence
+For each distinct in-scope seqid actually used by a feature, project a mandatory `SequencePresenceRequirement`. Name resolution uses an exact local name or an explicit verified `SequenceBinding`; a missing candidate capability by itself is not proof that the biological sequence is absent.
 
-Under default whole-resource scope, a feature on a missing patch/unplaced sequence is an unsatisfied mandatory requirement. It becomes conditional only if the evaluation scope explicitly excludes that sequence class.
+Project feature-coordinate validation through one scalable, resource-level `CoordinateBoundsRequirement` that names the selected FASTA anchor and the number of in-scope feature rows checked. Do not create one generic requirement per annotation feature. The corresponding anchor-owned `CoordinateBoundsValidationCapability` summarizes representable, conflicting, and unresolved feature counts while the annotation-specific validation result retains per-seqid summaries and enough local detail to explain every conflict/unresolved case.
 
-### Bounds and circular sequences
+The pair-derived capability can satisfy only a coordinate requirement for the same annotation resource and the same selected FASTA anchor. Peer resources cannot provide coordinate capability for one another or vote on the anchor.
 
-Ordinary feature coordinates extending beyond sequence length are a hard bounds conflict. Defined circular-origin semantics must be handled explicitly or conservatively reported unresolved; RefCompat must not produce a false out-of-bounds finding for a valid circular case.
+### Name resolution and missing sequences
+
+`1` versus `chr1`, `MT` versus `chrM`, version stripping, accession resemblance, and other familiar naming patterns are not aliases by themselves. `SatisfactionMode.VERIFIED_ALIAS` requires evidence-backed `SequenceBinding` using the existing binding rules. GFF3 feature `Alias` attributes describe feature aliases and are not sequence-binding authority for the column-1 seqid.
+
+When no exact-name or verified binding resolves a used annotation seqid, the feature remains `UNRESOLVED_SEQUENCE` and the mandatory relationship remains unresolved. RefCompat must not relabel an unfamiliar local name as a proven missing sequence merely because the selected FASTA uses different strings.
+
+If independent evidence actually establishes what sequence the annotation seqid denotes and establishes that the in-scope anchor lacks that required sequence, the mandatory presence relationship is unsatisfied. Explicit scope may make an otherwise relevant sequence out of scope, but scope must never manufacture alias uniqueness or hide duplicate anchor identities to create a binding.
+
+### Ordinary coordinate bounds
+
+For a resolved non-circular feature interval, `1 <= start <= end <= anchor_length` is required. A feature interval proven outside that range is a hard structural conflict. One proven conflict is not cancelled by any number or proportion of in-bounds features; counts describe impact rather than vote on truth.
+
+Unresolved-sequence features are not also labeled out of bounds because no anchor coordinate system has been established for them.
+
+### GFF3 `##sequence-region`
+
+The GFF3 `##sequence-region seqid start end` directive declares the sequence segment referred to by the file. It is not an assertion that the full biological sequence has length `end`, so it must not be projected as an exact `SequenceLengthRequirement` merely because it ends at a particular coordinate.
+
+When the directive's seqid resolves to the selected FASTA anchor, its declared segment must itself be representable against that anchor. Independently, GFF3 requires ordinary features on that landmark to lie within a supplied `##sequence-region`, subject to its circular-landmark exception. A file that violates its own required region semantics is malformed input; where that prevents meaningful evaluation it affects analysis status (`INVALID_INPUT`) rather than becoming a biological `INCOMPATIBLE` verdict.
+
+### GFF3 circular-origin semantics
+
+GFF3 permits an origin-crossing feature on a circular landmark to retain `start <= end` by adding the landmark length to the wrapped end coordinate. Consequently, `end > anchor_length` is not automatically a coordinate conflict in GFF3.
+
+RefCompat applies that exception only when the GFF3 document supplies the standard landmark evidence needed to establish the relevant sequence as circular and the extended interval is valid under the defined circular representation. It must not infer circularity from organism type, sequence name, feature type, or a convenient coordinate pattern. If the available data cannot establish whether the exception applies safely, the coordinate relationship remains unresolved rather than being forced to compatible or incompatible.
+
+GTF has no corresponding core circular-origin rule in the supported GFF2-derived coordinate model; ordinary GTF intervals therefore use the normal resolved-sequence bounds rule.
+
+### Provenance and embedded GFF3 FASTA
+
+Provider/release/build/species metadata are provenance claims. `GRCh38`, `GRCm39`, a provider name, an assembly accession, or a familiar filename can support explanation but cannot independently establish sequence identity or an alias.
+
+`##FASTA` ends the GFF3 feature/directive portion and begins embedded sequence content. The parser must recognize this boundary so sequence lines are never interpreted as feature rows; the GFF3 backward-compatibility rule that a line beginning with `>` implies the FASTA section is handled at the same parser boundary. If Milestone 5 derives an identity from embedded bases for a used landmark, that identity is `CONTENT_DERIVED` evidence owned by the annotation resource. It may participate in conservative sequence binding only under the existing full-anchor uniqueness and conflict rules. Embedded content never replaces, selects, or outranks the explicitly selected FASTA anchor, and exact-name coordinate validation does not require embedded FASTA content to exist.
+
+### Evidence and verdict effect
+
+Resolved in-bounds annotation coordinates are Tier-B structural evidence. They support the statement that the annotation's observed coordinates are representable against the selected anchor; they are not Tier-A proof that every anchor base is the sequence against which the annotation was originally produced.
+
+A proven ordinary out-of-bounds coordinate is a hard structural contradiction for that mandatory coordinate requirement. Unresolved names or unresolved circular interpretation keep the corresponding requirement unresolved and can therefore produce `INDETERMINATE`. A sparse annotation does not create absence evidence for unmentioned anchor sequences.
 
 ### Explicit non-goals
 
-Core v0.1 does not judge:
+Core v0.1 does not judge or perform:
 
-- exon/transcript biological correctness;
-- feature hierarchy repair;
-- gene naming quality;
+- exon/transcript/gene biological correctness;
+- `ID`/`Parent` hierarchy repair or general GFF3 conformance validation;
+- CDS phase/codon validation or transcript reconstruction;
+- gene naming or attribute normalization;
+- GTF ↔ GFF3 conversion;
+- sequence-name rewriting, version stripping, or heuristic `chr` prefix handling;
+- coordinate clipping, liftover, feature deletion, or other mutation;
 - GENCODE versus Ensembl biological equivalence;
-- featureCounts/Cell Ranger/other consumer-specific dialect requirements.
+- build guessing from coordinates, filenames, or familiar sequence names;
+- featureCounts, Cell Ranger, STAR, UCSC, Ensembl-import, or other consumer-specific dialect requirements.
 
-Those belong to dedicated annotation validators or consumer profiles.
+Those belong to dedicated annotation validators, later transformations, or explicit consumer profiles.
 
 ---
 
@@ -656,11 +710,11 @@ The first redistributable synthetic fixture suite should cover at least:
 18. localized/distributed/systematic VCF REF mismatch patterns;
 19. GTF exact seqid match;
 20. GTF verified alias requirement;
-21. GTF missing sequence;
+21. GTF unresolved cross-name seqid;
 22. GTF feature out of bounds;
 23. GFF3 `##sequence-region` conflict;
 24. valid GFF3 circular-origin exception;
-25. annotation requiring missing patch/unplaced sequence;
+25. annotation requiring an in-scope sequence whose absence from the anchor is independently established;
 26. declared assembly contradicted by verified identity;
 27. mixed bundle with multiple independent problems;
 28. non-model organism with no known registry entry;

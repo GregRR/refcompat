@@ -64,8 +64,10 @@ Examples:
 - matching sequence name and length when exact digest is unavailable;
 - `.fai` structural correspondence with the FASTA;
 - `.dict` name/length consistency;
-- GTF/GFF seqids resolved and coordinates in bounds;
+- GTF/GFF used seqids resolved and coordinates representable under the format's defined coordinate semantics;
 - exact accession plus independently matching structural properties.
+
+For annotations, structural coordinate agreement means only that the observed reference-coordinate statements can be represented against the selected anchor. It does not upgrade exact-name agreement, a build label, or plausible coordinate ranges into sequence-content identity. A valid GFF3 circular-origin feature may be structurally representable even when its encoded end coordinate is numerically greater than the landmark length.
 
 Tier B evidence can establish many operational constraints, but must not be described as exact sequence identity unless it actually proves content identity.
 

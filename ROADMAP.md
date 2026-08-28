@@ -84,12 +84,19 @@ The roadmap intentionally avoids turning RefCompat into a universal genomics val
 
 **Goal:** determine whether annotation coordinate requirements are satisfiable by the anchor reference.
 
-- Inspect seqids and feature coordinate bounds.
-- Handle exact and verified-alias name resolution.
-- Inspect GFF3 `##sequence-region` and relevant provenance directives.
-- Quantify affected features for missing sequences and out-of-bounds coordinates.
-- Handle defined circular-origin semantics conservatively.
-- Keep annotation biology, hierarchy repair, and consumer-specific dialect requirements out of core scope.
+- Stream GTF/GFF3 feature rows and summarize used seqids, feature counts, and native one-based closed coordinate bounds without constructing a gene-model database.
+- Treat annotations as sparse/partial resources: an unmentioned anchor sequence is not evidence that the annotation's underlying reference lacks that sequence.
+- Resolve seqids by exact name or verified `SequenceBinding` evidence only; honor GFF3 percent-encoded seqid syntax while preserving raw identifiers, and leave familiar naming patterns such as `1` versus `chr1` unresolved without evidence.
+- Project used seqids into generic sequence-presence requirements and annotation coordinates into a scalable generic `CoordinateBoundsRequirement` evaluated against the selected FASTA anchor.
+- Distinguish an unresolved local sequence name from a sequence that is actually proven absent; insufficient name-resolution evidence remains `INDETERMINATE` rather than becoming a false incompatibility.
+- Treat an ordinary feature interval that is proven outside a resolved anchor sequence as a hard coordinate conflict and quantify affected features without allowing counts to vote away contradictions.
+- Interpret GFF3 `##sequence-region` as a declared annotated segment, not an exact whole-sequence length, and keep malformed self-contradictory annotation input separate from biological incompatibility.
+- Observe GFF3 build/provider directives and recognizable GTF provider/release metadata as provenance claims only; they do not establish sequence identity.
+- Recognize the GFF3 `##FASTA` boundary. When embedded sequence content is used for binding evidence, treat identity derived from those bases as content-derived resource evidence without displacing the explicitly selected FASTA anchor.
+- Apply the GFF3 circular-origin exception only when the file supplies the standard evidence needed to justify it; otherwise preserve an unresolved state rather than suppressing an apparent bounds conflict.
+- Hold an internal review after the streaming observation, generic coordinate-bounds, and ordinary exact-name anchor-validation slices are integrated, before building verified annotation binding and circular semantics on top.
+- Hold an external milestone-boundary review after the complete GTF/GFF3 integration and adversarial coverage, before Milestone 6 depends on annotation semantics.
+- Keep annotation biology, hierarchy repair, broad format conformance, and consumer-specific dialect requirements out of core scope.
 
 ## Milestone 6 — First ecosystem profile
 
