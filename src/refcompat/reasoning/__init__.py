@@ -9,6 +9,7 @@ from refcompat.reasoning.alignment_relationship import classify_alignment_dictio
 from refcompat.reasoning.bundle import reason_bundle
 from refcompat.reasoning.conflict_core import extract_conflict_cores
 from refcompat.reasoning.constraints import build_constraint, evaluate_constraint
+from refcompat.reasoning.cram_reference import plan_cram_offline_reference
 from refcompat.reasoning.evidence import aggregate_constraint_evidence, derive_constraint_evidence
 from refcompat.reasoning.fasta_index import evaluate_fasta_index_integrity
 from refcompat.reasoning.interpretation import interpret_constraint_results
@@ -44,6 +45,7 @@ __all__ = [
     "evaluate_vcf_ref_records",
     "extract_conflict_cores",
     "interpret_constraint_results",
+    "plan_cram_offline_reference",
     "project_vcf_contract",
     "reason_bundle",
     "vcf_binding_identity_capabilities",

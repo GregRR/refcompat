@@ -6,6 +6,8 @@ The project is currently pre-release; entries under `Unreleased` describe ongoin
 
 ## Unreleased
 
+- Define deterministic offline CRAM reference planning: header-only reasoning never requires reference retrieval, while future reference-dependent decoding may use only an explicitly selected readable FASTA anchor with exact-name, M5-verified, length-consistent header coverage; otherwise decoding is deferred without ambient or network lookup.
+
 - Add descriptive BAM/CRAM header-dictionary relationship reasoning that separates exact identity, verified naming differences, shared-sequence order, subset/superset/overlap membership, M5 conflicts, length conflicts, and unresolved cases without introducing an alignment-specific verdict.
 
 - Add conservative BAM/CRAM cross-name sequence binding from uniquely matched `@SQ M5` identity with full-anchor uniqueness, scope, length-consistency, declared-metadata provenance, and generic whole-bundle reuse while leaving `AN` non-authoritative.

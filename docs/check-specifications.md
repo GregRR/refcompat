@@ -234,7 +234,7 @@ RefCompat does not automatically rename dictionary sequences, rewrite `@SQ` meta
 
 ## RCHECK-040 — BAM/CRAM ↔ FASTA reference context
 
-**Implementation status:** header observation, core `@SQ` contract projection, conservative M5-backed cross-name binding, and descriptive dictionary relationship reasoning are implemented for BAM and CRAM; CRAM reference-dependent behavior remains a later Milestone 4 slice.
+**Implementation status:** header observation, core `@SQ` contract projection, conservative M5-backed cross-name binding, descriptive dictionary relationship reasoning, and deterministic offline CRAM reference planning are implemented.
 
 ### Purpose
 
@@ -265,6 +265,17 @@ The descriptive relationship layer separately reports declared membership (`EXAC
 Still required in later Milestone 4 slices:
 
 - order is represented separately and becomes mandatory only when scope/profile requires it.
+
+### CRAM offline reference policy
+
+Header-only CRAM inspection does not require a reference FASTA. The SAM header also does not expose enough information to decide whether every CRAM container/slice can be restored without external reference content: the CRAM compression-header `RR` preservation flag and embedded-reference state live below this observation boundary. RefCompat therefore does not infer that an external reference is required or unnecessary from `@SQ` alone.
+
+If a future operation genuinely needs reference bases, deterministic offline handling has only two actions:
+
+- use the explicitly selected local FASTA anchor as `reference_filename` when the CRAM dictionary is fully covered by that anchor using exact primary names, every resolved sequence has M5 verified against content-derived anchor identity, declared lengths agree, and the anchor path is locally readable; or
+- defer reference-dependent decoding.
+
+Verified cross-name M5 identity is sufficient for RefCompat semantic binding but is deliberately insufficient to claim that an external parser can address the selected FASTA by those local names. `@SQ UR`, ambient `REF_PATH`/`REF_CACHE`, and network retrieval are not automatic fallback sources. Missing offline reference availability is not itself an incompatibility verdict; already-established header constraints and relationships remain valid.
 
 ### Completeness caution
 

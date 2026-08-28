@@ -123,7 +123,9 @@ that reads use every declared sequence, that no undeclared reference content is
 needed by record decoding, or that mapped reads are biologically correct.
 
 RefCompat still does not scan reads in this slice, infer usage from absence of
-records, reheader/rename references, or retrieve CRAM reference content.
+records, reheader/rename references, or retrieve CRAM reference content. A
+separate offline plan defines whether an explicitly selected local FASTA may be
+used if future CRAM record decoding genuinely requires reference bases.
 
 ## Related design
 
@@ -131,3 +133,4 @@ records, reheader/rename references, or retrieve CRAM reference content.
 - [`alignment-contract-projection.md`](alignment-contract-projection.md)
 - [`alignment-sequence-binding.md`](alignment-sequence-binding.md)
 - [`reference-context-bundle.md`](reference-context-bundle.md)
+- [`cram-offline-reference.md`](cram-offline-reference.md)

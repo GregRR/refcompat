@@ -53,6 +53,7 @@ from refcompat.model.contracts import (
     SequencePresenceCapability,
     SequencePresenceRequirement,
 )
+from refcompat.model.cram_reference import CramOfflineReferenceAction, CramOfflineReferencePlan
 from refcompat.model.evaluation import (
     EvaluationPolicyId,
     EvaluationRequest,
@@ -181,6 +182,8 @@ __all__ = [
     "ConstraintId",
     "ConstraintRule",
     "ConstraintState",
+    "CramOfflineReferenceAction",
+    "CramOfflineReferencePlan",
     "EvaluationPolicyId",
     "EvaluationRequest",
     "EvaluationScope",

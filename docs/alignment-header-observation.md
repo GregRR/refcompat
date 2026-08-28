@@ -80,8 +80,11 @@ alignment records and without supplying a reference FASTA to pysam. Merely
 observing the header therefore must not require reference-sequence retrieval.
 
 This does **not** imply that later CRAM record decoding is reference-independent.
-Milestone 4 will define separately what can be concluded when CRAM operations
-that genuinely require reference content cannot obtain it offline.
+Milestone 4 now defines a separate deterministic offline reference plan for any
+future operation that genuinely needs reference bases; see
+[`cram-offline-reference.md`](cram-offline-reference.md). The plan does not infer
+external-reference dependency from the SAM header and does not use ambient or
+network fallback.
 
 ## Provider boundary
 

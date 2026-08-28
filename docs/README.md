@@ -32,4 +32,5 @@ If a supporting document and `DESIGN.md` disagree, `DESIGN.md` wins until the di
 - [`alignment-contract-projection.md`](alignment-contract-projection.md) — BAM/CRAM `@SQ` presence, length, and declared-M5 projection into generic requirements.
 - [`alignment-sequence-binding.md`](alignment-sequence-binding.md) — conservative BAM/CRAM cross-name binding from uniquely matched declared M5 identity.
 - [`alignment-dictionary-relationships.md`](alignment-dictionary-relationships.md) — descriptive BAM/CRAM header membership, naming, shared-order, M5-content, and conflict dimensions.
+- [`cram-offline-reference.md`](cram-offline-reference.md) — conservative offline handling for future CRAM operations that may require reference content.
 - [`conflict-core.md`](conflict-core.md) — sixth Milestone 2 compact decisive conflict/evidence-core extraction boundary.
