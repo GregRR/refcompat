@@ -109,9 +109,88 @@ def test_inspect_gff3_observes_directives_decoded_seqids_and_circular_feature(
     ]
     assert snapshot.sequence_usage[0].circular_feature_count == 1
     assert snapshot.sequence_usage[0].first_circular_feature_line == 7
+    assert snapshot.sequence_usage[0].circular_landmark_candidate_count == 0
     assert snapshot.fasta_boundary is not None
     assert snapshot.fasta_boundary.line_number == 9
     assert snapshot.fasta_boundary.explicit_directive
+
+
+def test_gff3_ordinary_feature_id_is_outside_circular_observation_scope(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "ordinary-id.gff3"
+    path.write_text(
+        "chr1\tsrc\tgene\t1\t10\t.\t+\t.\tID=%GG\n",
+        encoding="utf-8",
+    )
+
+    record = next(iter_annotation_features(_resource(path, ResourceKind.GFF3)))
+
+    assert not record.is_circular
+    assert record.feature_id is None
+
+
+def test_gff3_observes_exact_logical_circular_landmark_candidate(tmp_path: Path) -> None:
+    path = tmp_path / "circular-landmark.gff3"
+    path.write_text(
+        "chr%2F1\tsrc\tregion\t1\t100\t.\t+\t.\tID=chr/1;Is_circular=true\n",
+        encoding="utf-8",
+    )
+
+    snapshot = inspect_annotation_context(_resource(path, ResourceKind.GFF3))
+    usage = snapshot.sequence_usage[0]
+    record = next(iter_annotation_features(_resource(path, ResourceKind.GFF3)))
+
+    assert record.sequence_name == "chr/1"
+    assert record.feature_id == "chr/1"
+    assert usage.circular_landmark_candidate_count == 1
+    assert usage.first_circular_landmark_start == 1
+    assert usage.first_circular_landmark_end == 100
+    assert usage.first_circular_landmark_line == 1
+
+
+def test_gff3_circular_id_rejects_unnecessary_percent_encoding(tmp_path: Path) -> None:
+    path = tmp_path / "overencoded-circular-id.gff3"
+    path.write_text(
+        "chr%2F1\tsrc\tregion\t1\t100\t.\t+\t.\tID=chr%2F1;Is_circular=true\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        AnnotationParseError,
+        match="unnecessary GFF3 attribute percent-encoding",
+    ):
+        inspect_annotation_context(_resource(path, ResourceKind.GFF3))
+
+
+def test_gff3_circular_id_requires_reserved_character_escaping(tmp_path: Path) -> None:
+    path = tmp_path / "unescaped-circular-id.gff3"
+    path.write_text(
+        "chr%2C1\tsrc\tregion\t1\t100\t.\t+\t.\tID=chr,1;Is_circular=true\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        AnnotationParseError,
+        match="unescaped reserved GFF3 attribute character",
+    ):
+        inspect_annotation_context(_resource(path, ResourceKind.GFF3))
+
+
+def test_gff3_circular_id_accepts_required_reserved_character_escape(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "escaped-circular-id.gff3"
+    path.write_text(
+        "chr%2C1\tsrc\tregion\t1\t100\t.\t+\t.\tID=chr%2C1;Is_circular=true\n",
+        encoding="utf-8",
+    )
+
+    snapshot = inspect_annotation_context(_resource(path, ResourceKind.GFF3))
+
+    usage = snapshot.sequence_usage[0]
+    assert usage.sequence_name == "chr,1"
+    assert usage.circular_landmark_candidate_count == 1
 
 
 def test_gff3_aggregates_distinct_raw_encodings_of_same_logical_seqid(tmp_path: Path) -> None:

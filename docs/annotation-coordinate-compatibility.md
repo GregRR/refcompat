@@ -1,6 +1,6 @@
 # GTF/GFF3 annotation coordinate compatibility
 
-**Status:** Milestone 5 implementation in progress; embedded-FASTA identity/binding slice complete.
+**Status:** Milestone 5 implementation in progress; circular-origin reasoning slice complete.
 
 RCHECK-060 asks a directional question: can the reference-coordinate statements
 made by this annotation be represented against the explicitly selected FASTA
@@ -12,7 +12,7 @@ The normative check contract remains in
 standards-derived invariants that should remain visible while Milestone 5 is
 implemented.
 
-The streaming observation boundary, format-neutral coordinate-bounds reasoning layer, ordinary annotation-to-FASTA validation, GFF3 sequence-region/provenance handling, and embedded-FASTA identity/binding slice are now implemented. Feature rows remain iterable in file order while compact snapshots retain per-seqid summaries and small reference-relevant GFF3/GTF metadata. Feature-used seqids plus any sequence-region-only seqids create mandatory presence requirements. Feature intervals and declared GFF3 regions project together through one anchor-owned coordinate capability, while relevant embedded GFF3 FASTA sequences can add content-derived identity requirements/capabilities and verified cross-name bindings. Final landmark-aware circular-origin semantics remain the principal unfinished Milestone 5 reasoning slice.
+The streaming observation boundary, format-neutral coordinate-bounds reasoning layer, ordinary annotation-to-FASTA validation, GFF3 sequence-region/provenance handling, embedded-FASTA identity/binding, and landmark-aware circular-origin reasoning are now implemented. Feature rows remain iterable in file order while compact snapshots retain per-seqid summaries and small reference-relevant GFF3/GTF metadata. Feature-used seqids plus any sequence-region-only seqids create mandatory presence requirements. Feature intervals and declared GFF3 regions project together through one anchor-owned coordinate capability, while relevant embedded GFF3 FASTA sequences can add content-derived identity requirements/capabilities and verified cross-name bindings. Milestone 5 integration/adversarial exit coverage remains before the external review boundary.
 
 ## Native coordinate model
 
@@ -33,8 +33,11 @@ GFF3 seqids use the format's percent-encoding rules. RefCompat should preserve
 the raw field for traceability while comparing the decoded logical identifier
 to the FASTA namespace and to `##sequence-region` seqids. Characters allowed
 unescaped by the GFF3 seqid grammar must remain unescaped rather than being
-percent-encoded. Invalid, missing, or disallowed escaping is malformed input;
-it is not an invitation to guess a name.
+percent-encoded. When circular reasoning compares a landmark feature `ID` with
+the logical seqid, the `ID` is decoded under GFF3 column-9 escaping rules:
+reserved characters must be escaped, while characters that do not require
+escaping must not be percent-encoded. Invalid, missing, or disallowed escaping
+is malformed input; it is not an invitation to guess a name.
 
 Coordinates carried by the GFF3 `Target` attribute belong to the aligned target
 sequence rather than the column-1 landmark. They are not anchor-coordinate
@@ -79,7 +82,7 @@ This mirrors the existing VCF direct-validation bridge: pair-derived evidence
 can satisfy only the requirement for the same subject resource and selected
 FASTA anchor. Peer resources never provide candidate anchor facts.
 
-The generic coordinate-bounds requirement/capability, evaluation, evidence, finding, and bundle-supplemental machinery is implemented independently of annotation policy. Annotation coordinate validation now resolves a local seqid either exactly or through an explicit verified `SequenceBinding`; no heuristic alias path exists. A proven ordinary out-of-bounds feature projects as a hard Tier-B structural conflict, while a local name without exact or verified resolution remains unresolved and a sparse annotation can be structurally compatible with a FASTA superset. The number of in-bounds features is descriptive and cannot cancel a conflict. An unresolved feature count likewise remains unresolved rather than being averaged into a positive conclusion. Until the dedicated circular slice establishes the GFF3 exception, an otherwise out-of-bounds feature on a seqid with observed circular evidence is conservatively counted as unresolved rather than contradicted.
+The generic coordinate-bounds requirement/capability, evaluation, evidence, finding, and bundle-supplemental machinery is implemented independently of annotation policy. Annotation coordinate validation resolves a local seqid either exactly or through an explicit verified `SequenceBinding`; no heuristic alias path exists. A proven ordinary out-of-bounds feature projects as a hard Tier-B structural conflict, while a local name without exact or verified resolution remains unresolved and a sparse annotation can be structurally compatible with a FASTA superset. The number of in-bounds features is descriptive and cannot cancel a conflict. Valid circular-origin features are counted separately in annotation-specific results but contribute to the generic representable coordinate total. Ambiguous landmark interpretation remains unresolved rather than being averaged into a positive conclusion.
 
 ## GFF3 `##sequence-region`
 
@@ -100,10 +103,10 @@ Separately, GFF3 requires features on a landmark with a supplied
 `##sequence-region` to stay within that region unless the standard
 circular-landmark exception applies. Ordinary self-contradiction stops
 coordinate evaluation as invalid annotation input rather than producing a
-biological `INCOMPATIBLE` verdict. If any `Is_circular=true` evidence exists on
-that seqid, Slice 5 defers the exception question and keeps the affected feature
-unresolved; Slice 7 must still prove that the circular feature is the relevant
-landmark before accepting wrapping.
+biological `INCOMPATIBLE` verdict. The exception now applies only when the file
+contains the exact logical circular landmark and the affected feature is a valid
+single-wrap circular-origin encoding; an unrelated circular child feature does
+not excuse a region violation.
 
 ## GFF3 circular-origin features
 
@@ -112,13 +115,24 @@ feature crossing the origin of a circular landmark, the specification encodes
 the wrapped end by adding the landmark length. A valid feature can therefore
 have an encoded `end` greater than the anchor sequence length.
 
-RefCompat must apply this exception narrowly. The GFF3 document must supply the
-standard landmark evidence establishing the relevant feature as circular, and
-the extended coordinates must be valid under the defined representation.
-Organism type, a familiar sequence name, or an apparently plausible wraparound
-pattern is not enough. When the exception cannot be established safely, the
-relationship remains unresolved rather than being declared compatible or
-incompatible on a guessed interpretation.
+RefCompat applies this exception narrowly. A circular landmark candidate is
+observed only when a feature carries `Is_circular=true` and its decoded `ID`
+exactly equals the logical column-1 seqid. A wrap is proven only when exactly
+one such candidate exists, the candidate begins at coordinate 1, its end (the
+landmark length) equals the resolved anchor sequence length, and an extended
+feature satisfies `1 <= end - landmark_length < start <= landmark_length`.
+Such a feature is recorded as circular-representable and contributes positive
+Tier-B coordinate evidence. If the exact landmark relationship exists but its
+length cannot be reconciled with the selected anchor, the wrap remains
+unresolved rather than being accepted on numeric coincidence. Multiple or
+non-origin landmark candidates likewise do not manufacture compatibility.
+
+An `Is_circular=true` attribute on some other feature is not landmark evidence
+and does not suppress an ordinary out-of-bounds conflict. Coordinates that
+would require more than one wrap, or that begin beyond the landmark before
+wrapping, are invalid input rather than valid circular coordinates. Organism
+type, a familiar sequence name, or an apparently plausible wraparound pattern
+is never enough.
 
 The supported GTF/GFF2-derived coordinate model has no corresponding core
 circular-origin rule; ordinary GTF intervals therefore use the normal resolved
@@ -163,9 +177,9 @@ When a relevant embedded FASTA identifier exactly matches a logical annotation
 seqid, its normalized sequence length also constrains the GFF3 document itself.
 An ordinary feature or `##sequence-region` extending beyond that embedded
 sequence is invalid annotation input, not evidence that the selected external
-FASTA is incompatible. A feature that could require the circular-landmark
-exception remains unresolved until the dedicated circular slice proves that
-exception.
+FASTA is incompatible. A feature may extend beyond matching embedded sequence
+length only when the exact landmark-aware single-wrap rule is proven; ambiguous
+landmark evidence remains unresolved.
 
 Because embedded bases are actual content, an exact-name identity contradiction
 against the selected FASTA is Tier-A evidence and can make the bundle

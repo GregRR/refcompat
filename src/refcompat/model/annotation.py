@@ -26,6 +26,7 @@ class AnnotationFeatureRecord:
     start: int
     end: int
     is_circular: bool = False
+    feature_id: str | None = None
 
     def __post_init__(self) -> None:
         if not self.resource_id:
@@ -44,6 +45,8 @@ class AnnotationFeatureRecord:
             raise ValueError("annotation feature coordinates must be positive")
         if self.start > self.end:
             raise ValueError("annotation feature start must not exceed end")
+        if self.feature_id == "":
+            raise ValueError("annotation feature ID must not be empty")
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,6 +62,10 @@ class AnnotationSequenceUsage:
     has_multiple_raw_sequence_names: bool = False
     circular_feature_count: int = 0
     first_circular_feature_line: int | None = None
+    circular_landmark_candidate_count: int = 0
+    first_circular_landmark_start: int | None = None
+    first_circular_landmark_end: int | None = None
+    first_circular_landmark_line: int | None = None
 
     def __post_init__(self) -> None:
         if not self.sequence_name:
@@ -81,6 +88,34 @@ class AnnotationSequenceUsage:
             self.first_circular_feature_line is None or self.first_circular_feature_line < 1
         ):
             raise ValueError("circular feature usage requires a positive first circular line")
+        if not 0 <= self.circular_landmark_candidate_count <= self.circular_feature_count:
+            raise ValueError(
+                "annotation circular landmark candidate count must be within circular feature count"
+            )
+        candidate_fields = (
+            self.first_circular_landmark_start,
+            self.first_circular_landmark_end,
+            self.first_circular_landmark_line,
+        )
+        if self.circular_landmark_candidate_count == 0:
+            if any(value is not None for value in candidate_fields):
+                raise ValueError(
+                    "zero circular landmark candidate count cannot retain candidate coordinates"
+                )
+        else:
+            if any(value is None for value in candidate_fields):
+                raise ValueError(
+                    "circular landmark candidates require first-candidate coordinates and line"
+                )
+            assert self.first_circular_landmark_start is not None
+            assert self.first_circular_landmark_end is not None
+            assert self.first_circular_landmark_line is not None
+            if self.first_circular_landmark_start < 1:
+                raise ValueError("circular landmark candidate start must be positive")
+            if self.first_circular_landmark_end < self.first_circular_landmark_start:
+                raise ValueError("circular landmark candidate end must not precede start")
+            if self.first_circular_landmark_line < 1:
+                raise ValueError("circular landmark candidate line must be positive")
 
 
 @dataclass(frozen=True, slots=True)

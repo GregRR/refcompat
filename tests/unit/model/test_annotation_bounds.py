@@ -242,3 +242,32 @@ def test_coordinate_totals_include_sequence_region_validation() -> None:
     assert result.coordinate_representable_count == 1
     assert result.coordinate_conflict_count == 1
     assert result.coordinate_unresolved_count == 0
+
+
+def test_circular_representable_features_count_as_coordinate_support() -> None:
+    result = AnnotationCoordinateValidationResult(
+        _ANNOTATION,
+        _FASTA,
+        feature_count=1,
+        representable_count=0,
+        out_of_bounds_count=0,
+        unresolved_sequence_count=0,
+        circular_bounds_unresolved_count=0,
+        circular_representable_count=1,
+        sequence_summaries=(
+            AnnotationCoordinateSequenceSummary(
+                "chrM",
+                feature_count=1,
+                circular_representable_count=1,
+            ),
+        ),
+    )
+
+    assert result.coordinate_representable_count == 1
+    check = AnnotationCoordinateCheck(
+        _feature(0, "chrM"),
+        AnnotationCoordinateCheckState.CIRCULAR_REPRESENTABLE,
+        anchor_sequence_name="chrM",
+        anchor_sequence_length=100,
+    )
+    assert check.state is AnnotationCoordinateCheckState.CIRCULAR_REPRESENTABLE

@@ -19,6 +19,7 @@ def _usage(
     *,
     count: int = 1,
     circular_count: int = 0,
+    landmark_count: int = 0,
 ) -> AnnotationSequenceUsage:
     return AnnotationSequenceUsage(
         sequence_name=sequence_name,
@@ -29,6 +30,10 @@ def _usage(
         first_feature_line=2,
         circular_feature_count=circular_count,
         first_circular_feature_line=2 if circular_count else None,
+        circular_landmark_candidate_count=landmark_count,
+        first_circular_landmark_start=1 if landmark_count else None,
+        first_circular_landmark_end=100 if landmark_count else None,
+        first_circular_landmark_line=2 if landmark_count else None,
     )
 
 
@@ -110,6 +115,20 @@ def test_annotation_usage_requires_consistent_circular_summary() -> None:
             first_feature_line=2,
             first_circular_feature_line=2,
         )
+
+
+def test_annotation_usage_preserves_circular_landmark_candidate_summary() -> None:
+    usage = _usage(circular_count=1, landmark_count=1)
+
+    assert usage.circular_landmark_candidate_count == 1
+    assert usage.first_circular_landmark_start == 1
+    assert usage.first_circular_landmark_end == 100
+    assert usage.first_circular_landmark_line == 2
+
+
+def test_annotation_usage_rejects_landmark_candidate_without_circular_feature() -> None:
+    with pytest.raises(ValueError, match="candidate count"):
+        _usage(circular_count=0, landmark_count=1)
 
 
 def test_gff3_snapshot_rejects_duplicate_logical_sequence_regions() -> None:

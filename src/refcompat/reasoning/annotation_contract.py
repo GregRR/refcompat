@@ -306,6 +306,7 @@ def _coordinate_capability_id(validation: AnnotationCoordinateValidationResult) 
                 str(validation.fasta_resource_id),
                 validation.feature_count,
                 validation.representable_count,
+                validation.circular_representable_count,
                 validation.out_of_bounds_count,
                 validation.unresolved_sequence_count,
                 validation.circular_bounds_unresolved_count,

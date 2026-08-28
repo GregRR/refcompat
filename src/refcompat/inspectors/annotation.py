@@ -112,6 +112,10 @@ class _UsageAccumulator:
     first_feature_line: int
     circular_feature_count: int
     first_circular_feature_line: int | None
+    circular_landmark_candidate_count: int
+    first_circular_landmark_start: int | None
+    first_circular_landmark_end: int | None
+    first_circular_landmark_line: int | None
 
 
 def inspect_annotation_context(resource: Resource) -> AnnotationContextSnapshot:
@@ -141,6 +145,18 @@ def inspect_annotation_context(resource: Resource) -> AnnotationContextSnapshot:
                     first_feature_line=event.line_number,
                     circular_feature_count=1 if event.is_circular else 0,
                     first_circular_feature_line=event.line_number if event.is_circular else None,
+                    circular_landmark_candidate_count=(
+                        1 if _is_circular_landmark_candidate(event) else 0
+                    ),
+                    first_circular_landmark_start=(
+                        event.start if _is_circular_landmark_candidate(event) else None
+                    ),
+                    first_circular_landmark_end=(
+                        event.end if _is_circular_landmark_candidate(event) else None
+                    ),
+                    first_circular_landmark_line=(
+                        event.line_number if _is_circular_landmark_candidate(event) else None
+                    ),
                 )
             else:
                 accumulator.feature_count += 1
@@ -152,6 +168,12 @@ def inspect_annotation_context(resource: Resource) -> AnnotationContextSnapshot:
                     accumulator.circular_feature_count += 1
                     if accumulator.first_circular_feature_line is None:
                         accumulator.first_circular_feature_line = event.line_number
+                if _is_circular_landmark_candidate(event):
+                    accumulator.circular_landmark_candidate_count += 1
+                    if accumulator.first_circular_landmark_line is None:
+                        accumulator.first_circular_landmark_start = event.start
+                        accumulator.first_circular_landmark_end = event.end
+                        accumulator.first_circular_landmark_line = event.line_number
             continue
 
         if isinstance(event, _GffVersionEvent):
@@ -182,6 +204,10 @@ def inspect_annotation_context(resource: Resource) -> AnnotationContextSnapshot:
             has_multiple_raw_sequence_names=accumulator.has_multiple_raw_sequence_names,
             circular_feature_count=accumulator.circular_feature_count,
             first_circular_feature_line=accumulator.first_circular_feature_line,
+            circular_landmark_candidate_count=accumulator.circular_landmark_candidate_count,
+            first_circular_landmark_start=accumulator.first_circular_landmark_start,
+            first_circular_landmark_end=accumulator.first_circular_landmark_end,
+            first_circular_landmark_line=accumulator.first_circular_landmark_line,
         )
         for sequence_name, accumulator in usage.items()
     )
@@ -419,9 +445,15 @@ def _parse_feature_line(
             raw_sequence_name, line_number=line_number, path=resource.artifact.path
         )
         is_circular = _has_gff3_is_circular_true(fields[8])
+        feature_id = (
+            _gff3_feature_id(fields[8], line_number=line_number, path=resource.artifact.path)
+            if is_circular
+            else None
+        )
     else:
         sequence_name = raw_sequence_name
         is_circular = False
+        feature_id = None
 
     start = _parse_positive_integer(
         fields[3], field="start", line_number=line_number, path=resource.artifact.path
@@ -444,6 +476,7 @@ def _parse_feature_line(
         start=start,
         end=end,
         is_circular=is_circular,
+        feature_id=feature_id,
     )
 
 
@@ -570,6 +603,64 @@ def _parse_positive_integer(value: str, *, field: str, line_number: int, path: P
 
 def _has_gff3_is_circular_true(attributes: str) -> bool:
     return "Is_circular=true" in attributes.split(";")
+
+
+def _gff3_feature_id(attributes: str, *, line_number: int, path: Path) -> str | None:
+    raw_id: str | None = None
+    for item in attributes.split(";"):
+        key, separator, value = item.partition("=")
+        if not separator or key != "ID":
+            continue
+        if raw_id is not None:
+            raise AnnotationParseError(f"duplicate GFF3 ID attribute at line {line_number}: {path}")
+        raw_id = value
+    if raw_id is None:
+        return None
+    if not raw_id:
+        raise AnnotationParseError(f"empty GFF3 ID attribute at line {line_number}: {path}")
+    return _decode_gff3_attribute_value(raw_id, line_number=line_number, path=path)
+
+
+def _decode_gff3_attribute_value(raw_value: str, *, line_number: int, path: Path) -> str:
+    decoded_bytes = bytearray()
+    index = 0
+    while index < len(raw_value):
+        character = raw_value[index]
+        if character == "%":
+            if index + 2 >= len(raw_value) or not all(
+                value in "0123456789abcdefABCDEF" for value in raw_value[index + 1 : index + 3]
+            ):
+                raise AnnotationParseError(
+                    f"invalid GFF3 attribute escaping at line {line_number}: {path}"
+                )
+            encoded_byte = int(raw_value[index + 1 : index + 3], 16)
+            if not (
+                encoded_byte <= 0x1F
+                or encoded_byte == 0x7F
+                or encoded_byte in {0x25, 0x26, 0x2C, 0x3B, 0x3D}
+            ):
+                raise AnnotationParseError(
+                    f"unnecessary GFF3 attribute percent-encoding at line {line_number}: {path}"
+                )
+            decoded_bytes.append(encoded_byte)
+            index += 3
+            continue
+        if character in ",&=":
+            raise AnnotationParseError(
+                f"unescaped reserved GFF3 attribute character at line {line_number}: {path}"
+            )
+        decoded_bytes.extend(character.encode("utf-8"))
+        index += 1
+    try:
+        return bytes(decoded_bytes).decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise AnnotationParseError(
+            f"GFF3 attribute percent-encoding is not valid UTF-8 at line {line_number}: {path}"
+        ) from exc
+
+
+def _is_circular_landmark_candidate(feature: AnnotationFeatureRecord) -> bool:
+    return feature.is_circular and feature.feature_id == feature.sequence_name
 
 
 def _require_annotation_kind(resource: Resource) -> None:

@@ -20,6 +20,7 @@ class AnnotationCoordinateCheckState(StrEnum):
     """Outcome for one annotation feature against the selected FASTA anchor."""
 
     REPRESENTABLE = "representable"
+    CIRCULAR_REPRESENTABLE = "circular_representable"
     OUT_OF_BOUNDS = "out_of_bounds"
     UNRESOLVED_SEQUENCE = "unresolved_sequence"
     CIRCULAR_BOUNDS_UNRESOLVED = "circular_bounds_unresolved"
@@ -37,6 +38,7 @@ class AnnotationCoordinateCheck:
     def __post_init__(self) -> None:
         resolved_states = {
             AnnotationCoordinateCheckState.REPRESENTABLE,
+            AnnotationCoordinateCheckState.CIRCULAR_REPRESENTABLE,
             AnnotationCoordinateCheckState.OUT_OF_BOUNDS,
             AnnotationCoordinateCheckState.CIRCULAR_BOUNDS_UNRESOLVED,
         }
@@ -139,6 +141,7 @@ class AnnotationCoordinateSequenceSummary:
     sequence_name: str
     feature_count: int
     representable_count: int = 0
+    circular_representable_count: int = 0
     out_of_bounds_count: int = 0
     unresolved_sequence_count: int = 0
     circular_bounds_unresolved_count: int = 0
@@ -149,6 +152,7 @@ class AnnotationCoordinateSequenceSummary:
         counts = (
             self.feature_count,
             self.representable_count,
+            self.circular_representable_count,
             self.out_of_bounds_count,
             self.unresolved_sequence_count,
             self.circular_bounds_unresolved_count,
@@ -157,6 +161,7 @@ class AnnotationCoordinateSequenceSummary:
             raise ValueError("annotation coordinate summary counts must not be negative")
         if (
             self.representable_count
+            + self.circular_representable_count
             + self.out_of_bounds_count
             + self.unresolved_sequence_count
             + self.circular_bounds_unresolved_count
@@ -190,6 +195,7 @@ class AnnotationCoordinateValidationResult:
     out_of_bounds_count: int
     unresolved_sequence_count: int
     circular_bounds_unresolved_count: int
+    circular_representable_count: int = 0
     sequence_summaries: tuple[AnnotationCoordinateSequenceSummary, ...] = ()
     problem_checks: tuple[AnnotationCoordinateCheck, ...] = ()
     sequence_region_validation: Gff3SequenceRegionValidationResult | None = None
@@ -203,6 +209,7 @@ class AnnotationCoordinateValidationResult:
         counts = (
             self.feature_count,
             self.representable_count,
+            self.circular_representable_count,
             self.out_of_bounds_count,
             self.unresolved_sequence_count,
             self.circular_bounds_unresolved_count,
@@ -211,6 +218,7 @@ class AnnotationCoordinateValidationResult:
             raise ValueError("annotation validation counts must not be negative")
         if (
             self.representable_count
+            + self.circular_representable_count
             + self.out_of_bounds_count
             + self.unresolved_sequence_count
             + self.circular_bounds_unresolved_count
@@ -225,12 +233,14 @@ class AnnotationCoordinateValidationResult:
             raise ValueError("annotation validation sequence summaries must cover every feature")
         summary_totals = (
             sum(summary.representable_count for summary in self.sequence_summaries),
+            sum(summary.circular_representable_count for summary in self.sequence_summaries),
             sum(summary.out_of_bounds_count for summary in self.sequence_summaries),
             sum(summary.unresolved_sequence_count for summary in self.sequence_summaries),
             sum(summary.circular_bounds_unresolved_count for summary in self.sequence_summaries),
         )
         if summary_totals != (
             self.representable_count,
+            self.circular_representable_count,
             self.out_of_bounds_count,
             self.unresolved_sequence_count,
             self.circular_bounds_unresolved_count,
@@ -243,7 +253,11 @@ class AnnotationCoordinateValidationResult:
         ):
             raise ValueError("annotation validation problem checks must belong to the annotation")
         if any(
-            check.state is AnnotationCoordinateCheckState.REPRESENTABLE
+            check.state
+            in (
+                AnnotationCoordinateCheckState.REPRESENTABLE,
+                AnnotationCoordinateCheckState.CIRCULAR_REPRESENTABLE,
+            )
             for check in self.problem_checks
         ):
             raise ValueError("annotation validation problem checks cannot contain matches")
@@ -318,7 +332,7 @@ class AnnotationCoordinateValidationResult:
             if self.sequence_region_validation is not None
             else 0
         )
-        return self.representable_count + region_count
+        return self.representable_count + self.circular_representable_count + region_count
 
     @property
     def coordinate_conflict_count(self) -> int:

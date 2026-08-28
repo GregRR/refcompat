@@ -6,6 +6,8 @@ The project is currently pre-release; entries under `Unreleased` describe ongoin
 
 ## Unreleased
 
+- Complete Milestone 5 GFF3 circular-origin reasoning: require exact logical `ID == seqid` landmark evidence, distinguish valid single-wrap coordinates from unresolved/invalid circular interpretations, prevent unrelated `Is_circular=true` features from suppressing bounds conflicts, and preserve ordinary GTF/GFF3 semantics outside the standard exception.
+
 - Add Milestone 5 GFF3 embedded-FASTA identity and verified annotation binding: stream embedded sequence summaries with refget-normalized MD5, project relevant content-derived identity requirements/capabilities, require complete anchor identity-scheme coverage plus full-anchor uniqueness for cross-name `SequenceBinding`, revalidate annotation bounds through independently derived verified bindings, and expose exact-name embedded-content contradictions as Tier-A conflicts without displacing the selected FASTA anchor.
 
 - Add Milestone 5 GFF3 sequence-region validation and provenance boundaries: enforce unique logical `##sequence-region` declarations, check declared segments against the selected FASTA, reject ordinary feature/region self-contradiction as invalid input, fold region statements into the scalable coordinate capability, and keep build/provider/species claims non-authoritative.

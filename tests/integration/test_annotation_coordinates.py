@@ -94,7 +94,7 @@ def test_streamed_annotation_reaches_compatible_bundle_against_fasta_superset(
     assert validation.representable_count == 1
 
 
-def test_streamed_gff3_possible_circular_bounds_remain_indeterminate(tmp_path: Path) -> None:
+def test_streamed_gff3_landmark_allows_valid_circular_origin_wrap(tmp_path: Path) -> None:
     path = tmp_path / "circular.gff3"
     path.write_text(
         "##gff-version 3\n"
@@ -120,8 +120,74 @@ def test_streamed_gff3_possible_circular_bounds_remain_indeterminate(tmp_path: P
     )
 
     assert validation.out_of_bounds_count == 0
-    assert validation.circular_bounds_unresolved_count == 1
-    assert aggregate_bundle_verdict(bundle).verdict is CompatibilityVerdict.INDETERMINATE
+    assert validation.circular_representable_count == 1
+    assert validation.circular_bounds_unresolved_count == 0
+    assert aggregate_bundle_verdict(bundle).verdict is CompatibilityVerdict.COMPATIBLE
+
+
+def test_streamed_gff3_decoded_seqid_uses_column9_landmark_id_rules(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "encoded-circular.gff3"
+    path.write_text(
+        "##gff-version 3\n"
+        "chr%2F1\tsrc\tregion\t1\t100\t.\t+\t.\tID=chr/1;Is_circular=true\n"
+        "chr%2F1\tsrc\tgene\t90\t120\t.\t+\t.\tID=g1\n",
+        encoding="utf-8",
+    )
+    annotation = Resource(_ANNOTATION, ResourceKind.GFF3, ArtifactIdentity(path))
+    request, anchor, context = _context(annotation, ("chr/1", 100))
+
+    snapshot = inspect_annotation_context(annotation)
+    validation = evaluate_annotation_coordinates(
+        snapshot,
+        iter_annotation_features(annotation),
+        context,
+    )
+    projection = project_annotation_contract(snapshot, validation, context)
+    bundle = reason_bundle(
+        request,
+        anchor,
+        (ResourceContract(_FASTA), projection.contract),
+        supplemental_capabilities=(projection.coordinate_bounds_capability,),
+    )
+
+    assert snapshot.sequence_usage[0].sequence_name == "chr/1"
+    assert snapshot.sequence_usage[0].circular_landmark_candidate_count == 1
+    assert validation.circular_representable_count == 1
+    assert aggregate_bundle_verdict(bundle).verdict is CompatibilityVerdict.COMPATIBLE
+
+
+def test_streamed_gff3_circular_child_does_not_create_landmark_exception(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "not-landmark.gff3"
+    path.write_text(
+        "##gff-version 3\n"
+        "chrM\tsrc\tgene\t1\t100\t.\t+\t.\tID=g0;Is_circular=true\n"
+        "chrM\tsrc\tgene\t90\t120\t.\t+\t.\tID=g1\n",
+        encoding="utf-8",
+    )
+    annotation = Resource(_ANNOTATION, ResourceKind.GFF3, ArtifactIdentity(path))
+    request, anchor, context = _context(annotation, ("chrM", 100))
+
+    snapshot = inspect_annotation_context(annotation)
+    validation = evaluate_annotation_coordinates(
+        snapshot,
+        iter_annotation_features(annotation),
+        context,
+    )
+    projection = project_annotation_contract(snapshot, validation, context)
+    bundle = reason_bundle(
+        request,
+        anchor,
+        (ResourceContract(_FASTA), projection.contract),
+        supplemental_capabilities=(projection.coordinate_bounds_capability,),
+    )
+
+    assert validation.circular_representable_count == 0
+    assert validation.out_of_bounds_count == 1
+    assert aggregate_bundle_verdict(bundle).verdict is CompatibilityVerdict.INCOMPATIBLE
 
 
 def test_streamed_gff3_sequence_region_participates_in_anchor_validation(

@@ -72,6 +72,7 @@ def _feature(
     end: int,
     *,
     circular: bool = False,
+    feature_id: str | None = None,
 ) -> AnnotationFeatureRecord:
     return AnnotationFeatureRecord(
         _ANNOTATION,
@@ -83,6 +84,7 @@ def _feature(
         start,
         end,
         is_circular=circular,
+        feature_id=feature_id,
     )
 
 
@@ -91,9 +93,11 @@ def _snapshot(
     kind: ResourceKind = ResourceKind.GTF,
     regions: tuple[Gff3SequenceRegion, ...] = (),
     embedded: tuple[Gff3EmbeddedFastaSequence, ...] = (),
+    landmarks: dict[str, tuple[int, int, int, int]] | None = None,
 ) -> AnnotationContextSnapshot:
     """Build usage as name, count, min start, max end, circular count."""
 
+    landmarks = landmarks or {}
     return AnnotationContextSnapshot(
         _ANNOTATION,
         kind,
@@ -108,6 +112,10 @@ def _snapshot(
                 first_feature_line=index + 1,
                 circular_feature_count=circular_count,
                 first_circular_feature_line=(index + 1 if circular_count else None),
+                circular_landmark_candidate_count=landmarks.get(name, (0, 0, 0, 0))[0],
+                first_circular_landmark_start=(landmarks[name][1] if name in landmarks else None),
+                first_circular_landmark_end=(landmarks[name][2] if name in landmarks else None),
+                first_circular_landmark_line=(landmarks[name][3] if name in landmarks else None),
             )
             for index, (name, count, minimum_start, maximum_end, circular_count) in enumerate(usage)
         ),
@@ -174,22 +182,131 @@ def test_resolved_ordinary_out_of_bounds_feature_is_hard_local_conflict() -> Non
     assert check.anchor_sequence_length == 100
 
 
-def test_gff3_possible_circular_seqid_defers_out_of_bounds_conclusion() -> None:
+def test_gff3_circular_child_without_landmark_does_not_defer_bounds() -> None:
     snapshot = _snapshot(("chrM", 2, 1, 120, 1), kind=ResourceKind.GFF3)
     result = evaluate_annotation_coordinates(
         snapshot,
         (
-            _feature(0, "chrM", 1, 100, circular=True),
+            _feature(0, "chrM", 1, 100, circular=True, feature_id="child"),
             _feature(1, "chrM", 90, 120),
         ),
         _context(("chrM", 100)),
     )
 
     assert result.representable_count == 1
+    assert result.circular_representable_count == 0
+    assert result.out_of_bounds_count == 1
+    assert result.circular_bounds_unresolved_count == 0
+
+
+def test_gff3_landmark_establishes_valid_circular_origin_wrap() -> None:
+    snapshot = _snapshot(
+        ("chrM", 2, 1, 120, 1),
+        kind=ResourceKind.GFF3,
+        landmarks={"chrM": (1, 1, 100, 1)},
+    )
+    result = evaluate_annotation_coordinates(
+        snapshot,
+        (
+            _feature(0, "chrM", 1, 100, circular=True, feature_id="chrM"),
+            _feature(1, "chrM", 90, 120, feature_id="gene1"),
+        ),
+        _context(("chrM", 100)),
+    )
+
+    assert result.representable_count == 1
+    assert result.circular_representable_count == 1
     assert result.out_of_bounds_count == 0
+    assert result.circular_bounds_unresolved_count == 0
+    assert result.problem_checks == ()
+    assert result.coordinate_representable_count == 2
+
+
+def test_gff3_landmark_length_mismatch_keeps_wrap_unresolved() -> None:
+    snapshot = _snapshot(
+        ("chrM", 2, 1, 120, 1),
+        kind=ResourceKind.GFF3,
+        landmarks={"chrM": (1, 1, 100, 1)},
+    )
+    result = evaluate_annotation_coordinates(
+        snapshot,
+        (
+            _feature(0, "chrM", 1, 100, circular=True, feature_id="chrM"),
+            _feature(1, "chrM", 90, 120),
+        ),
+        _context(("chrM", 200)),
+    )
+
+    assert result.representable_count == 1
+    assert result.circular_representable_count == 0
     assert result.circular_bounds_unresolved_count == 1
-    problem_check = result.problem_checks[0]
-    assert problem_check.state is AnnotationCoordinateCheckState.CIRCULAR_BOUNDS_UNRESOLVED
+    assert result.out_of_bounds_count == 0
+
+
+def test_gff3_cross_name_binding_can_establish_circular_landmark() -> None:
+    snapshot = _snapshot(
+        ("1", 2, 1, 120, 1),
+        kind=ResourceKind.GFF3,
+        landmarks={"1": (1, 1, 100, 1)},
+    )
+    binding = _binding("1", "chr1")
+
+    result = evaluate_annotation_coordinates(
+        snapshot,
+        (
+            _feature(0, "1", 1, 100, circular=True, feature_id="1"),
+            _feature(1, "1", 90, 120),
+        ),
+        _context(("chr1", 100)),
+        (binding,),
+    )
+
+    assert result.circular_representable_count == 1
+    assert result.circular_bounds_unresolved_count == 0
+    assert result.out_of_bounds_count == 0
+    assert result.sequence_binding_ids == (binding.id,)
+
+
+def test_gff3_ambiguous_landmark_candidates_keep_wrap_unresolved() -> None:
+    snapshot = _snapshot(
+        ("chr1", 3, 1, 120, 2),
+        kind=ResourceKind.GFF3,
+        landmarks={"chr1": (2, 1, 100, 1)},
+    )
+
+    result = evaluate_annotation_coordinates(
+        snapshot,
+        (
+            _feature(0, "chr1", 1, 100, circular=True, feature_id="chr1"),
+            _feature(1, "chr1", 1, 100, circular=True, feature_id="chr1"),
+            _feature(2, "chr1", 90, 120),
+        ),
+        _context(("chr1", 100)),
+    )
+
+    assert result.circular_representable_count == 0
+    assert result.circular_bounds_unresolved_count == 1
+    assert result.out_of_bounds_count == 0
+
+
+def test_gff3_non_origin_landmark_candidate_keeps_wrap_unresolved() -> None:
+    snapshot = _snapshot(
+        ("chr1", 2, 10, 120, 1),
+        kind=ResourceKind.GFF3,
+        landmarks={"chr1": (1, 10, 100, 1)},
+    )
+
+    result = evaluate_annotation_coordinates(
+        snapshot,
+        (
+            _feature(0, "chr1", 10, 100, circular=True, feature_id="chr1"),
+            _feature(1, "chr1", 90, 120),
+        ),
+        _context(("chr1", 100)),
+    )
+
+    assert result.circular_bounds_unresolved_count == 1
+    assert result.out_of_bounds_count == 0
 
 
 def test_same_gff3_out_of_bounds_interval_conflicts_without_circular_evidence() -> None:
@@ -369,22 +486,47 @@ def test_gff3_feature_outside_declared_region_is_invalid_without_circular_eviden
         )
 
 
-def test_gff3_feature_outside_declared_region_defers_with_circular_evidence() -> None:
-    region = Gff3SequenceRegion("chr1", "chr1", 1, 80, 1)
+def test_gff3_valid_wrap_can_extend_beyond_declared_region() -> None:
+    region = Gff3SequenceRegion("chr1", "chr1", 1, 100, 1)
     snapshot = _snapshot(
-        ("chr1", 1, 70, 90, 1),
+        ("chr1", 2, 1, 120, 1),
         kind=ResourceKind.GFF3,
         regions=(region,),
+        landmarks={"chr1": (1, 1, 100, 1)},
     )
 
     result = evaluate_annotation_coordinates(
         snapshot,
-        (_feature(0, "chr1", 70, 90, circular=True),),
+        (
+            _feature(0, "chr1", 1, 100, circular=True, feature_id="chr1"),
+            _feature(1, "chr1", 90, 120),
+        ),
         _context(("chr1", 100)),
     )
 
-    assert result.circular_bounds_unresolved_count == 1
+    assert result.circular_representable_count == 1
+    assert result.circular_bounds_unresolved_count == 0
     assert result.out_of_bounds_count == 0
+
+
+def test_gff3_nonwrap_region_violation_is_invalid_even_with_landmark() -> None:
+    region = Gff3SequenceRegion("chr1", "chr1", 20, 80, 1)
+    snapshot = _snapshot(
+        ("chr1", 2, 1, 100, 1),
+        kind=ResourceKind.GFF3,
+        regions=(region,),
+        landmarks={"chr1": (1, 1, 100, 1)},
+    )
+
+    with pytest.raises(AnnotationCoordinateEvaluationError, match="outside its declared"):
+        evaluate_annotation_coordinates(
+            snapshot,
+            (
+                _feature(0, "chr1", 1, 100, circular=True, feature_id="chr1"),
+                _feature(1, "chr1", 10, 15),
+            ),
+            _context(("chr1", 100)),
+        )
 
 
 def test_stale_feature_stream_is_rejected_before_sequence_region_semantic_error() -> None:
@@ -399,6 +541,31 @@ def test_stale_feature_stream_is_rejected_before_sequence_region_semantic_error(
         evaluate_annotation_coordinates(
             snapshot,
             (_feature(0, "chr1", 70, 90),),
+            _context(("chr1", 100)),
+        )
+
+
+def test_stale_landmark_snapshot_is_rejected_before_embedded_landmark_error() -> None:
+    embedded = Gff3EmbeddedFastaSequence(
+        "chr1",
+        80,
+        Md5Digest("0" * 32),
+        100,
+    )
+    snapshot = _snapshot(
+        ("chr1", 1, 1, 100, 1),
+        kind=ResourceKind.GFF3,
+        embedded=(embedded,),
+        landmarks={"chr1": (1, 1, 100, 1)},
+    )
+
+    with pytest.raises(
+        AnnotationCoordinateEvaluationError,
+        match="seqid/bounds/circular usage",
+    ):
+        evaluate_annotation_coordinates(
+            snapshot,
+            (_feature(0, "chr1", 1, 100, circular=True, feature_id="other"),),
             _context(("chr1", 100)),
         )
 
@@ -424,7 +591,35 @@ def test_gff3_feature_beyond_matching_embedded_fasta_is_invalid() -> None:
         )
 
 
-def test_gff3_feature_beyond_embedded_fasta_defers_with_circular_evidence() -> None:
+def test_gff3_valid_wrap_can_extend_beyond_matching_embedded_fasta() -> None:
+    embedded = Gff3EmbeddedFastaSequence(
+        "chr1",
+        100,
+        Md5Digest("0" * 32),
+        100,
+    )
+    snapshot = _snapshot(
+        ("chr1", 2, 1, 120, 1),
+        kind=ResourceKind.GFF3,
+        embedded=(embedded,),
+        landmarks={"chr1": (1, 1, 100, 1)},
+    )
+
+    result = evaluate_annotation_coordinates(
+        snapshot,
+        (
+            _feature(0, "chr1", 1, 100, circular=True, feature_id="chr1"),
+            _feature(1, "chr1", 90, 120),
+        ),
+        _context(("chr1", 100)),
+    )
+
+    assert result.circular_representable_count == 1
+    assert result.circular_bounds_unresolved_count == 0
+    assert result.out_of_bounds_count == 0
+
+
+def test_gff3_circular_landmark_must_match_embedded_sequence_length() -> None:
     embedded = Gff3EmbeddedFastaSequence(
         "chr1",
         80,
@@ -432,19 +627,75 @@ def test_gff3_feature_beyond_embedded_fasta_defers_with_circular_evidence() -> N
         100,
     )
     snapshot = _snapshot(
-        ("chr1", 1, 70, 90, 1),
+        ("chr1", 2, 1, 120, 1),
         kind=ResourceKind.GFF3,
         embedded=(embedded,),
+        landmarks={"chr1": (1, 1, 100, 1)},
     )
 
-    result = evaluate_annotation_coordinates(
-        snapshot,
-        (_feature(0, "chr1", 70, 90, circular=True),),
-        _context(("chr1", 100)),
+    with pytest.raises(AnnotationCoordinateEvaluationError, match="landmark length disagrees"):
+        evaluate_annotation_coordinates(
+            snapshot,
+            (
+                _feature(0, "chr1", 1, 100, circular=True, feature_id="chr1"),
+                _feature(1, "chr1", 90, 120),
+            ),
+            _context(("chr1", 100)),
+        )
+
+
+def test_gff3_rejects_circular_encoding_beyond_one_landmark_wrap() -> None:
+    snapshot = _snapshot(
+        ("chr1", 2, 1, 201, 1),
+        kind=ResourceKind.GFF3,
+        landmarks={"chr1": (1, 1, 100, 1)},
     )
 
-    assert result.circular_bounds_unresolved_count == 1
-    assert result.out_of_bounds_count == 0
+    with pytest.raises(AnnotationCoordinateEvaluationError, match="single-wrap"):
+        evaluate_annotation_coordinates(
+            snapshot,
+            (
+                _feature(0, "chr1", 1, 100, circular=True, feature_id="chr1"),
+                _feature(1, "chr1", 90, 201),
+            ),
+            _context(("chr1", 100)),
+        )
+
+
+def test_gff3_rejects_wrap_that_spans_more_than_full_landmark() -> None:
+    snapshot = _snapshot(
+        ("chr1", 2, 1, 120, 1),
+        kind=ResourceKind.GFF3,
+        landmarks={"chr1": (1, 1, 100, 1)},
+    )
+
+    with pytest.raises(AnnotationCoordinateEvaluationError, match="single-wrap"):
+        evaluate_annotation_coordinates(
+            snapshot,
+            (
+                _feature(0, "chr1", 1, 100, circular=True, feature_id="chr1"),
+                _feature(1, "chr1", 10, 120),
+            ),
+            _context(("chr1", 100)),
+        )
+
+
+def test_gff3_rejects_circular_encoding_that_starts_beyond_landmark() -> None:
+    snapshot = _snapshot(
+        ("chr1", 2, 1, 120, 1),
+        kind=ResourceKind.GFF3,
+        landmarks={"chr1": (1, 1, 100, 1)},
+    )
+
+    with pytest.raises(AnnotationCoordinateEvaluationError, match="single-wrap"):
+        evaluate_annotation_coordinates(
+            snapshot,
+            (
+                _feature(0, "chr1", 1, 100, circular=True, feature_id="chr1"),
+                _feature(1, "chr1", 110, 120),
+            ),
+            _context(("chr1", 100)),
+        )
 
 
 def test_gff3_sequence_region_beyond_matching_embedded_fasta_is_invalid() -> None:
