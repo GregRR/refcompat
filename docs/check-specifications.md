@@ -275,7 +275,7 @@ If a future operation genuinely needs reference bases, deterministic offline han
 - use the explicitly selected local FASTA anchor as `reference_filename` when the CRAM dictionary is fully covered by that anchor using exact primary names, every resolved sequence has M5 verified against content-derived anchor identity, declared lengths agree, and the anchor path is locally readable; or
 - defer reference-dependent decoding.
 
-Verified cross-name M5 identity is sufficient for RefCompat semantic binding but is deliberately insufficient to claim that an external parser can address the selected FASTA by those local names. `@SQ UR`, ambient `REF_PATH`/`REF_CACHE`, and network retrieval are not automatic fallback sources. Missing offline reference availability is not itself an incompatibility verdict; already-established header constraints and relationships remain valid.
+Verified cross-name M5 identity is sufficient for RefCompat semantic binding but is deliberately insufficient to claim that an external parser can address the selected FASTA by those local names. The planner never selects `@SQ UR`, ambient `REF_PATH`/`REF_CACHE`, or network retrieval. Because an explicit FASTA path has priority but does not itself disable every HTSlib fallback, any future decoder adapter must preserve the deterministic no-fallback boundary explicitly. The plan also assumes the selected FASTA has not changed since the anchor context was derived. Missing offline reference availability is not itself an incompatibility verdict; already-established header constraints and relationships remain valid.
 
 ### Completeness caution
 

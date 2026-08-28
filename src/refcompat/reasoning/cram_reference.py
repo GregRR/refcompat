@@ -3,9 +3,9 @@
 Header-only CRAM analysis stays reference-independent. If a later operation
 would need reference content, RefCompat may use only an explicitly selected,
 locally readable FASTA anchor whose header relationship is strong enough for
-provider-level exact-name lookup. Otherwise the operation must remain deferred;
-this layer never delegates to ambient ``REF_PATH``/``REF_CACHE`` or header
-``UR`` lookup.
+provider-level exact-name lookup. Otherwise the operation must remain deferred.
+This planner never selects ambient ``REF_PATH``/``REF_CACHE`` or header ``UR``
+lookup; a future decoder adapter must separately preserve that isolation.
 """
 
 from __future__ import annotations
@@ -35,9 +35,10 @@ def plan_cram_offline_reference(
 
     The function does not inspect CRAM compression headers, slices, or records,
     so it deliberately does not decide whether an external reference is
-    required. It decides only whether the selected FASTA anchor is safe to pass
-    explicitly as ``reference_filename`` if reference-dependent decoding is
-    later requested.
+    required. It decides only whether the selected FASTA anchor is eligible to
+    pass explicitly as ``reference_filename`` if reference-dependent decoding is
+    later requested. Provider configuration and artifact-stability checks at the
+    eventual decode boundary remain separate responsibilities.
     """
 
     if snapshot.resource_kind is not ResourceKind.CRAM:

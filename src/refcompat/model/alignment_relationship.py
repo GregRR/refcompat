@@ -214,6 +214,44 @@ class AlignmentDictionaryRelationshipSummary:
         if self.membership is AlignmentMembershipRelationship.DISJOINT and self.resolutions:
             raise ValueError("disjoint alignment membership cannot include resolved sequences")
 
+        order_requires_uncertainty = bool(
+            not self.resolutions
+            or self.unresolved_sequence_names
+            or self.duplicate_anchor_target_names
+        )
+        if order_requires_uncertainty:
+            if self.order is not AlignmentOrderRelationship.UNRESOLVED:
+                raise ValueError(
+                    "unresolved or absent alignment resolutions require unresolved order"
+                )
+        elif self.order is AlignmentOrderRelationship.UNRESOLVED:
+            raise ValueError(
+                "fully resolved alignment mappings require a resolved order relationship"
+            )
+
+        if not self.resolutions and self.content is not AlignmentContentRelationship.UNRESOLVED:
+            raise ValueError("absent alignment resolutions require unresolved M5 content")
+        if (
+            self.unresolved_sequence_names
+            and self.content is AlignmentContentRelationship.M5_VERIFIED
+        ):
+            raise ValueError(
+                "unresolved alignment sequences cannot claim fully verified M5 content"
+            )
+
+        if (
+            self.membership
+            in {
+                AlignmentMembershipRelationship.EXACT,
+                AlignmentMembershipRelationship.ALIGNMENT_SUPERSET,
+                AlignmentMembershipRelationship.OVERLAP,
+            }
+            and not self.resolutions
+        ):
+            raise ValueError(
+                "exact/superset/overlap alignment membership requires resolved sequences"
+            )
+
     @property
     def exact_identity(self) -> bool:
         """Whether the declared dictionary is fully M5-verified and exactly aligned."""

@@ -14,7 +14,7 @@ Basic RefCompat analysis must work without network access. Local content-derived
 
 Remote services may provide optional alias, metadata, or known-reference discovery. Their failure must not invalidate otherwise sufficient local analysis.
 
-For CRAM, header-only analysis must not trigger reference retrieval. A future reference-dependent decode may use an explicit local FASTA only when RefCompat has verified that anchor as safe for exact-name provider lookup; otherwise the decode remains deferred. Ambient `REF_PATH`/`REF_CACHE`, `@SQ UR`, and network retrieval are not deterministic-core fallbacks.
+For CRAM, header-only analysis must not trigger reference retrieval. A future reference-dependent decode may use an explicit local FASTA only when RefCompat has verified that anchor as eligible for exact-name provider lookup; otherwise the decode remains deferred. The planner does not select ambient `REF_PATH`/`REF_CACHE`, `@SQ UR`, or network retrieval. A future decoder adapter must explicitly preserve that isolation because supplying a FASTA path gives it priority but does not itself disable every provider fallback.
 
 ## Consequences
 

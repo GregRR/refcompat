@@ -216,3 +216,73 @@ def test_exact_membership_cannot_include_m5_distinct_extra() -> None:
             ),
             m5_distinct_extra_sequence_names=("decoy",),
         )
+
+
+def test_absent_resolutions_require_unresolved_order_and_content() -> None:
+    with pytest.raises(ValueError, match="require unresolved order"):
+        AlignmentDictionaryRelationshipSummary(
+            alignment_resource_id=_ALIGNMENT,
+            fasta_resource_id=_FASTA,
+            membership=AlignmentMembershipRelationship.ALIGNMENT_SUBSET,
+            naming=AlignmentNamingRelationship.UNRESOLVED,
+            order=AlignmentOrderRelationship.CONSISTENT,
+            content=AlignmentContentRelationship.UNRESOLVED,
+        )
+
+    with pytest.raises(ValueError, match="require unresolved M5 content"):
+        AlignmentDictionaryRelationshipSummary(
+            alignment_resource_id=_ALIGNMENT,
+            fasta_resource_id=_FASTA,
+            membership=AlignmentMembershipRelationship.ALIGNMENT_SUBSET,
+            naming=AlignmentNamingRelationship.UNRESOLVED,
+            order=AlignmentOrderRelationship.UNRESOLVED,
+            content=AlignmentContentRelationship.M5_VERIFIED,
+        )
+
+
+def test_unresolved_sequence_cannot_claim_resolved_order_or_verified_content() -> None:
+    resolution = AlignmentSequenceResolution(
+        "chr1",
+        "chr1",
+        AlignmentNameResolutionMethod.EXACT_NAME,
+    )
+    with pytest.raises(ValueError, match="require unresolved order"):
+        AlignmentDictionaryRelationshipSummary(
+            alignment_resource_id=_ALIGNMENT,
+            fasta_resource_id=_FASTA,
+            membership=AlignmentMembershipRelationship.UNRESOLVED,
+            naming=AlignmentNamingRelationship.UNRESOLVED,
+            order=AlignmentOrderRelationship.CONSISTENT,
+            content=AlignmentContentRelationship.UNRESOLVED,
+            resolutions=(resolution,),
+            unresolved_sequence_names=("missing",),
+        )
+
+    with pytest.raises(ValueError, match="cannot claim fully verified M5 content"):
+        AlignmentDictionaryRelationshipSummary(
+            alignment_resource_id=_ALIGNMENT,
+            fasta_resource_id=_FASTA,
+            membership=AlignmentMembershipRelationship.UNRESOLVED,
+            naming=AlignmentNamingRelationship.UNRESOLVED,
+            order=AlignmentOrderRelationship.UNRESOLVED,
+            content=AlignmentContentRelationship.M5_VERIFIED,
+            resolutions=(resolution,),
+            unresolved_sequence_names=("missing",),
+        )
+
+
+def test_fully_resolved_mapping_cannot_claim_unresolved_order() -> None:
+    with pytest.raises(ValueError, match="require a resolved order relationship"):
+        _summary(order=AlignmentOrderRelationship.UNRESOLVED)
+
+
+def test_exact_membership_requires_at_least_one_resolution() -> None:
+    with pytest.raises(ValueError, match="requires resolved sequences"):
+        AlignmentDictionaryRelationshipSummary(
+            alignment_resource_id=_ALIGNMENT,
+            fasta_resource_id=_FASTA,
+            membership=AlignmentMembershipRelationship.EXACT,
+            naming=AlignmentNamingRelationship.UNRESOLVED,
+            order=AlignmentOrderRelationship.UNRESOLVED,
+            content=AlignmentContentRelationship.UNRESOLVED,
+        )

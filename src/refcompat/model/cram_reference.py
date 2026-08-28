@@ -4,7 +4,8 @@ The SAM header alone cannot establish whether every CRAM container/slice can be
 restored without external reference content. These values therefore do not
 claim that a reference is required. They record only whether RefCompat has a
 safe, explicit local FASTA anchor it may pass to a future reference-dependent
-CRAM decoder without relying on ambient lookup or network fallback.
+CRAM decoder. The plan selects no ambient or network fallback; provider-level
+isolation remains a responsibility of the future decoder adapter.
 """
 
 from __future__ import annotations

@@ -69,13 +69,23 @@ The deterministic core does not automatically use:
 - `REF_PATH`; or
 - remote reference retrieval.
 
-HTSlib/pysam can use those mechanisms during CRAM decoding when no explicit
-reference is supplied. RefCompat's policy is instead to supply the selected
-local FASTA explicitly only when it is safe, which overrides those fallback
-paths, or to defer reference-dependent decoding.
+HTSlib searches an explicitly configured FASTA before `REF_CACHE`, `REF_PATH`,
+and a local header `UR`, but planning an explicit path does **not** itself
+disable those provider fallback mechanisms. The current RefCompat layer is a
+planner, not a record decoder: it never selects an ambient or remote source. A
+future decoder adapter must pass `reference_path` explicitly **and** preserve
+this deterministic boundary so a failure of the selected anchor cannot silently
+fall through to ambient or network lookup.
 
 A header `UR` remains provenance/metadata even when it happens to name a local
 file.
+
+The plan also assumes that the selected FASTA artifact still represents the
+content from which the `ReferenceContext` was derived. As with other path-based
+operations, changing the file after observation creates a time-of-check/time-of-
+use race. A future decoder boundary must fail closed if the selected artifact no
+longer satisfies the established context rather than recovering through an
+unapproved fallback source.
 
 ## What `UNRESOLVED` means here
 
