@@ -169,6 +169,55 @@ class SequenceIdentityCapability:
 
 
 @dataclass(frozen=True, slots=True)
+class SequenceIdentityAbsenceCapability:
+    """Exhaustive content-identity proof that one required sequence is absent.
+
+    The capability is owned by the selected FASTA anchor but names the peer
+    resource and local sequence whose independently established content
+    identity was searched exhaustively. It is reasoner-derived only; callers
+    must supply the underlying ``CONTENT_DERIVED`` identity capabilities
+    instead of asserting absence directly.
+    """
+
+    id: CapabilityId
+    resource_id: ResourceId
+    subject_resource_id: ResourceId
+    sequence_name: str
+    identity_values: tuple[SequenceIdentityValue, ...]
+    source_identity_capability_ids: tuple[CapabilityId, ...]
+    source_observation_ids: tuple[ObservationId, ...] = ()
+
+    def __post_init__(self) -> None:
+        _validate_capability_header(self.id, self.resource_id)
+        if not self.subject_resource_id:
+            raise ValueError(
+                "sequence-identity absence capability subject resource ID must not be empty"
+            )
+        if self.subject_resource_id == self.resource_id:
+            raise ValueError(
+                "sequence-identity absence capability subject must differ from its anchor owner"
+            )
+        _validate_sequence_name(self.sequence_name)
+        if not self.identity_values:
+            raise ValueError(
+                "sequence-identity absence capability requires at least one identity value"
+            )
+        if len(set(self.identity_values)) != len(self.identity_values):
+            raise ValueError("sequence-identity absence capability identity values must be unique")
+        if not self.source_identity_capability_ids:
+            raise ValueError(
+                "sequence-identity absence capability requires source identity capability IDs"
+            )
+        if any(not capability_id for capability_id in self.source_identity_capability_ids):
+            raise ValueError("sequence-identity absence source capability IDs must not be empty")
+        if len(set(self.source_identity_capability_ids)) != len(
+            self.source_identity_capability_ids
+        ):
+            raise ValueError("sequence-identity absence source capability IDs must be unique")
+        _validate_source_observation_ids(self.source_observation_ids)
+
+
+@dataclass(frozen=True, slots=True)
 class SequenceOrderCapability:
     """Exact ordered local sequence-name representation exposed by a resource."""
 
@@ -327,6 +376,7 @@ Capability: TypeAlias = (
     SequencePresenceCapability
     | SequenceLengthCapability
     | SequenceIdentityCapability
+    | SequenceIdentityAbsenceCapability
     | SequenceOrderCapability
     | CoordinateBoundsValidationCapability
     | ReferenceBaseValidationCapability
@@ -356,6 +406,14 @@ class ResourceContract:
             raise ValueError("resource-contract requirements must belong to the contract resource")
         if any(capability.resource_id != self.resource_id for capability in self.capabilities):
             raise ValueError("resource-contract capabilities must belong to the contract resource")
+        if any(
+            isinstance(capability, SequenceIdentityAbsenceCapability)
+            for capability in self.capabilities
+        ):
+            raise ValueError(
+                "sequence-identity absence capabilities are reasoner-derived "
+                "and cannot be supplied by resource contracts"
+            )
 
         requirement_ids = tuple(requirement.id for requirement in self.requirements)
         if len(set(requirement_ids)) != len(requirement_ids):

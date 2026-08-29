@@ -157,6 +157,89 @@ def test_incomplete_anchor_identity_scheme_does_not_manufacture_binding() -> Non
     )
 
 
+def test_incomplete_scheme_match_to_other_target_blocks_binding() -> None:
+    md5_a = Md5Digest("0" * 32)
+    md5_b = Md5Digest("1" * 32)
+    snapshot = SequenceCollectionSnapshot(
+        _REFERENCE,
+        CollectionCompleteness.COMPLETE,
+        sequences=(
+            SnapshotSequence("chr1", 10, 0, md5=md5_a),
+            SnapshotSequence("chr2", 10, 1, refget_id=_REFGET_B, md5=md5_b),
+        ),
+    )
+    context = build_reference_context(_request(), snapshot)
+    capabilities = (
+        SequenceIdentityCapability(
+            CapabilityId("local-md5"),
+            _CONSUMER,
+            "1",
+            md5_a,
+            provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
+        ),
+        SequenceIdentityCapability(
+            CapabilityId("local-refget"),
+            _CONSUMER,
+            "1",
+            _REFGET_B,
+            provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
+        ),
+    )
+
+    assert (
+        derive_sequence_bindings(
+            context,
+            (
+                ResourceContract(_REFERENCE),
+                ResourceContract(_CONSUMER, capabilities=capabilities),
+            ),
+        )
+        == ()
+    )
+
+
+def test_incomplete_scheme_match_to_same_target_allows_binding() -> None:
+    md5_a = Md5Digest("0" * 32)
+    md5_b = Md5Digest("1" * 32)
+    snapshot = SequenceCollectionSnapshot(
+        _REFERENCE,
+        CollectionCompleteness.COMPLETE,
+        sequences=(
+            SnapshotSequence("chr1", 10, 0, refget_id=_REFGET_A, md5=md5_a),
+            SnapshotSequence("chr2", 10, 1, md5=md5_b),
+        ),
+    )
+    context = build_reference_context(_request(), snapshot)
+    capabilities = (
+        SequenceIdentityCapability(
+            CapabilityId("local-md5"),
+            _CONSUMER,
+            "1",
+            md5_a,
+            provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
+        ),
+        SequenceIdentityCapability(
+            CapabilityId("local-refget"),
+            _CONSUMER,
+            "1",
+            _REFGET_A,
+            provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
+        ),
+    )
+
+    bindings = derive_sequence_bindings(
+        context,
+        (
+            ResourceContract(_REFERENCE),
+            ResourceContract(_CONSUMER, capabilities=capabilities),
+        ),
+    )
+
+    assert len(bindings) == 1
+    assert bindings[0].anchor_sequence_name == "chr1"
+    assert bindings[0].identity_values == (md5_a,)
+
+
 def test_sequence_scope_does_not_turn_duplicate_content_into_verified_binding() -> None:
     snapshot = SequenceCollectionSnapshot(
         _REFERENCE,

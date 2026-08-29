@@ -26,7 +26,11 @@ from refcompat.reasoning.cram_reference import plan_cram_offline_reference
 from refcompat.reasoning.evidence import aggregate_constraint_evidence, derive_constraint_evidence
 from refcompat.reasoning.fasta_index import evaluate_fasta_index_integrity
 from refcompat.reasoning.interpretation import interpret_constraint_results
-from refcompat.reasoning.reference_context import build_reference_context, derive_sequence_bindings
+from refcompat.reasoning.reference_context import (
+    build_reference_context,
+    derive_sequence_bindings,
+    derive_sequence_identity_absences,
+)
 from refcompat.reasoning.sequence_dictionary import evaluate_sequence_dictionary_integrity
 from refcompat.reasoning.vcf_binding import (
     derive_vcf_sequence_bindings,
@@ -56,6 +60,7 @@ __all__ = [
     "derive_annotation_sequence_bindings",
     "derive_constraint_evidence",
     "derive_sequence_bindings",
+    "derive_sequence_identity_absences",
     "derive_vcf_sequence_bindings",
     "evaluate_annotation_coordinates",
     "evaluate_constraint",

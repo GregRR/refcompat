@@ -12,7 +12,7 @@ The normative check contract remains in
 standards-derived invariants that should remain visible while Milestone 5 is
 implemented.
 
-The streaming observation boundary, format-neutral coordinate-bounds reasoning layer, ordinary annotation-to-FASTA validation, GFF3 sequence-region/provenance handling, embedded-FASTA identity/binding, landmark-aware circular-origin reasoning, and integration/adversarial exit suite are now implemented. Feature rows remain iterable in file order while compact snapshots retain per-seqid summaries and small reference-relevant GFF3/GTF metadata. Feature-used seqids plus any sequence-region-only seqids create mandatory presence requirements. Feature intervals and declared GFF3 regions project together through one anchor-owned coordinate capability, while relevant embedded GFF3 FASTA sequences can add content-derived identity requirements/capabilities and verified cross-name bindings. Independently established annotation-owned content identities may also be supplied solely as conservative binding evidence, which lets GTF participate in verified cross-name resolution without inventing identity from the GTF itself. External milestone-boundary review remains before Milestone 6.
+The streaming observation boundary, format-neutral coordinate-bounds reasoning layer, ordinary annotation-to-FASTA validation, GFF3 sequence-region/provenance handling, embedded-FASTA identity/binding, landmark-aware circular-origin reasoning, and integration/adversarial exit suite are now implemented. Feature rows remain iterable in file order while compact snapshots retain per-seqid summaries and small reference-relevant GFF3/GTF metadata. Feature-used seqids plus any sequence-region-only seqids create mandatory presence requirements. Feature intervals and declared GFF3 regions project together through one anchor-owned coordinate capability, while relevant embedded GFF3 FASTA sequences can add content-derived identity requirements/capabilities and verified cross-name bindings. Independently established annotation-owned content identities may also establish a conservative binding or, under complete anchor identity coverage, prove that required sequence content is absent without inventing identity from GTF/GFF3 metadata itself. External milestone-boundary review remains before Milestone 6.
 
 ## Native coordinate model
 
@@ -63,7 +63,14 @@ not authority to bind the column-1 seqid to an anchor sequence. If a used local
 name cannot be resolved, its coordinate statements remain unresolved. They are
 not called out of bounds because no anchor coordinate system has yet been
 established for them, and the name difference alone does not prove biological
-absence.
+absence. If independent `CONTENT_DERIVED` identity establishes what the local
+seqid denotes, however, and at least one such identity scheme covers every
+sequence in the complete selected FASTA with no match anywhere in that full
+anchor, the mandatory presence requirement may be unsatisfied. No other local
+content-derived identity may positively match the full anchor, even through an
+incompletely covered scheme. Lack of any completely covered scheme,
+metadata-only identity, duplicate/ambiguous identity, scope-hidden match, or
+conflicting local identity blocks that negative proof.
 
 ## Scalable coordinate evidence
 
@@ -115,8 +122,13 @@ feature crossing the origin of a circular landmark, the specification encodes
 the wrapped end by adding the landmark length. A valid feature can therefore
 have an encoded `end` greater than the anchor sequence length.
 
-RefCompat applies this exception narrowly. A circular landmark candidate is
-observed only when a feature carries `Is_circular=true` and its decoded `ID`
+RefCompat applies this exception narrowly. Because `Is_circular` directly
+changes compatibility interpretation, the narrow parser accepts it only when it
+occurs once with the exact literal value `true`; duplicate, contradictory,
+comma-valued, empty, bare, or non-`true` forms are invalid input rather than
+partial circular evidence. This is a control-field check, not general column-9
+conformance validation. A circular landmark candidate is observed only when a
+feature carries the valid `Is_circular=true` attribute and its decoded `ID`
 exactly equals the logical column-1 seqid. A wrap is proven only when exactly
 one such candidate exists, the candidate begins at coordinate 1, its end (the
 landmark length) equals the resolved anchor sequence length, and an extended
@@ -168,10 +180,29 @@ may establish a cross-name `SequenceBinding` only through the existing complete-
 anchor identity reasoner. The matching identity scheme must be available for
 every sequence in the complete anchor before uniqueness can be claimed; missing
 anchor identity, duplicate identity, or explicit scope cannot manufacture a
-binding. Annotation projection independently derives the expected bindings and
-rejects stale coordinate validation that did not use exactly those bindings.
-The verified binding is then used consistently for presence, identity, feature
-bounds, and sequence-region bounds.
+binding. If the relevant embedded identity has no match anywhere in a completely
+covered anchor scheme, RefCompat suppresses a redundant missing-sequence
+contradiction only when a directly comparable mandatory exact-name identity
+requirement already supplies the Tier-A conflict. When no such exact-name
+identity comparison is available, exhaustive identity absence may instead
+contradict the mandatory presence requirement while the identity requirement
+remains unresolved. Annotation projection independently derives the expected
+bindings and rejects stale coordinate validation that did not use exactly those
+bindings. A verified binding, when one exists, is then used consistently for
+presence, identity, feature bounds, and sequence-region bounds.
+
+
+GTF has no embedded-sequence mechanism. The annotation bridge may nevertheless
+accept independently established annotation-owned `SequenceIdentityCapability`
+values when they have `CONTENT_DERIVED` provenance and name a reference-relevant
+logical seqid. These are external evidence, not invented GTF declarations or
+identity requirements. The generic reasoner may use them either to establish a
+full-anchor-unique `SequenceBinding` or, when at least one identity scheme covers
+every sequence in the complete selected FASTA and no local content-derived
+identity matches any anchor sequence, to derive an anchor-owned
+`SequenceIdentityAbsenceCapability`. The latter is Tier-A content evidence
+against the mandatory presence requirement even if the feature's coordinate
+mapping remains unresolved.
 
 When a relevant embedded FASTA identifier exactly matches a logical annotation
 seqid, its normalized sequence length also constrains the GFF3 document itself.

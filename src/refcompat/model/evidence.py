@@ -51,6 +51,7 @@ class EvidenceMethod(StrEnum):
 
     EXACT_TYPED_CONSTRAINT = "exact_typed_constraint"
     VERIFIED_SEQUENCE_BINDING = "verified_sequence_binding"
+    EXHAUSTIVE_SEQUENCE_IDENTITY_ABSENCE = "exhaustive_sequence_identity_absence"
     EXHAUSTIVE_COORDINATE_BOUNDS_VALIDATION = "exhaustive_coordinate_bounds_validation"
     EXHAUSTIVE_REFERENCE_BASE_VALIDATION = "exhaustive_reference_base_validation"
 
@@ -104,6 +105,7 @@ class Evidence:
         if (
             self.method
             in (
+                EvidenceMethod.EXHAUSTIVE_SEQUENCE_IDENTITY_ABSENCE,
                 EvidenceMethod.EXHAUSTIVE_COORDINATE_BOUNDS_VALIDATION,
                 EvidenceMethod.EXHAUSTIVE_REFERENCE_BASE_VALIDATION,
             )

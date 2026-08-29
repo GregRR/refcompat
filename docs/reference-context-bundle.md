@@ -27,7 +27,12 @@ The context intentionally derives positive presence only for selected anchor
 sequences; it does not synthesize `present=False` for every unmatched raw name.
 A name absent from the FASTA namespace may still be an unbound local alias, so
 raw-name absence remains `UNRESOLVED` until evidence establishes a binding or
-an explicit negative capability can legitimately prove absence. Explicit
+an explicit negative capability can legitimately prove absence. Whole-bundle
+reasoning can derive one such negative from exhaustive content identity: at
+least one peer-local `CONTENT_DERIVED` identity scheme must be available for
+every sequence in the complete FASTA anchor, and no content-derived identity for
+that local sequence may match anywhere in the full anchor. A positive match in
+another incompletely covered scheme blocks the negative proof. Explicit
 anchor-sequence scope likewise hides out-of-scope anchor facts rather than
 turning them into contradictions.
 
@@ -58,12 +63,46 @@ applied. If one local identity maps to more than one anchor sequence because
 identical sequence content is duplicated anywhere in the FASTA, the binding
 remains unresolved rather than choosing by name. Narrowing evaluation scope may
 hide a unique target and leave the relationship unresolved, but it must never
-turn an ambiguous full-FASTA match into a verified binding. Conflicting local
-identity capabilities likewise do not produce a binding.
+turn an ambiguous full-FASTA match into a verified binding. Once one completely
+covered scheme identifies a unique target, every other local identity with a
+known full-anchor match must point to that same target, even if that other
+scheme is incomplete across the anchor. Conflicting local identity capabilities
+likewise do not produce a binding.
 
 A verified binding takes precedence over an identical string label when the two
 conflict. This prevents a familiar or matching label from overruling stronger
 content-derived evidence.
+
+## Exhaustive content-identity absence
+
+`SequenceIdentityAbsenceCapability` is a reasoner-owned pair fact, not a claim a
+resource contract may supply. It is owned by the selected FASTA anchor and names
+the peer resource/local sequence whose independently established content
+identity was searched. Derivation requires all of the following:
+
+- the peer identity is `CONTENT_DERIVED`, never `DECLARED_METADATA`;
+- the peer seqid has a sequence-presence requirement;
+- at least one comparable identity scheme covers every sequence in the complete
+  selected FASTA;
+- none of the peer's content-derived identities matches any sequence in the full
+  anchor, including identities from another incompletely covered scheme;
+- same-scheme local identities are not contradictory.
+
+Any full-anchor match blocks absence, including duplicate/ambiguous matches, a
+match visible only through another local content-identity scheme, and a match
+hidden by explicit anchor-sequence scope. If no local identity scheme has
+complete anchor coverage, the negative proof is also unavailable. Scope
+therefore cannot manufacture absence any more than it can manufacture binding
+uniqueness.
+
+When derived, the capability contradicts the corresponding presence requirement
+with Tier-A content evidence using
+`EXHAUSTIVE_SEQUENCE_IDENTITY_ABSENCE`. A same-string anchor name is weaker than
+this independently established content proof and cannot turn the requirement
+back into satisfied. Conversely, a raw name miss with no exhaustive content
+identity remains unresolved. If a mandatory exact-name identity requirement
+already expresses the same embedded-content contradiction, RefCompat suppresses
+the redundant absence capability so the same fact is not reported twice.
 
 ## Binding-aware constraints and evidence
 
@@ -108,12 +147,19 @@ The orchestrator:
 2. validates any explicitly supplied anchor-owned pair-derived supplemental capabilities;
 3. builds the FASTA `ReferenceContext`;
 4. derives unique evidence-backed sequence bindings;
-5. builds one anchor-driven constraint for every typed requirement;
-6. evaluates those constraints;
-7. aggregates qualitative evidence;
-8. produces structured findings and explicit-scope conditions.
+5. derives any exhaustive sequence-identity absence facts from complete anchor
+   coverage;
+6. builds one anchor-driven constraint for every typed requirement;
+7. evaluates those constraints;
+8. aggregates qualitative evidence;
+9. produces structured findings and explicit-scope conditions.
 
-The supplemental channel was added in Milestone 3 for exhaustive direct reference-base validation; peer contracts still cannot supply or vote on reference authority. `BundleReasoningResult` groups those immutable layers for later policy. It has no `verdict`, score, analysis status, or conflict core.
+The supplemental channel was added in Milestone 3 for caller-supplied exhaustive
+direct pair validations; peer contracts still cannot supply or vote on reference
+authority. Reasoner-derived absence capabilities are retained separately from
+that supplemental channel and are cross-checked against their peer-owned source
+identity capabilities. `BundleReasoningResult` groups those immutable layers for
+later policy. It has no `verdict`, score, analysis status, or conflict core.
 
 ## Deliberately not implemented yet
 

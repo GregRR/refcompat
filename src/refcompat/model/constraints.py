@@ -15,6 +15,7 @@ from refcompat.model.contracts import (
     ReferenceBaseValidationCapability,
     Requirement,
     RequirementId,
+    SequenceIdentityAbsenceCapability,
     SequenceIdentityCapability,
     SequenceIdentityProvenance,
     SequenceIdentityRequirement,
@@ -167,7 +168,13 @@ def capability_is_comparable(requirement: Requirement, capability: Capability) -
     """Whether a capability belongs to the scientific dimension of a requirement."""
 
     if isinstance(requirement, SequencePresenceRequirement):
-        return isinstance(capability, SequencePresenceCapability)
+        if isinstance(capability, SequencePresenceCapability):
+            return True
+        return (
+            isinstance(capability, SequenceIdentityAbsenceCapability)
+            and capability.subject_resource_id == requirement.resource_id
+            and capability.sequence_name == requirement.sequence_name
+        )
     if isinstance(requirement, SequenceLengthRequirement):
         return isinstance(capability, SequenceLengthCapability)
     if isinstance(requirement, SequenceIdentityRequirement):

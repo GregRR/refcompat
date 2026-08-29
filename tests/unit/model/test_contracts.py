@@ -13,6 +13,7 @@ from refcompat.model.contracts import (
     RequirementLevel,
     RequirementOrigin,
     ResourceContract,
+    SequenceIdentityAbsenceCapability,
     SequenceIdentityCapability,
     SequenceIdentityProvenance,
     SequenceIdentityRequirement,
@@ -66,6 +67,42 @@ def test_presence_capability_can_explicitly_prove_absence() -> None:
     )
 
     assert capability.present is False
+
+
+def test_sequence_identity_absence_capability_enforces_pair_identity() -> None:
+    with pytest.raises(ValueError, match="subject must differ"):
+        SequenceIdentityAbsenceCapability(
+            id=CapabilityId("absence"),
+            resource_id=_RESOURCE,
+            subject_resource_id=_RESOURCE,
+            sequence_name="chr1",
+            identity_values=(_MD5,),
+            source_identity_capability_ids=(CapabilityId("source"),),
+        )
+
+    with pytest.raises(ValueError, match="at least one identity value"):
+        SequenceIdentityAbsenceCapability(
+            id=CapabilityId("absence"),
+            resource_id=_RESOURCE,
+            subject_resource_id=ResourceId("consumer"),
+            sequence_name="chr1",
+            identity_values=(),
+            source_identity_capability_ids=(CapabilityId("source"),),
+        )
+
+
+def test_resource_contract_rejects_reasoner_owned_identity_absence() -> None:
+    absence = SequenceIdentityAbsenceCapability(
+        id=CapabilityId("absence"),
+        resource_id=_RESOURCE,
+        subject_resource_id=ResourceId("consumer"),
+        sequence_name="chr1",
+        identity_values=(_MD5,),
+        source_identity_capability_ids=(CapabilityId("source"),),
+    )
+
+    with pytest.raises(ValueError, match="reasoner-derived"):
+        ResourceContract(_RESOURCE, capabilities=(absence,))
 
 
 def test_identity_types_remain_algorithm_specific() -> None:

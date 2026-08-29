@@ -142,3 +142,16 @@ def test_evidence_method_and_binding_trace_must_agree() -> None:
             capability_id=CapabilityId("capability"),
             sequence_binding_ids=(SequenceBindingId("binding"),),
         )
+
+    with pytest.raises(ValueError, match="cannot cite a sequence binding"):
+        Evidence(
+            id=EvidenceId("absence"),
+            kind=EvidenceKind.SEQUENCE_PRESENCE,
+            method=EvidenceMethod.EXHAUSTIVE_SEQUENCE_IDENTITY_ABSENCE,
+            strength=EvidenceStrength.TIER_A_CONCLUSIVE_CONTENT,
+            polarity=EvidencePolarity.CONTRADICTS,
+            constraint_id=ConstraintId("constraint"),
+            requirement_id=RequirementId("requirement"),
+            capability_id=CapabilityId("capability"),
+            sequence_binding_ids=(SequenceBindingId("binding"),),
+        )

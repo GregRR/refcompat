@@ -16,6 +16,7 @@ from refcompat.model.contracts import (
     ReferenceBaseValidationCapability,
     Requirement,
     ResourceContract,
+    SequenceIdentityAbsenceCapability,
     SequenceIdentityCapability,
     SequenceIdentityRequirement,
     SequenceLengthCapability,
@@ -32,7 +33,11 @@ from refcompat.model.resources import ResourceId
 from refcompat.reasoning.constraints import build_constraint, evaluate_constraint
 from refcompat.reasoning.evidence import aggregate_constraint_evidence
 from refcompat.reasoning.interpretation import interpret_constraint_results
-from refcompat.reasoning.reference_context import build_reference_context, derive_sequence_bindings
+from refcompat.reasoning.reference_context import (
+    build_reference_context,
+    derive_sequence_bindings,
+    derive_sequence_identity_absences,
+)
 
 
 def reason_bundle(
@@ -44,16 +49,18 @@ def reason_bundle(
 ) -> BundleReasoningResult:
     """Evaluate every scoped typed requirement against the explicit FASTA anchor.
 
-    Peer-resource capabilities participate only in evidence-backed sequence
-    binding construction. Pair-derived exhaustive validations may enter only
-    through the explicit anchor-owned supplemental channel. Neither
-    path lets a peer outvote or replace the selected anchor.
+    Peer-resource identity capabilities may establish evidence-backed sequence
+    bindings or, when content identity is exhaustive over the complete anchor,
+    reasoner-derived sequence absence. Caller-supplied pair validations may enter
+    only through the explicit anchor-owned supplemental channel. None of these
+    paths lets a peer outvote or replace the selected anchor.
     """
 
     ordered_contracts = _ordered_contracts(request, contracts)
     _validate_supplemental_capabilities(request, ordered_contracts, supplemental_capabilities)
     context = build_reference_context(request, anchor_snapshot)
     bindings = derive_sequence_bindings(context, ordered_contracts)
+    derived_capabilities = derive_sequence_identity_absences(context, ordered_contracts)
 
     constraints = []
     for contract in ordered_contracts:
@@ -63,6 +70,7 @@ def reason_bundle(
                 context,
                 requirement,
                 relevant_bindings,
+                derived_capabilities,
                 supplemental_capabilities,
             )
             constraints.append(
@@ -97,6 +105,7 @@ def reason_bundle(
         evaluations=evaluations,
         evidence=evidence,
         interpretation=interpretation,
+        derived_capabilities=derived_capabilities,
         supplemental_capabilities=supplemental_capabilities,
     )
 
@@ -152,6 +161,7 @@ def _candidates_for_requirement(
     context: ReferenceContext,
     requirement: Requirement,
     bindings: tuple[SequenceBinding, ...],
+    derived_capabilities: tuple[SequenceIdentityAbsenceCapability, ...],
     supplemental_capabilities: tuple[SupplementalCapability, ...],
 ) -> tuple[Capability, ...]:
     if isinstance(requirement, (CoordinateBoundsRequirement, ReferenceBaseRequirement)):
@@ -168,6 +178,12 @@ def _candidates_for_requirement(
 
     target_name = _target_anchor_name(requirement, bindings)
     candidates: list[Capability] = []
+    if isinstance(requirement, SequencePresenceRequirement):
+        candidates.extend(
+            capability
+            for capability in derived_capabilities
+            if capability_is_comparable(requirement, capability)
+        )
     for capability in context.anchor_capabilities:
         if not capability_is_comparable(requirement, capability):
             continue

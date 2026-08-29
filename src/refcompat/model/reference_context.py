@@ -15,6 +15,7 @@ from refcompat._compat import StrEnum
 from refcompat.model.contracts import (
     Capability,
     CapabilityId,
+    SequenceIdentityAbsenceCapability,
     SequenceIdentityCapability,
     SequenceIdentityProvenance,
     SequenceIdentityValue,
@@ -98,6 +99,14 @@ class ReferenceContext:
             for capability in self.anchor_capabilities
         ):
             raise ValueError("reference-context capabilities must belong to the FASTA anchor")
+
+        if any(
+            isinstance(capability, SequenceIdentityAbsenceCapability)
+            for capability in self.anchor_capabilities
+        ):
+            raise ValueError(
+                "reference-context anchor capabilities cannot contain pair-derived absence proof"
+            )
 
         identity_capabilities = tuple(
             capability

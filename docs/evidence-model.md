@@ -53,7 +53,9 @@ Examples:
 - applicable SeqCol identity/relationship;
 - SAM `M5` content checksum when correctly comparable;
 - direct FASTA base comparison;
-- exhaustive VCF REF disagreement with the anchor FASTA.
+- exhaustive VCF REF disagreement with the anchor FASTA;
+- exhaustive content-identity proof that a required peer sequence is absent from
+  the complete selected FASTA.
 
 A Tier A contradiction is a hard conflict for the affected scope.
 

@@ -37,6 +37,7 @@ from refcompat.reasoning.annotation_binding import (
 )
 from refcompat.reasoning.constraints import build_constraint, evaluate_constraint
 from refcompat.reasoning.evidence import aggregate_constraint_evidence
+from refcompat.reasoning.reference_context import derive_sequence_identity_absences
 
 
 def build_annotation_contract(
@@ -45,7 +46,7 @@ def build_annotation_contract(
     *,
     binding_identity_capabilities: tuple[SequenceIdentityCapability, ...] = (),
 ) -> ResourceContract:
-    """Build sparse annotation requirements plus permitted binding capabilities."""
+    """Build sparse annotation requirements plus permitted content-identity capabilities."""
 
     if snapshot.resource_id == reference_context.anchor_resource_id:
         raise ValueError("annotation contract resource cannot be the FASTA anchor")
@@ -112,12 +113,14 @@ def project_annotation_contract(
 ) -> AnnotationContractProjection:
     """Project annotation coordinates and embedded identities into generic reasoning.
 
-    Verified cross-name bindings are derived independently from permitted
-    annotation-owned content identities and the complete FASTA anchor. Embedded
-    GFF3 sequence content is one such source; callers may additionally supply
-    independently established content-derived identities for reference-relevant
-    annotation seqids. If bindings exist, the supplied exhaustive validation
-    must have used exactly those bindings.
+    Permitted annotation-owned content identities are interpreted against the
+    complete FASTA anchor. They may establish verified cross-name bindings or,
+    when at least one identity scheme has exhaustive full-anchor coverage and no
+    local content-derived identity matches anywhere, prove required sequence
+    content absent. Embedded GFF3 sequence content is one such source;
+    callers may additionally supply independently established content-derived
+    identities for reference-relevant annotation seqids. If bindings exist, the
+    supplied exhaustive validation must have used exactly those bindings.
     """
 
     contract = build_annotation_contract(
@@ -157,6 +160,12 @@ def project_annotation_contract(
         unresolved_count=validation.coordinate_unresolved_count,
     )
 
+    projection_contracts = tuple(
+        contract if resource_id == snapshot.resource_id else ResourceContract(resource_id)
+        for resource_id in reference_context.scope.resource_ids
+    )
+    derived_absences = derive_sequence_identity_absences(reference_context, projection_contracts)
+
     bindings_by_name = {binding.local_sequence_name: binding for binding in sequence_bindings}
     constraints: list[CompatibilityConstraint] = []
     for presence_requirement in presence_requirements:
@@ -166,11 +175,20 @@ def project_annotation_contract(
             if binding is not None
             else presence_requirement.sequence_name
         )
-        presence_candidates = tuple(
+        absence_candidates = tuple(
+            absence_capability
+            for absence_capability in derived_absences
+            if capability_is_comparable(presence_requirement, absence_capability)
+        )
+        direct_presence_candidates = tuple(
             presence_capability
             for presence_capability in reference_context.anchor_capabilities
             if isinstance(presence_capability, SequencePresenceCapability)
             and presence_capability.sequence_name == target_name
+        )
+        presence_candidates: tuple[Capability, ...] = (
+            *absence_candidates,
+            *direct_presence_candidates,
         )
         constraints.append(
             _constraint(

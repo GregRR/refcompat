@@ -34,8 +34,10 @@ The baseline derivation method is `EXACT_TYPED_CONSTRAINT`. The later
 reference-context/bundle slice also uses `VERIFIED_SEQUENCE_BINDING` when an
 explicit content-verified binding is required to project a resource-local name
 into the FASTA-anchor namespace. Milestone 3 additionally uses
-`EXHAUSTIVE_REFERENCE_BASE_VALIDATION` for an anchor-backed complete REF comparison. None of
-these methods is a generic rules language.
+`EXHAUSTIVE_REFERENCE_BASE_VALIDATION` for an anchor-backed complete REF comparison.
+Milestone 5 review hardening adds `EXHAUSTIVE_SEQUENCE_IDENTITY_ABSENCE` when
+complete anchor identity coverage proves that independently established peer
+sequence content is absent. None of these methods is a generic rules language.
 
 ## Source traceability
 
@@ -78,7 +80,8 @@ parse policy or biological meaning from it.
 The current exact sequence evaluator maps evidence conservatively:
 
 - exact same-scheme sequence identity (refget or M5/MD5) -> Tier A;
-- sequence presence -> Tier B;
+- direct structural sequence presence -> Tier B;
+- exhaustive content-identity proof that a required sequence is absent -> Tier A;
 - exact sequence length -> Tier B;
 - exact sequence order -> Tier B;
 - exhaustive reference-base agreement/contradiction -> Tier A.

@@ -228,6 +228,61 @@ def test_gtf_content_identity_can_supply_verified_alias_without_identity_require
     assert aggregate_bundle_verdict(bundle).verdict is CompatibilityVerdict.COMPATIBLE
 
 
+def test_gtf_content_identity_can_prove_required_sequence_absent() -> None:
+    fasta = Resource(_FASTA, ResourceKind.FASTA, ArtifactIdentity(Path("anchor.fa")))
+    annotation = Resource(_ANNOTATION, ResourceKind.GTF, ArtifactIdentity(Path("genes.gtf")))
+    request = EvaluationRequest(
+        (fasta, annotation),
+        _FASTA,
+        EvaluationScope((_FASTA, _ANNOTATION)),
+    )
+    anchor_digest = Md5Digest("f1f8f4bf413b16ad135722aa4591043e")
+    absent_digest = Md5Digest("2f803268a6367d0943978eb5f84cc62e")
+    anchor = SequenceCollectionSnapshot(
+        _FASTA,
+        CollectionCompleteness.COMPLETE,
+        sequences=(SnapshotSequence("chr1", 4, 0, md5=anchor_digest),),
+    )
+    context = build_reference_context(request, anchor)
+    snapshot = _snapshot(("1", 1, 1, 4))
+    feature = _feature(0, "1", 1, 4)
+    capability = SequenceIdentityCapability(
+        CapabilityId("external-content:absent"),
+        _ANNOTATION,
+        "1",
+        absent_digest,
+        SequenceIdentityProvenance.CONTENT_DERIVED,
+    )
+    validation = evaluate_annotation_coordinates(snapshot, (feature,), context)
+    projection = project_annotation_contract(
+        snapshot,
+        validation,
+        context,
+        binding_identity_capabilities=(capability,),
+    )
+
+    assert projection.sequence_bindings == ()
+    assert validation.unresolved_sequence_count == 1
+    assert tuple(item.state for item in projection.evaluations) == (
+        ConstraintState.UNSATISFIED,
+        ConstraintState.UNRESOLVED,
+    )
+    assert len(projection.evidence.conclusive_contradictions) == 1
+    assert (
+        projection.evidence.conclusive_contradictions[0].method
+        is EvidenceMethod.EXHAUSTIVE_SEQUENCE_IDENTITY_ABSENCE
+    )
+
+    bundle = reason_bundle(
+        request,
+        anchor,
+        (ResourceContract(_FASTA), projection.contract),
+        supplemental_capabilities=(projection.coordinate_bounds_capability,),
+    )
+    assert len(bundle.derived_capabilities) == 1
+    assert aggregate_bundle_verdict(bundle).verdict is CompatibilityVerdict.INCOMPATIBLE
+
+
 def test_gtf_external_identity_rejects_stale_unbound_validation() -> None:
     fasta = Resource(_FASTA, ResourceKind.FASTA, ArtifactIdentity(Path("anchor.fa")))
     annotation = Resource(_ANNOTATION, ResourceKind.GTF, ArtifactIdentity(Path("genes.gtf")))
@@ -566,6 +621,46 @@ def test_embedded_content_binding_makes_cross_name_annotation_compatible() -> No
     binding_evidence = tuple(item for item in bundle.evidence.evidence if item.sequence_binding_ids)
     assert binding_evidence
     assert all(item.method is EvidenceMethod.VERIFIED_SEQUENCE_BINDING for item in binding_evidence)
+
+
+def test_cross_name_embedded_content_absence_uses_presence_conflict() -> None:
+    request, anchor, context, snapshot = _gff3_identity_case(
+        "1",
+        _MD5_TTTT,
+        SnapshotSequence("chr1", 4, 0, md5=_MD5_ACGT),
+    )
+    validation = evaluate_annotation_coordinates(
+        snapshot,
+        (_feature(0, "1", 1, 4),),
+        context,
+    )
+    projection = project_annotation_contract(snapshot, validation, context)
+
+    assert tuple(item.state for item in projection.evaluations) == (
+        ConstraintState.UNSATISFIED,
+        ConstraintState.UNRESOLVED,
+        ConstraintState.UNRESOLVED,
+    )
+    assert len(projection.evidence.conclusive_contradictions) == 1
+    assert (
+        projection.evidence.conclusive_contradictions[0].method
+        is EvidenceMethod.EXHAUSTIVE_SEQUENCE_IDENTITY_ABSENCE
+    )
+
+    bundle = reason_bundle(
+        request,
+        anchor,
+        (ResourceContract(_FASTA), projection.contract),
+        supplemental_capabilities=(projection.coordinate_bounds_capability,),
+    )
+
+    assert len(bundle.derived_capabilities) == 1
+    assert len(bundle.evidence.conclusive_contradictions) == 1
+    assert (
+        bundle.evidence.conclusive_contradictions[0].method
+        is EvidenceMethod.EXHAUSTIVE_SEQUENCE_IDENTITY_ABSENCE
+    )
+    assert aggregate_bundle_verdict(bundle).verdict is CompatibilityVerdict.INCOMPATIBLE
 
 
 def test_same_name_embedded_content_keeps_projection_exact() -> None:

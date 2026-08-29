@@ -63,15 +63,22 @@ resource-ID equality as a comparability rule.
 
 A missing capability is an evidence gap, not proof of absence.
 
-`SequencePresenceCapability(present=False)` is therefore an explicit negative
-fact that may be produced only when the evaluation context can actually prove
-absence—for example, from a complete authoritative FASTA snapshot. If no
-presence capability exists for the required name, the first evaluator returns
-`UNRESOLVED`, not `UNSATISFIED`.
+`SequencePresenceCapability(present=False)` is therefore an explicit direct
+negative fact that may be produced only when the evaluation context can actually
+prove absence. Later whole-bundle reasoning also supports a narrower
+`SequenceIdentityAbsenceCapability`: the reasoner may derive it when at least
+one of a peer's `CONTENT_DERIVED` sequence-identity schemes is observed for every
+sequence in the complete selected FASTA and none of that local sequence's
+content-derived identities matches anywhere in the full anchor. A positive
+match in another incompletely covered scheme blocks the negative proof. Callers
+cannot place this pair-derived absence fact in a resource contract.
 
-This preserves the project-wide rule that absence of evidence is not
-incompatibility and gives later sparse VCF/GTF/BAM contracts a conservative
-representation.
+If neither form of explicit negative exists, a missing candidate for the raw
+name returns `UNRESOLVED`, not `UNSATISFIED`. Metadata-only identity, lack of a
+completely covered local identity scheme, duplicate/ambiguous matches,
+scope-hidden matches, or conflicting local identities cannot manufacture
+absence. This preserves the project-wide rule that absence of evidence is not
+incompatibility.
 
 ## Constraints and evaluations
 
@@ -110,7 +117,7 @@ MD5 and refget identifiers are not cross-compared. A matching MD5 capability
 does not satisfy a refget requirement, or vice versa, merely because both are
 content identities.
 
-Cross-name identity/verified alias reasoning is implemented only through the later `SequenceBinding` layer documented in `reference-context-bundle.md`. The base evaluator still manufactures no alias from string similarity; a same-content capability under another local name is usable only when an explicit verified binding is attached to the constraint.
+Cross-name identity/verified alias reasoning is implemented only through the later `SequenceBinding` layer documented in `reference-context-bundle.md`. The base evaluator still manufactures no alias from string similarity; a same-content capability under another local name is usable only when an explicit verified binding is attached to the constraint. The same generic layer may consume a reasoner-derived exhaustive identity-absence capability as a Tier-A negative presence fact; that path proves absence from content rather than inferring an alias.
 
 Pair-derived exhaustive validation capabilities remain outside resource contracts because they are produced by comparing a consumer against the selected FASTA. Whole-bundle orchestration accepts reference-base and coordinate-bounds validations through a separate supplemental-capability channel. That channel is typed and anchor-scoped and rejects unused, out-of-scope, duplicate, wrong-anchor, wrong-count, or competing exhaustive validations instead of allowing peer contracts to supply reference authority.
 

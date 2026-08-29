@@ -444,7 +444,11 @@ def _parse_feature_line(
         sequence_name = _decode_gff3_seqid(
             raw_sequence_name, line_number=line_number, path=resource.artifact.path
         )
-        is_circular = _has_gff3_is_circular_true(fields[8])
+        is_circular = _parse_gff3_is_circular(
+            fields[8],
+            line_number=line_number,
+            path=resource.artifact.path,
+        )
         feature_id = (
             _gff3_feature_id(fields[8], line_number=line_number, path=resource.artifact.path)
             if is_circular
@@ -601,8 +605,23 @@ def _parse_positive_integer(value: str, *, field: str, line_number: int, path: P
     return parsed
 
 
-def _has_gff3_is_circular_true(attributes: str) -> bool:
-    return "Is_circular=true" in attributes.split(";")
+def _parse_gff3_is_circular(attributes: str, *, line_number: int, path: Path) -> bool:
+    value: str | None = None
+    for item in attributes.split(";"):
+        key, separator, candidate = item.partition("=")
+        if key != "Is_circular":
+            continue
+        if value is not None:
+            raise AnnotationParseError(
+                f"duplicate GFF3 Is_circular attribute at line {line_number}: {path}"
+            )
+        if not separator or candidate != "true":
+            raise AnnotationParseError(
+                "GFF3 Is_circular attribute must have the single literal value "
+                f"'true' at line {line_number}: {path}"
+            )
+        value = candidate
+    return value == "true"
 
 
 def _gff3_feature_id(attributes: str, *, line_number: int, path: Path) -> str | None:

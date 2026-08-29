@@ -3,10 +3,11 @@
 GFF3 sequence content bundled after the FASTA boundary can contribute intrinsic
 annotation-local identity. Callers may also supply independently established
 annotation-owned content identities for reference-relevant seqids, which is the
-only path for GTF to participate in content-verified cross-name binding. Neither
-FASTA identifiers nor familiar strings are treated as aliases to the external
-FASTA anchor. Cross-name binding is delegated to the existing complete-anchor
-identity reasoner so explicit scope cannot manufacture uniqueness.
+only path for GTF to participate in content-verified cross-name binding or
+exhaustive content-absence reasoning. Neither FASTA identifiers nor familiar
+strings are treated as aliases to the external FASTA anchor. Cross-name binding
+is delegated to the existing complete-anchor identity reasoner so explicit scope
+cannot manufacture uniqueness.
 """
 
 from __future__ import annotations
@@ -54,13 +55,13 @@ def annotation_binding_identity_capabilities(
     snapshot: AnnotationContextSnapshot,
     additional_capabilities: tuple[SequenceIdentityCapability, ...] = (),
 ) -> tuple[SequenceIdentityCapability, ...]:
-    """Return all content-derived identities allowed to establish annotation bindings.
+    """Return content identities allowed in annotation reference reasoning.
 
     GFF3 embedded FASTA contributes intrinsic annotation-owned sequence content.
     Callers may also supply independently established content-derived identities
-    for reference-relevant annotation seqids. This supports evidence-backed GTF
-    bindings without treating a familiar string pattern or declared metadata as
-    alias authority.
+    for reference-relevant annotation seqids. These capabilities can support
+    conservative binding or exhaustive absence reasoning without treating a
+    familiar string pattern or declared metadata as alias authority.
     """
 
     embedded = annotation_embedded_identity_capabilities(snapshot)

@@ -34,6 +34,7 @@ _FIXTURES = Path(__file__).parents[1] / "fixtures" / "milestone5"
 _FASTA = ResourceId("fasta")
 _ANNOTATION = ResourceId("annotation")
 _MD5_ACGT = Md5Digest("f1f8f4bf413b16ad135722aa4591043e")
+_MD5_TTTT = Md5Digest("2f803268a6367d0943978eb5f84cc62e")
 
 
 def _annotation(name: str, kind: ResourceKind) -> Resource:
@@ -128,6 +129,28 @@ def test_gtf_verified_content_identity_resolves_cross_name_seqid() -> None:
     assert len(bundle.sequence_bindings) == 1
     assert bundle.sequence_bindings[0].local_sequence_name == "1"
     assert bundle.sequence_bindings[0].anchor_sequence_name == "chr1"
+
+
+def test_gtf_verified_content_identity_can_prove_required_sequence_absent() -> None:
+    identity = SequenceIdentityCapability(
+        CapabilityId("milestone5:gtf-absent-content"),
+        _ANNOTATION,
+        "1",
+        _MD5_TTTT,
+        SequenceIdentityProvenance.CONTENT_DERIVED,
+    )
+
+    verdict, _snapshot, validation, bundle = _bundle_verdict(
+        _annotation("gtf_alias.gtf", ResourceKind.GTF),
+        SnapshotSequence("chr1", 4, 0, md5=_MD5_ACGT),
+        binding_identity_capabilities=(identity,),
+    )
+
+    assert verdict is CompatibilityVerdict.INCOMPATIBLE
+    assert validation.unresolved_sequence_count == 1
+    assert bundle.sequence_bindings == ()
+    assert len(bundle.derived_capabilities) == 1
+    assert len(bundle.evidence.conclusive_contradictions) == 1
 
 
 def test_gtf_familiar_cross_name_without_identity_remains_indeterminate() -> None:

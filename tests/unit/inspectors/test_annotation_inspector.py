@@ -115,6 +115,31 @@ def test_inspect_gff3_observes_directives_decoded_seqids_and_circular_feature(
     assert snapshot.fasta_boundary.explicit_directive
 
 
+@pytest.mark.parametrize(
+    "attributes",
+    [
+        "ID=chr1;Is_circular=true;Is_circular=true",
+        "ID=chr1;Is_circular=true;Is_circular=false",
+        "ID=chr1;Is_circular=false",
+        "ID=chr1;Is_circular=true,false",
+        "ID=chr1;Is_circular=",
+        "ID=chr1;Is_circular",
+    ],
+)
+def test_gff3_rejects_malformed_is_circular_metadata(
+    tmp_path: Path,
+    attributes: str,
+) -> None:
+    path = tmp_path / "malformed-circular.gff3"
+    path.write_text(
+        f"chr1\tsrc\tregion\t1\t100\t.\t+\t.\t{attributes}\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(AnnotationParseError, match="Is_circular"):
+        inspect_annotation_context(_resource(path, ResourceKind.GFF3))
+
+
 def test_gff3_ordinary_feature_id_is_outside_circular_observation_scope(
     tmp_path: Path,
 ) -> None:

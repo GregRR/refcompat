@@ -22,6 +22,7 @@ from refcompat.model.contracts import (
     ReferenceBaseRequirement,
     ReferenceBaseValidationCapability,
     Requirement,
+    SequenceIdentityAbsenceCapability,
     SequenceIdentityCapability,
     SequenceIdentityRequirement,
     SequenceLengthCapability,
@@ -162,6 +163,14 @@ def _classify_relationship(
     tuple[SequenceBindingId, ...],
 ]:
     if isinstance(requirement, SequencePresenceRequirement):
+        if isinstance(capability, SequenceIdentityAbsenceCapability):
+            return (
+                EvidenceKind.SEQUENCE_PRESENCE,
+                EvidenceStrength.TIER_A_CONCLUSIVE_CONTENT,
+                EvidencePolarity.CONTRADICTS,
+                EvidenceMethod.EXHAUSTIVE_SEQUENCE_IDENTITY_ABSENCE,
+                (),
+            )
         if not isinstance(capability, SequencePresenceCapability):
             raise ValueError("presence evidence requires a presence capability")
         binding = _named_binding(

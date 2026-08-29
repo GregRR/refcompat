@@ -28,6 +28,7 @@ from refcompat.model.contracts import (
     ReferenceBaseRequirement,
     ReferenceBaseValidationCapability,
     Requirement,
+    SequenceIdentityAbsenceCapability,
     SequenceIdentityCapability,
     SequenceIdentityRequirement,
     SequenceLengthCapability,
@@ -92,6 +93,19 @@ def _evaluate_presence(
     constraint: CompatibilityConstraint,
     requirement: SequencePresenceRequirement,
 ) -> ConstraintEvaluation:
+    absence_candidates = tuple(
+        capability
+        for capability in constraint.candidate_capabilities
+        if isinstance(capability, SequenceIdentityAbsenceCapability)
+        and capability_is_comparable(requirement, capability)
+    )
+    if absence_candidates:
+        return _result(
+            constraint,
+            ConstraintState.UNSATISFIED,
+            candidates=absence_candidates,
+        )
+
     candidates, used_alias = _named_candidates(
         constraint,
         requirement.sequence_name,
