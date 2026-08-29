@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+import pytest
+
 from refcompat.model.annotation import (
     AnnotationContextSnapshot,
     AnnotationSequenceUsage,
@@ -9,7 +11,11 @@ from refcompat.model.annotation import (
     Gff3FastaBoundary,
     Gff3SequenceRegion,
 )
-from refcompat.model.contracts import SequenceIdentityProvenance
+from refcompat.model.contracts import (
+    CapabilityId,
+    SequenceIdentityCapability,
+    SequenceIdentityProvenance,
+)
 from refcompat.model.evaluation import EvaluationRequest, EvaluationScope
 from refcompat.model.identity import (
     CollectionCompleteness,
@@ -20,6 +26,7 @@ from refcompat.model.identity import (
 from refcompat.model.reference_context import ReferenceContext
 from refcompat.model.resources import ArtifactIdentity, Resource, ResourceId, ResourceKind
 from refcompat.reasoning.annotation_binding import (
+    annotation_binding_identity_capabilities,
     annotation_embedded_identity_capabilities,
     derive_annotation_sequence_bindings,
 )
@@ -170,3 +177,93 @@ def test_gtf_never_exposes_embedded_fasta_identity_capability() -> None:
     )
 
     assert annotation_embedded_identity_capabilities(snapshot) == ()
+
+
+def test_gtf_can_bind_from_independently_content_derived_identity() -> None:
+    snapshot = AnnotationContextSnapshot(
+        _ANNOTATION,
+        ResourceKind.GTF,
+        feature_count=1,
+        sequence_usage=(AnnotationSequenceUsage("1", "1", 1, 1, 4, 1),),
+    )
+    capability = SequenceIdentityCapability(
+        CapabilityId("external-content:1"),
+        _ANNOTATION,
+        "1",
+        _MD5_ACGT,
+        SequenceIdentityProvenance.CONTENT_DERIVED,
+    )
+    context = _context(SnapshotSequence("chr1", 4, 0, md5=_MD5_ACGT))
+
+    bindings = derive_annotation_sequence_bindings(
+        snapshot,
+        context,
+        binding_identity_capabilities=(capability,),
+    )
+
+    assert len(bindings) == 1
+    assert bindings[0].local_sequence_name == "1"
+    assert bindings[0].anchor_sequence_name == "chr1"
+
+
+def test_additional_annotation_binding_identity_must_be_content_derived() -> None:
+    snapshot = _snapshot(embedded=())
+    capability = SequenceIdentityCapability(
+        CapabilityId("declared:1"),
+        _ANNOTATION,
+        "1",
+        _MD5_ACGT,
+        SequenceIdentityProvenance.DECLARED_METADATA,
+    )
+
+    with pytest.raises(ValueError, match="must be content-derived"):
+        annotation_binding_identity_capabilities(snapshot, (capability,))
+
+
+def test_additional_annotation_binding_identity_must_be_reference_relevant() -> None:
+    snapshot = _snapshot(embedded=())
+    capability = SequenceIdentityCapability(
+        CapabilityId("external-content:unused"),
+        _ANNOTATION,
+        "unused",
+        _MD5_ACGT,
+        SequenceIdentityProvenance.CONTENT_DERIVED,
+    )
+
+    with pytest.raises(ValueError, match="must be reference-relevant"):
+        annotation_binding_identity_capabilities(snapshot, (capability,))
+
+
+def test_additional_annotation_binding_identity_must_belong_to_annotation() -> None:
+    snapshot = _snapshot(embedded=())
+    capability = SequenceIdentityCapability(
+        CapabilityId("external-content:wrong-resource"),
+        ResourceId("other"),
+        "1",
+        _MD5_ACGT,
+        SequenceIdentityProvenance.CONTENT_DERIVED,
+    )
+
+    with pytest.raises(ValueError, match="must belong to the annotation"):
+        annotation_binding_identity_capabilities(snapshot, (capability,))
+
+
+def test_additional_annotation_binding_identity_ids_must_be_unique() -> None:
+    snapshot = _snapshot(embedded=())
+    first = SequenceIdentityCapability(
+        CapabilityId("external-content:duplicate"),
+        _ANNOTATION,
+        "1",
+        _MD5_ACGT,
+        SequenceIdentityProvenance.CONTENT_DERIVED,
+    )
+    second = SequenceIdentityCapability(
+        CapabilityId("external-content:duplicate"),
+        _ANNOTATION,
+        "1",
+        _MD5_TTTT,
+        SequenceIdentityProvenance.CONTENT_DERIVED,
+    )
+
+    with pytest.raises(ValueError, match="IDs must be unique"):
+        annotation_binding_identity_capabilities(snapshot, (first, second))

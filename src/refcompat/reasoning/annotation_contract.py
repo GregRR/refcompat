@@ -31,6 +31,7 @@ from refcompat.model.contracts import (
 from refcompat.model.reference_context import ReferenceContext, SequenceBinding
 from refcompat.model.resources import ResourceId
 from refcompat.reasoning.annotation_binding import (
+    annotation_binding_identity_capabilities,
     annotation_embedded_identity_capabilities,
     derive_annotation_sequence_bindings,
 )
@@ -41,8 +42,10 @@ from refcompat.reasoning.evidence import aggregate_constraint_evidence
 def build_annotation_contract(
     snapshot: AnnotationContextSnapshot,
     reference_context: ReferenceContext,
+    *,
+    binding_identity_capabilities: tuple[SequenceIdentityCapability, ...] = (),
 ) -> ResourceContract:
-    """Build sparse annotation requirements plus embedded content capabilities."""
+    """Build sparse annotation requirements plus permitted binding capabilities."""
 
     if snapshot.resource_id == reference_context.anchor_resource_id:
         raise ValueError("annotation contract resource cannot be the FASTA anchor")
@@ -61,6 +64,10 @@ def build_annotation_contract(
         for sequence_name in presence_names
     )
     identity_capabilities = annotation_embedded_identity_capabilities(snapshot)
+    binding_capabilities = annotation_binding_identity_capabilities(
+        snapshot,
+        binding_identity_capabilities,
+    )
     identity_requirements = tuple(
         SequenceIdentityRequirement(
             id=_requirement_id(
@@ -92,7 +99,7 @@ def build_annotation_contract(
     return ResourceContract(
         resource_id=snapshot.resource_id,
         requirements=(*presence_requirements, *identity_requirements, bounds_requirement),
-        capabilities=identity_capabilities,
+        capabilities=binding_capabilities,
     )
 
 
@@ -100,16 +107,29 @@ def project_annotation_contract(
     snapshot: AnnotationContextSnapshot,
     validation: AnnotationCoordinateValidationResult,
     reference_context: ReferenceContext,
+    *,
+    binding_identity_capabilities: tuple[SequenceIdentityCapability, ...] = (),
 ) -> AnnotationContractProjection:
     """Project annotation coordinates and embedded identities into generic reasoning.
 
-    Verified cross-name bindings are derived independently from relevant embedded
-    GFF3 sequence content and the complete FASTA anchor. If such bindings exist,
-    the supplied exhaustive validation must have used exactly those bindings.
+    Verified cross-name bindings are derived independently from permitted
+    annotation-owned content identities and the complete FASTA anchor. Embedded
+    GFF3 sequence content is one such source; callers may additionally supply
+    independently established content-derived identities for reference-relevant
+    annotation seqids. If bindings exist, the supplied exhaustive validation
+    must have used exactly those bindings.
     """
 
-    contract = build_annotation_contract(snapshot, reference_context)
-    sequence_bindings = derive_annotation_sequence_bindings(snapshot, reference_context)
+    contract = build_annotation_contract(
+        snapshot,
+        reference_context,
+        binding_identity_capabilities=binding_identity_capabilities,
+    )
+    sequence_bindings = derive_annotation_sequence_bindings(
+        snapshot,
+        reference_context,
+        binding_identity_capabilities=binding_identity_capabilities,
+    )
     _validate_inputs(snapshot, validation, reference_context, sequence_bindings)
 
     presence_requirements = tuple(

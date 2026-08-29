@@ -17,8 +17,11 @@ from refcompat.model.annotation import (
 from refcompat.model.annotation_contract import AnnotationContractProjection
 from refcompat.model.constraints import ConstraintState
 from refcompat.model.contracts import (
+    CapabilityId,
     CoordinateBoundsRequirement,
     ResourceContract,
+    SequenceIdentityCapability,
+    SequenceIdentityProvenance,
     SequenceIdentityRequirement,
     SequencePresenceRequirement,
 )
@@ -168,6 +171,96 @@ def test_sparse_annotation_accepts_fasta_superset() -> None:
         ConstraintState.SATISFIED,
         ConstraintState.SATISFIED,
     )
+
+
+def test_gtf_content_identity_can_supply_verified_alias_without_identity_requirement() -> None:
+    fasta = Resource(_FASTA, ResourceKind.FASTA, ArtifactIdentity(Path("anchor.fa")))
+    annotation = Resource(_ANNOTATION, ResourceKind.GTF, ArtifactIdentity(Path("genes.gtf")))
+    request = EvaluationRequest(
+        (fasta, annotation),
+        _FASTA,
+        EvaluationScope((_FASTA, _ANNOTATION)),
+    )
+    digest = Md5Digest("f1f8f4bf413b16ad135722aa4591043e")
+    anchor = SequenceCollectionSnapshot(
+        _FASTA,
+        CollectionCompleteness.COMPLETE,
+        sequences=(SnapshotSequence("chr1", 4, 0, md5=digest),),
+    )
+    context = build_reference_context(request, anchor)
+    snapshot = _snapshot(("1", 1, 1, 4))
+    feature = _feature(0, "1", 1, 4)
+    capability = SequenceIdentityCapability(
+        CapabilityId("external-content:1"),
+        _ANNOTATION,
+        "1",
+        digest,
+        SequenceIdentityProvenance.CONTENT_DERIVED,
+    )
+    bindings = derive_annotation_sequence_bindings(
+        snapshot,
+        context,
+        binding_identity_capabilities=(capability,),
+    )
+    validation = evaluate_annotation_coordinates(snapshot, (feature,), context, bindings)
+    projection = project_annotation_contract(
+        snapshot,
+        validation,
+        context,
+        binding_identity_capabilities=(capability,),
+    )
+
+    identity_requirements = tuple(
+        requirement
+        for requirement in projection.contract.requirements
+        if isinstance(requirement, SequenceIdentityRequirement)
+    )
+    assert identity_requirements == ()
+    assert projection.contract.capabilities == (capability,)
+    assert len(projection.sequence_bindings) == 1
+
+    bundle = reason_bundle(
+        request,
+        anchor,
+        (ResourceContract(_FASTA), projection.contract),
+        supplemental_capabilities=(projection.coordinate_bounds_capability,),
+    )
+    assert aggregate_bundle_verdict(bundle).verdict is CompatibilityVerdict.COMPATIBLE
+
+
+def test_gtf_external_identity_rejects_stale_unbound_validation() -> None:
+    fasta = Resource(_FASTA, ResourceKind.FASTA, ArtifactIdentity(Path("anchor.fa")))
+    annotation = Resource(_ANNOTATION, ResourceKind.GTF, ArtifactIdentity(Path("genes.gtf")))
+    request = EvaluationRequest(
+        (fasta, annotation),
+        _FASTA,
+        EvaluationScope((_FASTA, _ANNOTATION)),
+    )
+    digest = Md5Digest("f1f8f4bf413b16ad135722aa4591043e")
+    anchor = SequenceCollectionSnapshot(
+        _FASTA,
+        CollectionCompleteness.COMPLETE,
+        sequences=(SnapshotSequence("chr1", 4, 0, md5=digest),),
+    )
+    context = build_reference_context(request, anchor)
+    snapshot = _snapshot(("1", 1, 1, 4))
+    feature = _feature(0, "1", 1, 4)
+    capability = SequenceIdentityCapability(
+        CapabilityId("external-content:stale"),
+        _ANNOTATION,
+        "1",
+        digest,
+        SequenceIdentityProvenance.CONTENT_DERIVED,
+    )
+    stale_validation = evaluate_annotation_coordinates(snapshot, (feature,), context)
+
+    with pytest.raises(ValueError, match="exactly the verified sequence bindings"):
+        project_annotation_contract(
+            snapshot,
+            stale_validation,
+            context,
+            binding_identity_capabilities=(capability,),
+        )
 
 
 def test_unfamiliar_seqid_remains_indeterminate_not_proven_absent() -> None:
