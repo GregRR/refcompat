@@ -34,4 +34,6 @@ If a supporting document and `DESIGN.md` disagree, `DESIGN.md` wins until the di
 - [`alignment-dictionary-relationships.md`](alignment-dictionary-relationships.md) — descriptive BAM/CRAM header membership, naming, shared-order, M5-content, and conflict dimensions.
 - [`cram-offline-reference.md`](cram-offline-reference.md) — conservative offline handling for future CRAM operations that may require reference content.
 - [`alignment-non-mutation-boundary.md`](alignment-non-mutation-boundary.md) — Milestone 4 read-only diagnostic boundary for BAM/CRAM: no header rewriting, renaming, remapping, or realignment.
+- [`annotation-coordinate-compatibility.md`](annotation-coordinate-compatibility.md) — Milestone 5 sparse GTF/GFF3 coordinate, sequence-region, embedded-content, and circular-origin compatibility boundary.
+- [`ucsc-preflight-profile.md`](ucsc-preflight-profile.md) — Milestone 6 explicit UCSC target, provider-snapshot, authoritative-alias, and deterministic online/offline profile boundary.
 - [`conflict-core.md`](conflict-core.md) — sixth Milestone 2 compact decisive conflict/evidence-core extraction boundary.

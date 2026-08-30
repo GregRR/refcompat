@@ -619,6 +619,121 @@ Those belong to dedicated annotation validators, later transformations, or expli
 
 ---
 
+## RCHECK-070 — UCSC preflight profile
+
+### Purpose
+
+Determine whether in-scope resources can satisfy the reference-coordinate and
+sequence-naming requirements of one explicitly selected native UCSC Genome
+Browser database without treating UCSC metadata or aliases as biological
+sequence identity.
+
+### Explicit target
+
+The caller must select the UCSC database explicitly. The profile never infers a
+`db` from filenames, assembly labels, species, coordinate ranges, chromosome
+style, or other heuristic context. Those observations may remain provenance but
+cannot select or authenticate the target.
+
+### Provider snapshot
+
+Reasoning consumes a deterministic provider snapshot that keeps separate:
+
+- selected UCSC database identity;
+- canonical sequence names and lengths;
+- authoritative sequence aliases and authority columns;
+- content-derived identity for provider target sequences when available;
+- completeness of the sequence catalog, alias set, and identity coverage;
+- source/freshness provenance.
+
+Provider data that cannot be shown to belong to the selected database context
+must not be silently combined. Malformed or cross-wired provider input is an
+acquisition/input problem rather than evidence that the genomic resources are
+biologically incompatible.
+
+### UCSC target ↔ FASTA anchor relationship
+
+A fully positive UCSC-target relationship requires independently comparable
+content-derived identity between each needed UCSC target sequence and exactly
+one sequence in the complete selected FASTA anchor. Exact names, matching
+lengths, database labels, assembly accessions, download URLs, and aliases do not
+establish this relationship.
+
+The complete FASTA is searched before explicit anchor sequence scope is applied.
+Scope may hide a usable target but cannot manufacture target uniqueness by
+hiding duplicate matching content. A provider-target identity proves a hard
+absence contradiction only when a comparable identity scheme covers every
+sequence in the complete FASTA anchor and no anchor sequence matches it. A
+mismatch against merely the same-named anchor sequence is insufficient when
+another anchor sequence could still match. Missing, incompletely comparable, or
+ambiguous identity remains unresolved.
+
+### Authoritative alias relationship
+
+A UCSC-authoritative alias can resolve a resource-local name only when:
+
+1. the alias belongs to the selected database context;
+2. it maps uniquely to one canonical UCSC target in the complete relevant alias
+   evidence;
+3. that UCSC target has already been content-bound to exactly one FASTA-anchor
+   sequence;
+4. the target remains in explicit scope; and
+5. no stronger content evidence contradicts the relationship.
+
+The alias is naming evidence. It does not become a refget/MD5 identity for the
+peer resource. Familiar string transforms such as `1` ↔ `chr1`, `MT` ↔ `chrM`,
+or accession-version stripping remain unsupported without evidence.
+
+A missing alias, even from a complete provider alias table, does not prove that
+the underlying biological sequence is absent or different. It establishes only
+that this provider snapshot did not declare the naming relationship.
+
+### Profile projection
+
+Core-format requirements remain intact. The profile may add
+`RequirementOrigin.PROFILE` requirements and evidence-backed sequence
+relationships needed to establish the UCSC target, then reuse generic/core
+presence, length, identity, coordinate-bounds, VCF REF, BAM/CRAM dictionary,
+evidence, finding, and verdict behavior.
+
+Profile logic must not suppress a core-format requirement, create peer-owned
+content identity from provider metadata, or introduce UCSC-specific constraint
+or verdict policy. Existing direct content contradictions retain precedence.
+
+### Online/offline rule
+
+Provider acquisition occurs outside scientific reasoning. A fixed provider
+snapshot must produce the same result regardless of network availability. A
+network failure or unavailable enrichment may leave a mandatory UCSC
+relationship unresolved and therefore contribute to `INDETERMINATE`; it is not
+an `INCOMPATIBLE` result by itself. Automated exit tests use frozen
+redistributable provider fixtures rather than live services.
+
+### Verdict effect
+
+- `COMPATIBLE` requires every mandatory core/profile relationship to be
+  satisfied, including the required FASTA-to-UCSC target-content bridge.
+- `COMPATIBLE_WITH_CONDITIONS` may qualify only an otherwise-positive result
+  under explicit scope; it does not convert missing mandatory target identity
+  into a positive conclusion.
+- `INCOMPATIBLE` requires a real contradiction, such as exhaustive comparable
+  anchor identity proving required UCSC target content absent, or an existing
+  core hard conflict. A mismatch against only a same-named anchor sequence is
+  not sufficient.
+- `INDETERMINATE` covers insufficient target identity, ambiguous/incomplete
+  alias evidence, unavailable required provider evidence, and other unresolved
+  mandatory target relationships.
+
+### Initial M6 non-goals
+
+The first profile does not implement bigBed/bigWig reference checks, full track
+hub or assembly-hub/GenArk reasoning, persistent provider caching, automatic
+renaming/conversion, or structural hub validation. Use UCSC tooling such as
+`hubCheck` for structural track-hub integrity where appropriate.
+
+See [`ucsc-preflight-profile.md`](ucsc-preflight-profile.md) for the detailed
+Milestone 6 contract and primary UCSC references.
+
 ## RCHECK-100 — Whole-bundle reference-context coherence
 
 ### Purpose

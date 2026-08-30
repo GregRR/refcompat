@@ -1,6 +1,6 @@
 # GTF/GFF3 annotation coordinate compatibility
 
-**Status:** Milestone 5 implementation and exit coverage complete; external review pending.
+**Status:** Milestone 5 complete, including external review and targeted follow-up.
 
 RCHECK-060 asks a directional question: can the reference-coordinate statements
 made by this annotation be represented against the explicitly selected FASTA
@@ -12,7 +12,7 @@ The normative check contract remains in
 standards-derived invariants that should remain visible while Milestone 5 is
 implemented.
 
-The streaming observation boundary, format-neutral coordinate-bounds reasoning layer, ordinary annotation-to-FASTA validation, GFF3 sequence-region/provenance handling, embedded-FASTA identity/binding, landmark-aware circular-origin reasoning, and integration/adversarial exit suite are now implemented. Feature rows remain iterable in file order while compact snapshots retain per-seqid summaries and small reference-relevant GFF3/GTF metadata. Feature-used seqids plus any sequence-region-only seqids create mandatory presence requirements. Feature intervals and declared GFF3 regions project together through one anchor-owned coordinate capability, while relevant embedded GFF3 FASTA sequences can add content-derived identity requirements/capabilities and verified cross-name bindings. Independently established annotation-owned content identities may also establish a conservative binding or, under complete anchor identity coverage, prove that required sequence content is absent without inventing identity from GTF/GFF3 metadata itself. External milestone-boundary review confirmed those identity semantics and identified one circular-landmark `ID == seqid` proxy defect; the structural `region` correction now awaits targeted follow-up review before Milestone 6.
+The streaming observation boundary, format-neutral coordinate-bounds reasoning layer, ordinary annotation-to-FASTA validation, GFF3 sequence-region/provenance handling, embedded-FASTA identity/binding, landmark-aware circular-origin reasoning, and integration/adversarial exit suite are now implemented. Feature rows remain iterable in file order while compact snapshots retain per-seqid summaries and small reference-relevant GFF3/GTF metadata. Feature-used seqids plus any sequence-region-only seqids create mandatory presence requirements. Feature intervals and declared GFF3 regions project together through one anchor-owned coordinate capability, while relevant embedded GFF3 FASTA sequences can add content-derived identity requirements/capabilities and verified cross-name bindings. Independently established annotation-owned content identities may also establish a conservative binding or, under complete anchor identity coverage, prove that required sequence content is absent without inventing identity from GTF/GFF3 metadata itself. External milestone-boundary review confirmed those identity semantics and identified one circular-landmark `ID == seqid` proxy defect; the structural `region` correction passed targeted follow-up review and closed Milestone 5.
 
 ## Native coordinate model
 
