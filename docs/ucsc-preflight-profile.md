@@ -1,6 +1,6 @@
 # UCSC preflight profile
 
-**Status:** Milestone 6 scientific/profile contract pinned; implementation pending.
+**Status:** Milestone 6 scientific/profile contract pinned; immutable provider-snapshot model implemented; binding/profile reasoning pending.
 
 RCHECK-070 defines RefCompat's first ecosystem profile. The profile asks whether
 in-scope resources can satisfy the reference-coordinate and naming requirements
@@ -90,6 +90,25 @@ user's genomic resources are biologically incompatible.
 The snapshot is evidence, not authority over the selected FASTA. It never
 replaces `ReferenceContext` or allows peer/provider resources to vote on the
 anchor.
+
+The implemented snapshot boundary lives in `refcompat.profiles.ucsc` rather than
+in the generic model. `UcscProviderSnapshot` retains the selected database plus
+an explicit opaque provider-context identifier, three independent completeness
+dimensions, canonical `UcscSequence` values, `UcscSequenceAlias` relationships,
+and timezone-aware `UcscProviderSource` provenance. Sequence and
+alias facts cite the exact source IDs that supplied their catalog, identity, or
+alias evidence. Construction rejects source/database or same-database/provider-context
+cross-wiring, unknown or wrong-dimension provenance, duplicate canonical names,
+dangling alias targets, known alias completeness without alias-source evidence,
+and completeness claims inconsistent with the represented catalog/identity
+coverage.
+
+The snapshot deliberately preserves duplicate biological content under distinct
+canonical names and aliases that resolve to multiple canonical targets. Those
+are scientifically meaningful ambiguity cases for later reasoning; the provider
+model must not manufacture uniqueness by deleting them. It also keeps canonical
+lookup separate from alias lookup, so merely querying the snapshot cannot turn an
+alternate name into a binding.
 
 ## Anchor-to-UCSC target identity
 

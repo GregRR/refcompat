@@ -105,7 +105,7 @@ The roadmap intentionally avoids turning RefCompat into a universal genomics val
 
 **Goal:** implement a conservative `ucsc-preflight` profile for an explicitly selected native UCSC Genome Browser database without allowing provider metadata, aliases, or familiar names to become sequence identity.
 
-**Implementation status:** scientific/profile contract pinned; implementation not yet started.
+**Implementation status:** scientific/profile contract pinned; immutable UCSC provider-snapshot model and adversarial model invariants implemented; authoritative alias-to-anchor reasoning and profile projection remain pending.
 
 Committed scope:
 
