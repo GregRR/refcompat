@@ -146,16 +146,16 @@ def inspect_annotation_context(resource: Resource) -> AnnotationContextSnapshot:
                     circular_feature_count=1 if event.is_circular else 0,
                     first_circular_feature_line=event.line_number if event.is_circular else None,
                     circular_landmark_candidate_count=(
-                        1 if _is_circular_landmark_candidate(event) else 0
+                        1 if event.is_circular_landmark_candidate else 0
                     ),
                     first_circular_landmark_start=(
-                        event.start if _is_circular_landmark_candidate(event) else None
+                        event.start if event.is_circular_landmark_candidate else None
                     ),
                     first_circular_landmark_end=(
-                        event.end if _is_circular_landmark_candidate(event) else None
+                        event.end if event.is_circular_landmark_candidate else None
                     ),
                     first_circular_landmark_line=(
-                        event.line_number if _is_circular_landmark_candidate(event) else None
+                        event.line_number if event.is_circular_landmark_candidate else None
                     ),
                 )
             else:
@@ -168,7 +168,7 @@ def inspect_annotation_context(resource: Resource) -> AnnotationContextSnapshot:
                     accumulator.circular_feature_count += 1
                     if accumulator.first_circular_feature_line is None:
                         accumulator.first_circular_feature_line = event.line_number
-                if _is_circular_landmark_candidate(event):
+                if event.is_circular_landmark_candidate:
                     accumulator.circular_landmark_candidate_count += 1
                     if accumulator.first_circular_landmark_line is None:
                         accumulator.first_circular_landmark_start = event.start
@@ -676,10 +676,6 @@ def _decode_gff3_attribute_value(raw_value: str, *, line_number: int, path: Path
         raise AnnotationParseError(
             f"GFF3 attribute percent-encoding is not valid UTF-8 at line {line_number}: {path}"
         ) from exc
-
-
-def _is_circular_landmark_candidate(feature: AnnotationFeatureRecord) -> bool:
-    return feature.is_circular and feature.feature_id == feature.sequence_name
 
 
 def _require_annotation_kind(resource: Resource) -> None:

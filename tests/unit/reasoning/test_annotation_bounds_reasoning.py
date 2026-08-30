@@ -72,6 +72,7 @@ def _feature(
     end: int,
     *,
     circular: bool = False,
+    feature_type: str = "gene",
     feature_id: str | None = None,
 ) -> AnnotationFeatureRecord:
     return AnnotationFeatureRecord(
@@ -80,7 +81,7 @@ def _feature(
         ordinal + 1,
         sequence_name,
         sequence_name,
-        "gene",
+        feature_type,
         start,
         end,
         is_circular=circular,
@@ -208,7 +209,7 @@ def test_gff3_landmark_establishes_valid_circular_origin_wrap() -> None:
     result = evaluate_annotation_coordinates(
         snapshot,
         (
-            _feature(0, "chrM", 1, 100, circular=True, feature_id="chrM"),
+            _feature(0, "chrM", 1, 100, circular=True, feature_type="region", feature_id="chrM"),
             _feature(1, "chrM", 90, 120, feature_id="gene1"),
         ),
         _context(("chrM", 100)),
@@ -231,7 +232,7 @@ def test_gff3_landmark_length_mismatch_keeps_wrap_unresolved() -> None:
     result = evaluate_annotation_coordinates(
         snapshot,
         (
-            _feature(0, "chrM", 1, 100, circular=True, feature_id="chrM"),
+            _feature(0, "chrM", 1, 100, circular=True, feature_type="region", feature_id="chrM"),
             _feature(1, "chrM", 90, 120),
         ),
         _context(("chrM", 200)),
@@ -254,7 +255,7 @@ def test_gff3_cross_name_binding_can_establish_circular_landmark() -> None:
     result = evaluate_annotation_coordinates(
         snapshot,
         (
-            _feature(0, "1", 1, 100, circular=True, feature_id="1"),
+            _feature(0, "1", 1, 100, circular=True, feature_type="region", feature_id="1"),
             _feature(1, "1", 90, 120),
         ),
         _context(("chr1", 100)),
@@ -277,8 +278,8 @@ def test_gff3_ambiguous_landmark_candidates_keep_wrap_unresolved() -> None:
     result = evaluate_annotation_coordinates(
         snapshot,
         (
-            _feature(0, "chr1", 1, 100, circular=True, feature_id="chr1"),
-            _feature(1, "chr1", 1, 100, circular=True, feature_id="chr1"),
+            _feature(0, "chr1", 1, 100, circular=True, feature_type="region", feature_id="chr1"),
+            _feature(1, "chr1", 1, 100, circular=True, feature_type="region", feature_id="chr1"),
             _feature(2, "chr1", 90, 120),
         ),
         _context(("chr1", 100)),
@@ -299,7 +300,7 @@ def test_gff3_non_origin_landmark_candidate_keeps_wrap_unresolved() -> None:
     result = evaluate_annotation_coordinates(
         snapshot,
         (
-            _feature(0, "chr1", 10, 100, circular=True, feature_id="chr1"),
+            _feature(0, "chr1", 10, 100, circular=True, feature_type="region", feature_id="chr1"),
             _feature(1, "chr1", 90, 120),
         ),
         _context(("chr1", 100)),
@@ -498,7 +499,7 @@ def test_gff3_valid_wrap_can_extend_beyond_declared_region() -> None:
     result = evaluate_annotation_coordinates(
         snapshot,
         (
-            _feature(0, "chr1", 1, 100, circular=True, feature_id="chr1"),
+            _feature(0, "chr1", 1, 100, circular=True, feature_type="region", feature_id="chr1"),
             _feature(1, "chr1", 90, 120),
         ),
         _context(("chr1", 100)),
@@ -522,7 +523,15 @@ def test_gff3_nonwrap_region_violation_is_invalid_even_with_landmark() -> None:
         evaluate_annotation_coordinates(
             snapshot,
             (
-                _feature(0, "chr1", 1, 100, circular=True, feature_id="chr1"),
+                _feature(
+                    0,
+                    "chr1",
+                    1,
+                    100,
+                    circular=True,
+                    feature_type="region",
+                    feature_id="chr1",
+                ),
                 _feature(1, "chr1", 10, 15),
             ),
             _context(("chr1", 100)),
@@ -608,7 +617,7 @@ def test_gff3_valid_wrap_can_extend_beyond_matching_embedded_fasta() -> None:
     result = evaluate_annotation_coordinates(
         snapshot,
         (
-            _feature(0, "chr1", 1, 100, circular=True, feature_id="chr1"),
+            _feature(0, "chr1", 1, 100, circular=True, feature_type="region", feature_id="chr1"),
             _feature(1, "chr1", 90, 120),
         ),
         _context(("chr1", 100)),
@@ -637,7 +646,15 @@ def test_gff3_circular_landmark_must_match_embedded_sequence_length() -> None:
         evaluate_annotation_coordinates(
             snapshot,
             (
-                _feature(0, "chr1", 1, 100, circular=True, feature_id="chr1"),
+                _feature(
+                    0,
+                    "chr1",
+                    1,
+                    100,
+                    circular=True,
+                    feature_type="region",
+                    feature_id="chr1",
+                ),
                 _feature(1, "chr1", 90, 120),
             ),
             _context(("chr1", 100)),
@@ -655,7 +672,15 @@ def test_gff3_rejects_circular_encoding_beyond_one_landmark_wrap() -> None:
         evaluate_annotation_coordinates(
             snapshot,
             (
-                _feature(0, "chr1", 1, 100, circular=True, feature_id="chr1"),
+                _feature(
+                    0,
+                    "chr1",
+                    1,
+                    100,
+                    circular=True,
+                    feature_type="region",
+                    feature_id="chr1",
+                ),
                 _feature(1, "chr1", 90, 201),
             ),
             _context(("chr1", 100)),
@@ -673,7 +698,15 @@ def test_gff3_rejects_wrap_that_spans_more_than_full_landmark() -> None:
         evaluate_annotation_coordinates(
             snapshot,
             (
-                _feature(0, "chr1", 1, 100, circular=True, feature_id="chr1"),
+                _feature(
+                    0,
+                    "chr1",
+                    1,
+                    100,
+                    circular=True,
+                    feature_type="region",
+                    feature_id="chr1",
+                ),
                 _feature(1, "chr1", 10, 120),
             ),
             _context(("chr1", 100)),
@@ -691,7 +724,15 @@ def test_gff3_rejects_circular_encoding_that_starts_beyond_landmark() -> None:
         evaluate_annotation_coordinates(
             snapshot,
             (
-                _feature(0, "chr1", 1, 100, circular=True, feature_id="chr1"),
+                _feature(
+                    0,
+                    "chr1",
+                    1,
+                    100,
+                    circular=True,
+                    feature_type="region",
+                    feature_id="chr1",
+                ),
                 _feature(1, "chr1", 110, 120),
             ),
             _context(("chr1", 100)),

@@ -4,7 +4,7 @@ The evaluator consumes RefCompat-owned annotation observations plus the explicit
 FASTA reference context. It resolves seqids by exact name or explicit verified
 sequence binding and never infers aliases. GFF3 circular-origin coordinates use
 the standard landmark relationship only when ``Is_circular=true`` is carried by
-a feature whose decoded ``ID`` exactly equals the logical column-1 seqid; other
+a ``region`` feature that can structurally represent the column-1 landmark; other
 circular-feature observations do not weaken ordinary bounds checks.
 """
 
@@ -61,9 +61,9 @@ def evaluate_annotation_coordinates(
     declarations beyond the selected anchor are hard structural conflicts.
 
     The GFF3 circular-origin exception is recognized only when ``Is_circular``
-    is carried by a feature whose decoded ``ID`` exactly equals the logical
-    column-1 seqid, establishing a landmark candidate rather than merely an
-    arbitrary circular child feature. A unique candidate beginning at position
+    is carried by a ``region`` feature, establishing a structural landmark
+    candidate rather than merely an arbitrary circular child feature. A unique
+    candidate beginning at position
     one supplies the landmark length used by the standard wrap encoding. It is
     accepted against the anchor only when that length equals the resolved FASTA
     sequence length; otherwise a syntactically plausible wrap remains
@@ -178,7 +178,7 @@ def evaluate_annotation_coordinates(
         )
         by_state[check.state] += 1
 
-        is_landmark_candidate = feature.is_circular and feature.feature_id == feature.sequence_name
+        is_landmark_candidate = feature.is_circular_landmark_candidate
         observed = stream_usage.get(feature.sequence_name)
         if observed is None:
             stream_usage[feature.sequence_name] = [

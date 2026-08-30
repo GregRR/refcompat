@@ -48,6 +48,12 @@ class AnnotationFeatureRecord:
         if self.feature_id == "":
             raise ValueError("annotation feature ID must not be empty")
 
+    @property
+    def is_circular_landmark_candidate(self) -> bool:
+        """Whether this row can structurally represent the circular landmark."""
+
+        return self.is_circular and self.feature_type == "region"
+
 
 @dataclass(frozen=True, slots=True)
 class AnnotationSequenceUsage:

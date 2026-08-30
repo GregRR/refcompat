@@ -98,7 +98,7 @@ def test_streamed_gff3_landmark_allows_valid_circular_origin_wrap(tmp_path: Path
     path = tmp_path / "circular.gff3"
     path.write_text(
         "##gff-version 3\n"
-        "chrM\tsrc\tregion\t1\t100\t.\t+\t.\tID=chrM;Is_circular=true\n"
+        "chrM\tsrc\tregion\t1\t100\t.\t+\t.\tID=chrM:1..100;Is_circular=true\n"
         "chrM\tsrc\tgene\t90\t120\t.\t+\t.\tID=g1\n",
         encoding="utf-8",
     )
@@ -125,13 +125,13 @@ def test_streamed_gff3_landmark_allows_valid_circular_origin_wrap(tmp_path: Path
     assert aggregate_bundle_verdict(bundle).verdict is CompatibilityVerdict.COMPATIBLE
 
 
-def test_streamed_gff3_decoded_seqid_uses_column9_landmark_id_rules(
+def test_streamed_gff3_region_landmark_does_not_require_id_equal_seqid(
     tmp_path: Path,
 ) -> None:
     path = tmp_path / "encoded-circular.gff3"
     path.write_text(
         "##gff-version 3\n"
-        "chr%2F1\tsrc\tregion\t1\t100\t.\t+\t.\tID=chr/1;Is_circular=true\n"
+        "chr%2F1\tsrc\tregion\t1\t100\t.\t+\t.\tID=region0;Is_circular=true\n"
         "chr%2F1\tsrc\tgene\t90\t120\t.\t+\t.\tID=g1\n",
         encoding="utf-8",
     )
@@ -164,7 +164,7 @@ def test_streamed_gff3_circular_child_does_not_create_landmark_exception(
     path = tmp_path / "not-landmark.gff3"
     path.write_text(
         "##gff-version 3\n"
-        "chrM\tsrc\tgene\t1\t100\t.\t+\t.\tID=g0;Is_circular=true\n"
+        "chrM\tsrc\tgene\t1\t100\t.\t+\t.\tID=chrM;Is_circular=true\n"
         "chrM\tsrc\tgene\t90\t120\t.\t+\t.\tID=g1\n",
         encoding="utf-8",
     )
