@@ -15,6 +15,8 @@ from refcompat.model.contracts import (
     ReferenceBaseValidationCapability,
     Requirement,
     RequirementId,
+    SequenceBindingRequirement,
+    SequenceBindingValidationCapability,
     SequenceIdentityAbsenceCapability,
     SequenceIdentityCapability,
     SequenceIdentityProvenance,
@@ -42,6 +44,7 @@ class ConstraintRule(StrEnum):
     SEQUENCE_ORDER = "sequence_order"
     COORDINATE_BOUNDS = "coordinate_bounds"
     REFERENCE_BASES = "reference_bases"
+    SEQUENCE_BINDING = "sequence_binding"
 
 
 class ConstraintState(StrEnum):
@@ -59,6 +62,7 @@ class SatisfactionMode(StrEnum):
     EXACT = "exact"
     VERIFIED_ALIAS = "verified_alias"
     VERIFIED_SEQUENCE_IDENTITY = "verified_sequence_identity"
+    VERIFIED_SEQUENCE_BINDING = "verified_sequence_binding"
     VERIFIED_SUBSET = "verified_subset"
     EXHAUSTIVE_DIRECT = "exhaustive_direct"
 
@@ -157,6 +161,8 @@ def constraint_rule_for_requirement(requirement: Requirement) -> ConstraintRule:
         return ConstraintRule.SEQUENCE_IDENTITY
     if isinstance(requirement, SequenceOrderRequirement):
         return ConstraintRule.SEQUENCE_ORDER
+    if isinstance(requirement, SequenceBindingRequirement):
+        return ConstraintRule.SEQUENCE_BINDING
     if isinstance(requirement, CoordinateBoundsRequirement):
         return ConstraintRule.COORDINATE_BOUNDS
     if isinstance(requirement, ReferenceBaseRequirement):
@@ -189,6 +195,13 @@ def capability_is_comparable(requirement: Requirement, capability: Capability) -
         assert_never(requirement.identity)
     if isinstance(requirement, SequenceOrderRequirement):
         return isinstance(capability, SequenceOrderCapability)
+    if isinstance(requirement, SequenceBindingRequirement):
+        return (
+            isinstance(capability, SequenceBindingValidationCapability)
+            and capability.resource_id == requirement.anchor_resource_id
+            and capability.subject_resource_id == requirement.resource_id
+            and capability.sequence_name == requirement.sequence_name
+        )
     if isinstance(requirement, CoordinateBoundsRequirement):
         return (
             isinstance(capability, CoordinateBoundsValidationCapability)
@@ -267,6 +280,11 @@ def _binding_is_relevant_to_requirement(
         return binding.local_sequence_name == requirement.sequence_name
     if isinstance(requirement, SequenceOrderRequirement):
         return binding.local_sequence_name in requirement.sequence_names
+    if isinstance(requirement, SequenceBindingRequirement):
+        return (
+            binding.local_sequence_name == requirement.sequence_name
+            and binding.anchor_resource_id == requirement.anchor_resource_id
+        )
     if isinstance(requirement, (CoordinateBoundsRequirement, ReferenceBaseRequirement)):
         return False
     assert_never(requirement)

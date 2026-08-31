@@ -18,6 +18,7 @@ from refcompat.model.contracts import (
     ReferenceBaseRequirement,
     Requirement,
     RequirementId,
+    SequenceBindingRequirement,
     SequenceIdentityRequirement,
     SequenceLengthRequirement,
     SequenceOrderRequirement,
@@ -183,6 +184,8 @@ def _conflict_kind(requirement: Requirement) -> FindingKind:
         return FindingKind.SEQUENCE_LENGTH_CONFLICT
     if isinstance(requirement, SequenceIdentityRequirement):
         return FindingKind.SEQUENCE_IDENTITY_CONFLICT
+    if isinstance(requirement, SequenceBindingRequirement):
+        return FindingKind.SEQUENCE_BINDING_CONFLICT
     if isinstance(requirement, SequenceOrderRequirement):
         return FindingKind.SEQUENCE_ORDER_CONFLICT
     if isinstance(requirement, CoordinateBoundsRequirement):

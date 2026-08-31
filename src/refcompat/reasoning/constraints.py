@@ -28,6 +28,9 @@ from refcompat.model.contracts import (
     ReferenceBaseRequirement,
     ReferenceBaseValidationCapability,
     Requirement,
+    SequenceBindingRequirement,
+    SequenceBindingValidationCapability,
+    SequenceBindingValidationState,
     SequenceIdentityAbsenceCapability,
     SequenceIdentityCapability,
     SequenceIdentityRequirement,
@@ -82,6 +85,8 @@ def evaluate_constraint(constraint: CompatibilityConstraint) -> ConstraintEvalua
         return _evaluate_identity(constraint, requirement)
     if isinstance(requirement, SequenceOrderRequirement):
         return _evaluate_order(constraint, requirement)
+    if isinstance(requirement, SequenceBindingRequirement):
+        return _evaluate_sequence_binding(constraint, requirement)
     if isinstance(requirement, CoordinateBoundsRequirement):
         return _evaluate_coordinate_bounds(constraint, requirement)
     if isinstance(requirement, ReferenceBaseRequirement):
@@ -161,6 +166,51 @@ def _evaluate_identity(
         expected=requirement.identity,
         values=tuple(capability.identity for capability in candidates),
         satisfied_mode=SatisfactionMode.VERIFIED_SEQUENCE_IDENTITY,
+    )
+
+
+def _evaluate_sequence_binding(
+    constraint: CompatibilityConstraint,
+    requirement: SequenceBindingRequirement,
+) -> ConstraintEvaluation:
+    candidates = tuple(
+        capability
+        for capability in constraint.candidate_capabilities
+        if isinstance(capability, SequenceBindingValidationCapability)
+        and capability_is_comparable(requirement, capability)
+    )
+    if not candidates:
+        return _result(constraint, ConstraintState.UNRESOLVED)
+
+    states = {capability.state for capability in candidates}
+    if len(states) != 1:
+        return _result(constraint, ConstraintState.UNRESOLVED, candidates=candidates)
+
+    state = next(iter(states))
+    if state in (
+        SequenceBindingValidationState.CONTENT_CONFLICT,
+        SequenceBindingValidationState.PROVEN_ABSENT,
+    ):
+        return _result(constraint, ConstraintState.UNSATISFIED, candidates=candidates)
+
+    bindings = tuple(
+        binding
+        for binding in constraint.sequence_bindings
+        if binding.local_sequence_name == requirement.sequence_name
+        and binding.anchor_resource_id == requirement.anchor_resource_id
+    )
+    if len(bindings) != 1:
+        return _result(constraint, ConstraintState.UNRESOLVED)
+    binding = bindings[0]
+    if any(
+        capability.anchor_sequence_name != binding.anchor_sequence_name for capability in candidates
+    ):
+        return _result(constraint, ConstraintState.UNRESOLVED, candidates=candidates)
+    return _result(
+        constraint,
+        ConstraintState.SATISFIED,
+        mode=SatisfactionMode.VERIFIED_SEQUENCE_BINDING,
+        candidates=candidates,
     )
 
 

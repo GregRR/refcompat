@@ -251,7 +251,7 @@ Examples of requirements:
 - derived artifact must correspond to exact source representation;
 - order must match when explicitly required.
 
-Requirements record origin (`CORE_FORMAT`, `PROFILE`, `USER_POLICY`) and level (`MANDATORY`, `ADVISORY`). The typed implementation covers sequence presence, exact length, content identity (refget or M5/MD5 without cross-algorithm comparison), exact local sequence order, scalable exhaustive coordinate-bounds validation, and scalable exhaustive reference-base consistency. A missing capability is not proof of absence. Absence requires an explicit negative fact, including the reasoner-owned `SequenceIdentityAbsenceCapability` when at least one independently established content-identity scheme has complete anchor coverage and no local content-derived identity positively matches anywhere in the full anchor.
+Requirements record origin (`CORE_FORMAT`, `PROFILE`, `USER_POLICY`) and level (`MANDATORY`, `ADVISORY`). The typed implementation covers sequence presence, exact length, content identity (refget or M5/MD5 without cross-algorithm comparison), explicit evidence-backed local-to-anchor binding, exact local sequence order, scalable exhaustive coordinate-bounds validation, and scalable exhaustive reference-base consistency. A missing capability is not proof of absence. Absence requires an explicit negative fact, including the reasoner-owned `SequenceIdentityAbsenceCapability` when at least one independently established content-identity scheme has complete anchor coverage and no local content-derived identity positively matches anywhere in the full anchor.
 
 ## Typed requirements and capabilities
 
@@ -261,7 +261,7 @@ Avoid generic string dictionaries. Prefer typed variants such as:
 SequencePresenceRequirement
 SequenceLengthRequirement
 SequenceIdentityRequirement
-SequenceNameResolutionRequirement
+SequenceBindingRequirement
 CoordinateBoundsRequirement
 ReferenceBaseRequirement
 DerivedFromRequirement
@@ -271,6 +271,16 @@ SequenceOrderRequirement
 and corresponding capability types.
 
 Typed variants prevent comparisons between unrelated scientific constraints and make type checking useful.
+
+Milestone 6 adds `SequenceBindingRequirement` for profile or policy contexts in
+which exact-name availability is insufficient and the local-to-anchor
+relationship itself must be authenticated. It is evaluated only against an
+anchor-owned pair-derived `SequenceBindingValidationCapability`; unresolved
+relationships are represented by absence of that capability rather than a
+negative assertion. A `BOUND` validation requires an explicit `SequenceBinding`,
+while `PROVEN_ABSENT` is reserved for a producer that has exhaustive content
+evidence for the required external target. The generic model contains no UCSC
+identifiers or alias-table rules.
 
 `ReferenceBaseRequirement` is resource-level, names the selected anchor resource explicitly, and carries the exhaustive checked-record count rather than expanding into one object per locus. `ReferenceBaseValidationCapability` is owned by that anchor, names the subject resource, and partitions the exhaustive check into match, mismatch, and unresolved counts. Generic comparability requires the capability owner to equal the requirement's named anchor, so pair-derived evidence from another FASTA cannot satisfy the requirement. Generic evaluation gives mismatch Tier-A precedence, leaves unresolved-only checks unresolved without fabricated evidence, and treats an empty record set as not applicable. Format-specific local mismatch/bounds/name details remain in the producing validation model. VCF additionally exposes `VcfRefConflictPatternSummary` as descriptive format-specific interpretation; it is not a generic requirement, capability, finding, or verdict state.
 
@@ -292,11 +302,12 @@ Mechanism belongs in a separate `SatisfactionMode`, for example:
 - `EXACT`
 - `VERIFIED_ALIAS`
 - `VERIFIED_SEQUENCE_IDENTITY`
+- `VERIFIED_SEQUENCE_BINDING`
 - `VERIFIED_SUBSET`
 
 Do not encode mechanisms as proliferating states such as `SATISFIED_BY_ALIAS`.
 
-The evaluator supports exact typed comparisons plus projection through explicit verified `SequenceBinding` objects. It returns `UNRESOLVED` when comparable evidence is absent or internally conflicting and never infers a cross-name relationship from familiar names alone. Bound cross-name presence/length/order may use `VERIFIED_ALIAS`; identity remains `VERIFIED_SEQUENCE_IDENTITY`. Evidence records `VERIFIED_SEQUENCE_BINDING` and the binding IDs when a cross-name projection was required. A reasoner-derived `SequenceIdentityAbsenceCapability` is a separate Tier-A contradiction to presence: it is usable only after exhaustive full-anchor content-identity search and therefore takes precedence over weaker same-string structural presence.
+The evaluator supports exact typed comparisons plus projection through explicit verified `SequenceBinding` objects. It returns `UNRESOLVED` when comparable evidence is absent or internally conflicting and never infers a cross-name relationship from familiar names alone. Bound cross-name presence/length/order may use `VERIFIED_ALIAS`; identity remains `VERIFIED_SEQUENCE_IDENTITY`. An explicit `SequenceBindingRequirement` uses `VERIFIED_SEQUENCE_BINDING` only when its pair validation and binding agree on one anchor target. Evidence records `VERIFIED_SEQUENCE_BINDING` and the binding IDs when a verified mapping is required. A reasoner-derived `SequenceIdentityAbsenceCapability` is a separate Tier-A contradiction to presence; a pair-derived binding validation may likewise carry Tier-A exhaustive target absence for a profile requirement. Both are usable only after their producing layer has the required exhaustive content evidence.
 
 ## `Evidence` and `EvidenceAggregate`
 

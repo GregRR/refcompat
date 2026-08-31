@@ -20,17 +20,28 @@ from refcompat.profiles.ucsc import (
     UcscTargetResolutionReason,
     UcscTargetResolutionState,
 )
+from refcompat.profiles.ucsc_preflight import (
+    UCSC_PREFLIGHT_PROFILE_ID,
+    UcscPreflightProjection,
+    UcscPreflightSequenceProjection,
+    UcscPreflightTarget,
+    project_ucsc_preflight,
+)
 from refcompat.profiles.ucsc_reasoning import (
     resolve_ucsc_sequence_name,
     resolve_ucsc_target,
 )
 
 __all__ = [
+    "UCSC_PREFLIGHT_PROFILE_ID",
     "UcscDatabaseId",
     "UcscNameResolution",
     "UcscNameResolutionMethod",
     "UcscNameResolutionReason",
     "UcscNameResolutionState",
+    "UcscPreflightProjection",
+    "UcscPreflightSequenceProjection",
+    "UcscPreflightTarget",
     "UcscProviderCompleteness",
     "UcscProviderContextId",
     "UcscProviderDimension",
@@ -44,6 +55,7 @@ __all__ = [
     "UcscTargetResolution",
     "UcscTargetResolutionReason",
     "UcscTargetResolutionState",
+    "project_ucsc_preflight",
     "resolve_ucsc_sequence_name",
     "resolve_ucsc_target",
 ]

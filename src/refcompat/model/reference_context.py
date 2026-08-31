@@ -2,8 +2,10 @@
 
 A ``ReferenceContext`` is produced by the reasoner from the explicitly selected
 FASTA anchor and evaluation scope. ``SequenceBinding`` connects a resource-local
-sequence label to one anchor-local sequence only when comparable content
-identity evidence establishes the relationship.
+sequence label to one anchor-local sequence only through an explicit verified
+relationship. Content identity is the generic core path; profiles may add an
+authoritative naming path only when its external target is independently
+content-bound to the anchor.
 """
 
 from __future__ import annotations
@@ -87,6 +89,7 @@ class AnchorIdentityResolution:
 class SequenceBindingMethod(StrEnum):
     """Evidence-backed mechanism establishing a local-to-anchor sequence mapping."""
 
+    AUTHORITATIVE_NAME = "authoritative_name"
     VERIFIED_SEQUENCE_IDENTITY = "verified_sequence_identity"
 
 
@@ -196,9 +199,14 @@ class ReferenceContext:
 class SequenceBinding:
     """Verified mapping from one resource-local label to one anchor-local sequence.
 
-    Bindings are established only from comparable content identities. The
-    capability IDs retain the concrete identity facts used to establish the
-    relationship. String resemblance alone must never construct this object.
+    ``VERIFIED_SEQUENCE_IDENTITY`` bindings establish the local-to-anchor
+    relationship directly from comparable sequence identity.
+    ``AUTHORITATIVE_NAME`` bindings instead require an independently verified
+    authoritative naming relationship whose provider target has already been
+    content-bound to the anchor. In that case ``identity_values`` and
+    ``capability_ids`` authenticate the provider-target-to-anchor leg rather than
+    assigning those identities to the peer resource itself. String resemblance
+    alone must never construct this object.
     """
 
     id: SequenceBindingId

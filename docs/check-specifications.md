@@ -690,15 +690,38 @@ that this provider snapshot did not declare the naming relationship.
 
 ### Profile projection
 
-Core-format requirements remain intact. The profile may add
-`RequirementOrigin.PROFILE` requirements and evidence-backed sequence
-relationships needed to establish the UCSC target, then reuse generic/core
-presence, length, identity, coordinate-bounds, VCF REF, BAM/CRAM dictionary,
-evidence, finding, and verdict behavior.
+Core-format requirements remain intact. For each peer sequence already required
+by core presence, the profile adds a `RequirementOrigin.PROFILE`
+`SequenceBindingRequirement` naming the selected FASTA anchor. Matching names
+alone cannot satisfy this requirement. A positive relationship requires an
+anchor-owned `SequenceBindingValidationCapability` plus the corresponding
+verified `SequenceBinding`; exhaustive provider-target absence may instead
+produce a hard negative validation. If independently established peer identity
+binds that local name to a different anchor sequence than the content-bound UCSC
+target, the profile produces a hard content-conflict validation. Peer identity
+evidence that is internally conflicting, directly mismatches the proposed target
+under a comparable scheme, or has any known positive match to another sequence in
+the complete anchor cannot be overridden by provider naming; if it is not itself
+strong enough to establish a different binding, the profile relationship remains
+unresolved. Incomplete or otherwise ambiguous evidence produces no capability and
+remains unresolved.
 
-Profile logic must not suppress a core-format requirement, create peer-owned
-content identity from provider metadata, or introduce UCSC-specific constraint
-or verdict policy. Existing direct content contradictions retain precedence.
+The generic `AUTHORITATIVE_NAME` binding method records a provider-authorized
+name relationship only after the provider target has been independently
+content-bound to the selected FASTA. Its content identity trace authenticates
+the provider-target-to-anchor leg and must not be reinterpreted as peer-owned
+content identity. Generic bundle reasoning accepts such a supplemental binding
+only when that trace itself uniquely resolves against the complete FASTA anchor
+and exactly one matching `BOUND` pair validation authorizes the relationship.
+Profile-specific provenance remains on the profile projection. The existing
+content-derived binding path is unchanged.
+
+The resulting relationship is then reused by generic/core presence, length,
+identity, coordinate-bounds, VCF REF, BAM/CRAM dictionary, evidence, finding,
+and verdict behavior. Profile logic must not suppress a core-format requirement,
+create peer-owned content identity from provider metadata, or introduce
+UCSC-specific constraint or verdict policy. Existing direct content
+contradictions retain precedence.
 
 ### Online/offline rule
 

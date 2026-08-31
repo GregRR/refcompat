@@ -101,17 +101,22 @@ def project_vcf_contract(
     snapshot: VcfContextSnapshot,
     validation: VcfRefValidationResult,
     reference_context: ReferenceContext,
+    *,
+    sequence_bindings: tuple[SequenceBinding, ...] | None = None,
 ) -> VcfContractProjection:
     """Build scalable generic requirements/evidence from exhaustive VCF facts.
 
-    Verified cross-name bindings are derived independently from VCF ``##contig``
-    MD5 identity claims and the complete FASTA anchor. If such bindings exist,
-    the supplied exhaustive validation must have used exactly those bindings; a
-    stale exact-name validation is rejected rather than silently projected.
+    By default, verified cross-name bindings are derived independently from VCF
+    ``##contig`` MD5 identity claims and the complete FASTA anchor. A caller may
+    instead supply an already verified binding set, such as a profile-authorized
+    naming relationship. In either case the exhaustive validation must have used
+    exactly those bindings; stale exact-name validation is rejected rather than
+    silently projected.
     """
 
     contract = build_vcf_contract(snapshot, reference_context)
-    sequence_bindings = derive_vcf_sequence_bindings(snapshot, reference_context)
+    if sequence_bindings is None:
+        sequence_bindings = derive_vcf_sequence_bindings(snapshot, reference_context)
     _validate_inputs(snapshot, validation, reference_context, sequence_bindings)
 
     presence_requirements = tuple(

@@ -9,6 +9,8 @@ from refcompat.model.constraints import CompatibilityConstraint, ConstraintEvalu
 from refcompat.model.contracts import (
     RequirementLevel,
     ResourceContract,
+    SequenceBindingValidationCapability,
+    SequenceBindingValidationState,
     SequenceIdentityAbsenceCapability,
     SequenceIdentityCapability,
     SequenceIdentityProvenance,
@@ -21,7 +23,11 @@ from refcompat.model.evaluation import EvaluationRequest
 from refcompat.model.evidence import EvidenceAggregate
 from refcompat.model.identity import Md5Digest, RefgetSequenceId, SnapshotSequence
 from refcompat.model.interpretation import InterpretationResult
-from refcompat.model.reference_context import ReferenceContext, SequenceBinding
+from refcompat.model.reference_context import (
+    ReferenceContext,
+    SequenceBinding,
+    SequenceBindingMethod,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -30,7 +36,8 @@ class BundleReasoningResult:
 
     This object proves that one explicit FASTA anchor drove all current typed
     constraints. Reasoner-derived pair facts such as exhaustive sequence-identity
-    absence remain separate from caller-supplied supplemental validations. It
+    absence remain separate from caller-supplied pair validations such as
+    coordinate, reference-base, or profile-authorized binding checks. It
     intentionally has no compatibility verdict, analysis status, conflict core,
     or stable report serialization contract.
     """
@@ -203,6 +210,42 @@ class BundleReasoningResult:
             raise ValueError("bundle derived capabilities must be used by a constraint")
         if not set(supplemental_ids).issubset(constraint_capability_ids):
             raise ValueError("bundle supplemental capabilities must be used by a constraint")
+
+        for supplemental_capability in self.supplemental_capabilities:
+            if not isinstance(supplemental_capability, SequenceBindingValidationCapability):
+                continue
+            matching_bindings = tuple(
+                binding
+                for binding in self.sequence_bindings
+                if binding.resource_id == supplemental_capability.subject_resource_id
+                and binding.local_sequence_name == supplemental_capability.sequence_name
+                and binding.anchor_resource_id == supplemental_capability.resource_id
+            )
+            if supplemental_capability.state is SequenceBindingValidationState.BOUND:
+                if len(matching_bindings) != 1:
+                    raise ValueError(
+                        "bundle bound sequence-binding capability requires one matching binding"
+                    )
+                if (
+                    matching_bindings[0].anchor_sequence_name
+                    != supplemental_capability.anchor_sequence_name
+                ):
+                    raise ValueError(
+                        "bundle sequence-binding capability target must match its binding"
+                    )
+            elif supplemental_capability.state is SequenceBindingValidationState.CONTENT_CONFLICT:
+                if len(matching_bindings) != 1:
+                    raise ValueError(
+                        "bundle content-conflict capability requires one identity-derived binding"
+                    )
+                binding = matching_bindings[0]
+                if (
+                    binding.method is not SequenceBindingMethod.VERIFIED_SEQUENCE_IDENTITY
+                    or binding.anchor_sequence_name == supplemental_capability.anchor_sequence_name
+                ):
+                    raise ValueError(
+                        "bundle content-conflict capability requires a different identity target"
+                    )
 
         evidence_constraint_ids = {item.constraint_id for item in self.evidence.evidence}
         if not evidence_constraint_ids.issubset(set(constraint_ids)):

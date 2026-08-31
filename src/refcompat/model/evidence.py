@@ -41,6 +41,7 @@ class EvidenceKind(StrEnum):
     SEQUENCE_PRESENCE = "sequence_presence"
     SEQUENCE_LENGTH = "sequence_length"
     SEQUENCE_IDENTITY = "sequence_identity"
+    SEQUENCE_BINDING = "sequence_binding"
     SEQUENCE_ORDER = "sequence_order"
     COORDINATE_BOUNDS = "coordinate_bounds"
     REFERENCE_BASES = "reference_bases"

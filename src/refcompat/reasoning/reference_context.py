@@ -164,6 +164,42 @@ def resolve_anchor_sequence_identity(
     return AnchorIdentityResolution(AnchorIdentityResolutionState.UNRESOLVED)
 
 
+def identity_evidence_is_consistent_with_anchor_target(
+    context: ReferenceContext,
+    capabilities: tuple[SequenceIdentityCapability, ...],
+    anchor_sequence_name: str,
+) -> bool:
+    """Whether peer identity evidence permits a separate naming-only target.
+
+    This helper does not establish a sequence binding. It only prevents an
+    independently supplied naming relationship from overriding stronger
+    identity evidence. Conflicting same-scheme values, a known positive match
+    to another sequence anywhere in the complete anchor, or a directly
+    comparable mismatch against the proposed target all fail closed. Identity
+    evidence that is merely unavailable or incomparable does not block a
+    separately justified naming relationship.
+    """
+
+    if not anchor_sequence_name:
+        raise ValueError("anchor target name must not be empty")
+    if not capabilities:
+        return True
+    if _has_scheme_conflict(capabilities):
+        return False
+
+    anchor_by_name, identity_index, _complete_identity_schemes = _anchor_identity_search(context)
+    target_identities = anchor_by_name.get(anchor_sequence_name)
+    if target_identities is None:
+        raise ValueError("anchor target must expose content identity in the complete FASTA")
+
+    identities = tuple(
+        sorted({capability.identity for capability in capabilities}, key=_identity_token)
+    )
+    if _identity_values_match_outside_target(identities, identity_index, anchor_sequence_name):
+        return False
+    return not _identity_values_contradict_target(identities, target_identities)
+
+
 def derive_sequence_bindings(
     context: ReferenceContext,
     contracts: tuple[ResourceContract, ...],

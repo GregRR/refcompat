@@ -1,6 +1,6 @@
 # UCSC preflight profile
 
-**Status:** Milestone 6 contract, immutable provider snapshot, target-content resolution, and authoritative UCSC name resolution implemented; resource binding/profile projection pending.
+**Status:** Milestone 6 contract, immutable provider snapshot, target-content resolution, authoritative UCSC name resolution, resource binding/profile projection, and the first VCF end-to-end path implemented; the first internal scientific/code checkpoint is complete and hardened before broader integration.
 
 RCHECK-070 defines RefCompat's first ecosystem profile. The profile asks whether
 in-scope resources can satisfy the reference-coordinate and naming requirements
@@ -205,9 +205,9 @@ snapshot declares the alias dimension `COMPLETE` and every matching alias row
 points to one canonical target; multiple authority columns may repeat the same
 relationship without creating ambiguity. A familiar but undeclared name, a
 partial/unknown alias dimension, or one alias pointing to multiple targets stays
-unresolved. The resolver returns provider source provenance but does not yet
-construct a resource-local `SequenceBinding`; that composition is the Slice 4
-end-to-end profile step.
+unresolved. Slice 4 composes that naming result with the independently resolved
+provider target while retaining both provider source provenance and the
+anchor-content proof trace.
 
 ## Profile projection into the generic reasoner
 
@@ -231,11 +231,39 @@ For example, reassuring UCSC metadata or an alias cannot erase a VCF REF
 mismatch, BAM M5 contradiction, embedded GFF3 sequence contradiction, or other
 directly comparable hard evidence.
 
-The current `SequenceBinding` implementation is content-identity-only. Milestone
-6 may extend the generic binding vocabulary with an authoritative-alias method
-and evidence trace because that relationship is scientifically distinct. If so,
-the existing identity-derived binding rules remain unchanged, and the generic
-model must not contain UCSC-specific names or acquisition logic.
+Slice 4 introduces the smallest generic extension needed for that composition.
+`SequenceBindingRequirement` asks whether one resource-local sequence has an
+explicit evidence-backed relationship to the selected anchor; matching strings
+alone cannot satisfy it. An anchor-owned `SequenceBindingValidationCapability`
+records a conclusive `BOUND`, exhaustively `PROVEN_ABSENT`, or independently
+established `CONTENT_CONFLICT` pair result. The conflict state is used only when
+peer identity already binds the local name to a different anchor target than the
+content-bound UCSC target; unresolved provider/name/target relationships still
+contribute no capability.
+`SequenceBindingMethod.AUTHORITATIVE_NAME` records the naming path without
+pretending that the provider target identity is peer-owned content identity.
+The identity values and anchor capability IDs on that binding authenticate the
+provider-target-to-anchor content leg, while the profile-specific projection
+retains the UCSC naming and provider-source trace. Generic bundle reasoning
+rechecks that the authoritative binding's identity trace uniquely resolves on
+the complete FASTA anchor and requires exactly one matching `BOUND` pair
+validation before the supplemental binding may affect ordinary core checks. The
+existing `VERIFIED_SEQUENCE_IDENTITY` path and its full-anchor rules are
+unchanged.
+
+The profile adds one binding requirement for each peer sequence already required
+by a core presence requirement. A provider target proven absent by exhaustive
+comparable anchor identity yields a hard negative validation, while a conflicting
+independently established peer identity yields a hard binding contradiction. When
+peer identity evidence exists but cannot establish one binding because it conflicts
+internally, directly disagrees with the proposed anchor target under a comparable
+scheme, or positively matches another sequence anywhere in the complete anchor,
+provider naming is not allowed to manufacture an authoritative binding. That case
+remains unresolved unless an existing core requirement independently proves a hard
+conflict. Incomplete or otherwise ambiguous evidence likewise yields no validation
+and therefore an unresolved mandatory profile requirement. This prevents exact-name
+core presence, matching length, or even successful format-specific checks from
+rescuing a missing or contradicted mandatory UCSC target bridge.
 
 ## Verdict semantics
 
@@ -279,9 +307,14 @@ to a content-bound UCSC target/FASTA sequence, existing format semantics remain
 in force.
 
 For VCF, exhaustive REF comparison remains the record-level content check. The
-profile does not invent a second UCSC REF validator. A UCSC alias may make a
-previously unresolved `CHROM` addressable only through the evidence-backed
-binding path described above.
+profile does not invent a second UCSC REF validator. The first Slice 4
+end-to-end path derives an authoritative-name binding only after the UCSC target
+is content-bound, supplies that binding to the existing exhaustive REF evaluator,
+projects the resulting reference-base capability normally, and sends the
+profile-augmented contract plus pair validations through the ordinary bundle and
+verdict reasoners. A matching VCF REF check cannot rescue a missing mandatory
+UCSC target identity; the profile binding requirement remains unresolved and the
+whole result remains `INDETERMINATE`.
 
 For BAM/CRAM, existing dictionary presence, length, M5, ordering, relationship,
 and offline-reference semantics remain distinct. A UCSC alias cannot turn
@@ -347,7 +380,7 @@ minimum they should cover:
 
 ## Review checkpoints
 
-The first internal scientific/code review occurs after:
+The first internal scientific/code review occurred after:
 
 1. the provider snapshot model exists;
 2. authoritative-alias semantics are implemented;
@@ -355,8 +388,10 @@ The first internal scientific/code review occurs after:
 4. one representative end-to-end profile path exercises those semantics through
    the normal bundle reasoner.
 
-No significant additional UCSC-profile behavior should be built on top of that
-relationship until the checkpoint is clean.
+That checkpoint is complete. It found and corrected a false-positive path where
+conflicting/non-bindable peer identity could be overridden by provider naming,
+and a deterministic validation-ID defect that omitted provider context. Broader
+profile integration may now proceed from the hardened relationship boundary.
 
 After the full M6 adversarial suite and internal milestone review are clean,
 RefCompat stops again for an external milestone-boundary review before M7.

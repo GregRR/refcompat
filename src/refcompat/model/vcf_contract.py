@@ -16,7 +16,7 @@ from refcompat.model.contracts import (
     SequenceIdentityProvenance,
 )
 from refcompat.model.evidence import EvidenceAggregate
-from refcompat.model.reference_context import SequenceBinding
+from refcompat.model.reference_context import SequenceBinding, SequenceBindingMethod
 from refcompat.model.resources import ResourceId
 from refcompat.model.vcf_ref import VcfRefValidationResult
 from refcompat.model.vcf_ref_pattern import VcfRefConflictPatternSummary
@@ -87,6 +87,8 @@ class VcfContractProjection:
             if isinstance(capability, SequenceIdentityCapability)
         )
         for binding in self.sequence_bindings:
+            if binding.method is not SequenceBindingMethod.VERIFIED_SEQUENCE_IDENTITY:
+                continue
             local_sources = tuple(
                 capability
                 for capability in contract_identity_capabilities
@@ -97,7 +99,7 @@ class VcfContractProjection:
             )
             if len(local_sources) != 1:
                 raise ValueError(
-                    "VCF contract projection binding must cite its local VCF identity capability"
+                    "identity-derived VCF binding must cite its local VCF identity capability"
                 )
 
         if self.conflict_pattern.vcf_resource_id != self.vcf_resource_id:

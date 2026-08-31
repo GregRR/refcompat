@@ -93,6 +93,87 @@ class SequenceIdentityRequirement:
 
 
 @dataclass(frozen=True, slots=True)
+class SequenceBindingRequirement:
+    """Require a verified local-to-anchor sequence relationship.
+
+    This requirement is intentionally stronger than exact-name presence. It is
+    satisfied only by an explicit pair-derived binding validation for the named
+    resource-local sequence against the selected anchor. Profiles and user
+    policies may use it when a consumer target must be authenticated rather than
+    inferred from matching strings.
+    """
+
+    id: RequirementId
+    resource_id: ResourceId
+    anchor_resource_id: ResourceId
+    origin: RequirementOrigin
+    level: RequirementLevel
+    sequence_name: str
+
+    def __post_init__(self) -> None:
+        _validate_requirement_header(self.id, self.resource_id)
+        if not self.anchor_resource_id:
+            raise ValueError("sequence-binding requirement anchor resource ID must not be empty")
+        _validate_sequence_name(self.sequence_name)
+
+
+class SequenceBindingValidationState(StrEnum):
+    """Conclusive pair states a binding validator may contribute.
+
+    Unresolved relationships are represented by omitting the capability rather
+    than manufacturing a negative fact.
+    """
+
+    BOUND = "bound"
+    CONTENT_CONFLICT = "content_conflict"
+    PROVEN_ABSENT = "proven_absent"
+
+
+@dataclass(frozen=True, slots=True)
+class SequenceBindingValidationCapability:
+    """Pair-derived validation of one required local-to-anchor relationship.
+
+    The capability is owned by the selected anchor and names the peer resource
+    whose local sequence is being validated. ``BOUND`` requires an explicit
+    ``SequenceBinding`` to the named anchor sequence. ``PROVEN_ABSENT`` is a hard
+    negative only when the producing layer has exhaustive content evidence for
+    the required external target. ``CONTENT_CONFLICT`` requires an independently
+    verified local sequence binding to a different anchor target.
+    """
+
+    id: CapabilityId
+    resource_id: ResourceId
+    subject_resource_id: ResourceId
+    sequence_name: str
+    state: SequenceBindingValidationState
+    anchor_sequence_name: str | None = None
+    source_observation_ids: tuple[ObservationId, ...] = ()
+
+    def __post_init__(self) -> None:
+        _validate_capability_header(self.id, self.resource_id)
+        if not self.subject_resource_id:
+            raise ValueError("sequence-binding capability subject resource ID must not be empty")
+        if self.subject_resource_id == self.resource_id:
+            raise ValueError(
+                "sequence-binding capability subject must differ from its anchor owner"
+            )
+        _validate_sequence_name(self.sequence_name)
+        if self.state in (
+            SequenceBindingValidationState.BOUND,
+            SequenceBindingValidationState.CONTENT_CONFLICT,
+        ):
+            if not self.anchor_sequence_name:
+                raise ValueError(
+                    "bound or conflicting sequence-binding capability requires an anchor name"
+                )
+        elif self.anchor_sequence_name is not None:
+            raise ValueError(
+                "proven-absent sequence-binding capability cannot name an anchor sequence"
+            )
+        _validate_source_observation_ids(self.source_observation_ids)
+
+
+@dataclass(frozen=True, slots=True)
 class SequenceOrderRequirement:
     """Require an exact ordered local sequence-name representation."""
 
@@ -368,6 +449,7 @@ Requirement: TypeAlias = (
     SequencePresenceRequirement
     | SequenceLengthRequirement
     | SequenceIdentityRequirement
+    | SequenceBindingRequirement
     | SequenceOrderRequirement
     | CoordinateBoundsRequirement
     | ReferenceBaseRequirement
@@ -377,12 +459,15 @@ Capability: TypeAlias = (
     | SequenceLengthCapability
     | SequenceIdentityCapability
     | SequenceIdentityAbsenceCapability
+    | SequenceBindingValidationCapability
     | SequenceOrderCapability
     | CoordinateBoundsValidationCapability
     | ReferenceBaseValidationCapability
 )
 SupplementalCapability: TypeAlias = (
-    CoordinateBoundsValidationCapability | ReferenceBaseValidationCapability
+    CoordinateBoundsValidationCapability
+    | ReferenceBaseValidationCapability
+    | SequenceBindingValidationCapability
 )
 
 
@@ -412,6 +497,14 @@ class ResourceContract:
         ):
             raise ValueError(
                 "sequence-identity absence capabilities are reasoner-derived "
+                "and cannot be supplied by resource contracts"
+            )
+        if any(
+            isinstance(capability, SequenceBindingValidationCapability)
+            for capability in self.capabilities
+        ):
+            raise ValueError(
+                "sequence-binding validation capabilities are pair-derived "
                 "and cannot be supplied by resource contracts"
             )
 

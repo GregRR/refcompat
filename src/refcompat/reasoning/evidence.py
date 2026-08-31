@@ -22,6 +22,9 @@ from refcompat.model.contracts import (
     ReferenceBaseRequirement,
     ReferenceBaseValidationCapability,
     Requirement,
+    SequenceBindingRequirement,
+    SequenceBindingValidationCapability,
+    SequenceBindingValidationState,
     SequenceIdentityAbsenceCapability,
     SequenceIdentityCapability,
     SequenceIdentityRequirement,
@@ -41,7 +44,11 @@ from refcompat.model.evidence import (
     EvidencePolarity,
     EvidenceStrength,
 )
-from refcompat.model.reference_context import SequenceBinding, SequenceBindingId
+from refcompat.model.reference_context import (
+    SequenceBinding,
+    SequenceBindingId,
+    SequenceBindingMethod,
+)
 from refcompat.model.resources import ResourceId
 
 
@@ -223,6 +230,57 @@ def _classify_relationship(
             else EvidencePolarity.CONTRADICTS,
             _method(binding),
             _binding_ids(binding),
+        )
+
+    if isinstance(requirement, SequenceBindingRequirement):
+        if not isinstance(capability, SequenceBindingValidationCapability):
+            raise ValueError("sequence-binding evidence requires a binding validation capability")
+        if capability.state is SequenceBindingValidationState.PROVEN_ABSENT:
+            return (
+                EvidenceKind.SEQUENCE_BINDING,
+                EvidenceStrength.TIER_A_CONCLUSIVE_CONTENT,
+                EvidencePolarity.CONTRADICTS,
+                EvidenceMethod.EXHAUSTIVE_SEQUENCE_IDENTITY_ABSENCE,
+                (),
+            )
+        bindings = tuple(
+            binding
+            for binding in constraint.sequence_bindings
+            if binding.local_sequence_name == requirement.sequence_name
+            and binding.anchor_resource_id == requirement.anchor_resource_id
+        )
+        if capability.state is SequenceBindingValidationState.CONTENT_CONFLICT:
+            conflicting = tuple(
+                binding
+                for binding in bindings
+                if binding.anchor_sequence_name != capability.anchor_sequence_name
+                and binding.method is SequenceBindingMethod.VERIFIED_SEQUENCE_IDENTITY
+            )
+            if len(conflicting) != 1:
+                raise ValueError(
+                    "content-conflict sequence-binding evidence requires one identity binding"
+                )
+            return (
+                EvidenceKind.SEQUENCE_BINDING,
+                EvidenceStrength.TIER_A_CONCLUSIVE_CONTENT,
+                EvidencePolarity.CONTRADICTS,
+                EvidenceMethod.VERIFIED_SEQUENCE_BINDING,
+                (conflicting[0].id,),
+            )
+
+        matching = tuple(
+            binding
+            for binding in bindings
+            if binding.anchor_sequence_name == capability.anchor_sequence_name
+        )
+        if len(matching) != 1:
+            raise ValueError("bound sequence-binding evidence requires one matching binding")
+        return (
+            EvidenceKind.SEQUENCE_BINDING,
+            EvidenceStrength.TIER_B_DIRECT_STRUCTURAL,
+            EvidencePolarity.SUPPORTS,
+            EvidenceMethod.VERIFIED_SEQUENCE_BINDING,
+            (matching[0].id,),
         )
 
     if isinstance(requirement, SequenceOrderRequirement):
