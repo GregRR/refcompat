@@ -522,6 +522,63 @@ def test_incomplete_peer_identity_match_to_other_anchor_blocks_authoritative_bin
     assert aggregate_bundle_verdict(result).verdict is CompatibilityVerdict.INDETERMINATE
 
 
+def test_direct_peer_identity_mismatch_blocks_authoritative_name_binding() -> None:
+    target_md5 = Md5Digest("3" * 32)
+    peer_md5 = Md5Digest("4" * 32)
+    anchor = _anchor_snapshot(
+        (
+            SnapshotSequence("chr1", 10, 0, _A, md5=target_md5),
+            SnapshotSequence("chr2", 10, 1, _B),
+        )
+    )
+    provider = _provider_snapshot(
+        sequences=(
+            _provider_sequence("chr1", 10, _A),
+            _provider_sequence("chr2", 10, _B),
+        ),
+        aliases=(UcscSequenceAlias("1", "chr1", (_ALIAS_SOURCE,)),),
+    )
+    request = _request(local_name="1")
+    context = build_reference_context(request, anchor)
+    peer = ResourceContract(
+        _PEER,
+        requirements=(
+            SequencePresenceRequirement(
+                RequirementId("presence:1"),
+                _PEER,
+                RequirementOrigin.CORE_FORMAT,
+                RequirementLevel.MANDATORY,
+                "1",
+            ),
+        ),
+        capabilities=(
+            SequenceIdentityCapability(
+                CapabilityId("peer-md5"),
+                _PEER,
+                "1",
+                peer_md5,
+                provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
+            ),
+        ),
+    )
+
+    projection = project_ucsc_preflight(
+        request,
+        UcscPreflightTarget(_DB),
+        provider,
+        context,
+        (ResourceContract(_REFERENCE), peer),
+    )
+
+    trace = projection.sequence_projections[0]
+    assert trace.target_resolution is not None
+    assert trace.target_resolution.state is UcscTargetResolutionState.BOUND
+    assert trace.sequence_binding is None
+    assert trace.validation_capability is None
+    result = _reason(request, anchor, projection)
+    assert aggregate_bundle_verdict(result).verdict is CompatibilityVerdict.INDETERMINATE
+
+
 def test_absence_validation_id_includes_provider_context() -> None:
     anchor = _anchor_snapshot((SnapshotSequence("chr1", 10, 0, _A),))
     first = _provider_snapshot(

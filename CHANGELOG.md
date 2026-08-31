@@ -6,6 +6,8 @@ The project is currently pre-release; entries under `Unreleased` describe ongoin
 
 ## Unreleased
 
+- Record the targeted external review of the first Milestone 6 `ucsc-preflight` path: no MAJOR correctness or proof-chain defect was found, and add direct plus profile-level regression coverage proving that a same-scheme peer identity contradiction blocks authoritative provider naming without being promoted into a false hard conflict.
+
 - Add the first end-to-end Milestone 6 `ucsc-preflight` path: introduce a generic profile/policy sequence-binding requirement plus anchor-owned pair validation, compose UCSC authoritative names only after their provider target is content-bound to the selected FASTA, block provider naming from overriding conflicting or differently matching peer identity evidence, preserve unresolved/absence semantics plus direct peer-identity conflicts through ordinary verdict aggregation, context-qualify provider-derived validation IDs, and reuse the existing exhaustive VCF REF evaluator with the resulting verified binding instead of adding a UCSC-specific validator.
 
 - Add Milestone 6 UCSC target-content and authoritative-name reasoning: factor the reviewed complete-anchor identity/absence rules into a reusable anchor resolver, content-bind provider targets only through exhaustive comparable identity, preserve exact-name/content disagreement, require complete alias evidence for authoritative alternate-name resolution, and leave ambiguous, incomplete, out-of-scope, or provider-length-conflicting relationships unresolved.

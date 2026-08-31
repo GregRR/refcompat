@@ -1,6 +1,6 @@
 # UCSC preflight profile
 
-**Status:** Milestone 6 contract, immutable provider snapshot, target-content resolution, authoritative UCSC name resolution, resource binding/profile projection, and the first VCF end-to-end path implemented; the first internal scientific/code checkpoint is complete and hardened before broader integration.
+**Status:** Milestone 6 contract, immutable provider snapshot, target-content resolution, authoritative UCSC name resolution, resource binding/profile projection, and the first VCF end-to-end path implemented; the first internal scientific/code checkpoint and targeted external review are complete, with the reviewer finding no MAJOR issue and one non-blocking peer-identity regression gap hardened before broader integration.
 
 RCHECK-070 defines RefCompat's first ecosystem profile. The profile asks whether
 in-scope resources can satisfy the reference-coordinate and naming requirements

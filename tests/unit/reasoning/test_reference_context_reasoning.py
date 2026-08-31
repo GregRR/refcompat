@@ -26,6 +26,9 @@ from refcompat.reasoning import (
     derive_sequence_bindings,
     resolve_anchor_sequence_identity,
 )
+from refcompat.reasoning.reference_context import (
+    identity_evidence_is_consistent_with_anchor_target,
+)
 
 _REFERENCE = ResourceId("reference")
 _CONSUMER = ResourceId("consumer")
@@ -526,3 +529,30 @@ def test_anchor_identity_resolution_incomplete_scheme_cannot_prove_absence() -> 
     resolution = resolve_anchor_sequence_identity(context, (missing,))
 
     assert resolution.state is AnchorIdentityResolutionState.UNRESOLVED
+
+
+def test_direct_target_identity_contradiction_blocks_naming_relationship() -> None:
+    target_md5 = Md5Digest("0" * 32)
+    peer_md5 = Md5Digest("1" * 32)
+    snapshot = SequenceCollectionSnapshot(
+        _REFERENCE,
+        CollectionCompleteness.COMPLETE,
+        sequences=(
+            SnapshotSequence("chr1", 10, 0, _REFGET_A, target_md5),
+            SnapshotSequence("chr2", 20, 1, _REFGET_B),
+        ),
+    )
+    context = build_reference_context(_request(), snapshot)
+    capability = SequenceIdentityCapability(
+        CapabilityId("peer-md5"),
+        _CONSUMER,
+        "1",
+        peer_md5,
+        provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
+    )
+
+    assert not identity_evidence_is_consistent_with_anchor_target(
+        context,
+        (capability,),
+        "chr1",
+    )
