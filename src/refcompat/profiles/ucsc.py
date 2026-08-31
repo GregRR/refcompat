@@ -12,11 +12,14 @@ from datetime import datetime
 from typing import NewType
 
 from refcompat._compat import StrEnum
+from refcompat.model.contracts import CapabilityId, SequenceIdentityValue
 from refcompat.model.identity import Md5Digest, RefgetSequenceId
+from refcompat.model.resources import ResourceId
 
 UcscDatabaseId = NewType("UcscDatabaseId", str)
 UcscProviderContextId = NewType("UcscProviderContextId", str)
 UcscProviderSourceId = NewType("UcscProviderSourceId", str)
+UcscTargetBindingId = NewType("UcscTargetBindingId", str)
 
 
 class UcscProviderDimension(StrEnum):
@@ -247,6 +250,168 @@ class UcscProviderSnapshot:
             if alias.alias == alias_name and alias.canonical_name not in targets:
                 targets.append(alias.canonical_name)
         return tuple(targets)
+
+
+class UcscTargetResolutionState(StrEnum):
+    """Relationship between one canonical UCSC target and the FASTA anchor."""
+
+    BOUND = "bound"
+    PROVEN_ABSENT = "proven_absent"
+    UNRESOLVED = "unresolved"
+
+
+class UcscTargetResolutionReason(StrEnum):
+    """Scientific reason for one target-resolution outcome."""
+
+    CONTENT_BOUND = "content_bound"
+    EXHAUSTIVE_CONTENT_ABSENCE = "exhaustive_content_absence"
+    CONTENT_IDENTITY_UNAVAILABLE = "content_identity_unavailable"
+    CONTENT_IDENTITY_UNRESOLVED = "content_identity_unresolved"
+    PROVIDER_LENGTH_CONFLICT = "provider_length_conflict"
+
+
+class UcscNameResolutionState(StrEnum):
+    """Whether a local label resolves to one canonical UCSC target."""
+
+    RESOLVED = "resolved"
+    UNRESOLVED = "unresolved"
+
+
+class UcscNameResolutionMethod(StrEnum):
+    """Provider evidence used to resolve a local sequence label."""
+
+    CANONICAL_NAME = "canonical_name"
+    AUTHORITATIVE_ALIAS = "authoritative_alias"
+
+
+class UcscNameResolutionReason(StrEnum):
+    """Reason a provider-name lookup resolved or remained unresolved."""
+
+    CANONICAL_NAME = "canonical_name"
+    AUTHORITATIVE_ALIAS = "authoritative_alias"
+    ALIAS_EVIDENCE_INCOMPLETE = "alias_evidence_incomplete"
+    AMBIGUOUS_ALIAS = "ambiguous_alias"
+    UNDECLARED_NAME = "undeclared_name"
+
+
+@dataclass(frozen=True, slots=True)
+class UcscTargetBinding:
+    """Content-derived bridge from one UCSC target to one FASTA anchor sequence."""
+
+    id: UcscTargetBindingId
+    database_id: UcscDatabaseId
+    context_id: UcscProviderContextId
+    canonical_name: str
+    anchor_resource_id: ResourceId
+    anchor_sequence_name: str
+    identity_values: tuple[SequenceIdentityValue, ...]
+    provider_source_ids: tuple[UcscProviderSourceId, ...]
+    anchor_capability_ids: tuple[CapabilityId, ...]
+
+    def __post_init__(self) -> None:
+        if not self.id:
+            raise ValueError("UCSC target binding ID must not be empty")
+        if not self.database_id or not self.context_id:
+            raise ValueError("UCSC target binding provider context must not be empty")
+        if not self.canonical_name or not self.anchor_sequence_name:
+            raise ValueError("UCSC target binding sequence names must not be empty")
+        if not self.anchor_resource_id:
+            raise ValueError("UCSC target binding anchor resource ID must not be empty")
+        if not self.identity_values or len(set(self.identity_values)) != len(self.identity_values):
+            raise ValueError("UCSC target binding identity values must be non-empty and unique")
+        _validate_source_ids(
+            self.provider_source_ids,
+            noun="UCSC target binding provider source IDs",
+            required=True,
+        )
+        if not self.anchor_capability_ids:
+            raise ValueError("UCSC target binding requires anchor capability IDs")
+        if any(not capability_id for capability_id in self.anchor_capability_ids):
+            raise ValueError("UCSC target binding anchor capability IDs must not be empty")
+        if len(set(self.anchor_capability_ids)) != len(self.anchor_capability_ids):
+            raise ValueError("UCSC target binding anchor capability IDs must be unique")
+
+
+@dataclass(frozen=True, slots=True)
+class UcscTargetResolution:
+    """Conservative resolution of one canonical UCSC target against the FASTA anchor."""
+
+    canonical_name: str
+    state: UcscTargetResolutionState
+    reason: UcscTargetResolutionReason
+    binding: UcscTargetBinding | None = None
+    identity_values: tuple[SequenceIdentityValue, ...] = ()
+    provider_source_ids: tuple[UcscProviderSourceId, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not self.canonical_name:
+            raise ValueError("UCSC target resolution canonical name must not be empty")
+        if len(set(self.identity_values)) != len(self.identity_values):
+            raise ValueError("UCSC target resolution identity values must be unique")
+        _validate_source_ids(
+            self.provider_source_ids,
+            noun="UCSC target resolution provider source IDs",
+            required=False,
+        )
+        if self.state is UcscTargetResolutionState.BOUND:
+            if self.reason is not UcscTargetResolutionReason.CONTENT_BOUND or self.binding is None:
+                raise ValueError("bound UCSC target resolution requires a content binding")
+            if self.identity_values or self.provider_source_ids:
+                raise ValueError("bound UCSC target resolution keeps proof trace on its binding")
+        elif self.state is UcscTargetResolutionState.PROVEN_ABSENT:
+            if self.reason is not UcscTargetResolutionReason.EXHAUSTIVE_CONTENT_ABSENCE:
+                raise ValueError("proven-absent UCSC target resolution requires absence reason")
+            if self.binding is not None or not self.identity_values or not self.provider_source_ids:
+                raise ValueError(
+                    "proven-absent UCSC target resolution requires identity provenance"
+                )
+        elif self.state is UcscTargetResolutionState.UNRESOLVED:
+            if self.reason in {
+                UcscTargetResolutionReason.CONTENT_BOUND,
+                UcscTargetResolutionReason.EXHAUSTIVE_CONTENT_ABSENCE,
+            }:
+                raise ValueError("unresolved UCSC target resolution requires unresolved reason")
+            if self.binding is not None or self.identity_values:
+                raise ValueError("unresolved UCSC target resolution cannot carry content proof")
+
+
+@dataclass(frozen=True, slots=True)
+class UcscNameResolution:
+    """Provider-authoritative mapping from one local label to a canonical UCSC target."""
+
+    local_name: str
+    state: UcscNameResolutionState
+    reason: UcscNameResolutionReason
+    canonical_name: str | None = None
+    method: UcscNameResolutionMethod | None = None
+    provider_source_ids: tuple[UcscProviderSourceId, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not self.local_name:
+            raise ValueError("UCSC name resolution local name must not be empty")
+        _validate_source_ids(
+            self.provider_source_ids,
+            noun="UCSC name resolution provider source IDs",
+            required=False,
+        )
+        if self.state is UcscNameResolutionState.RESOLVED:
+            if not self.canonical_name or self.method is None or not self.provider_source_ids:
+                raise ValueError("resolved UCSC name requires canonical target and provenance")
+            expected_reason = (
+                UcscNameResolutionReason.CANONICAL_NAME
+                if self.method is UcscNameResolutionMethod.CANONICAL_NAME
+                else UcscNameResolutionReason.AUTHORITATIVE_ALIAS
+            )
+            if self.reason is not expected_reason:
+                raise ValueError("resolved UCSC name reason must match its resolution method")
+        elif self.state is UcscNameResolutionState.UNRESOLVED:
+            if self.reason in {
+                UcscNameResolutionReason.CANONICAL_NAME,
+                UcscNameResolutionReason.AUTHORITATIVE_ALIAS,
+            }:
+                raise ValueError("unresolved UCSC name requires an unresolved reason")
+            if self.canonical_name is not None or self.method is not None:
+                raise ValueError("unresolved UCSC name cannot identify a canonical target")
 
 
 def _validate_source_ids(

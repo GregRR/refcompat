@@ -1,6 +1,6 @@
 # UCSC preflight profile
 
-**Status:** Milestone 6 scientific/profile contract pinned; immutable provider-snapshot model implemented; binding/profile reasoning pending.
+**Status:** Milestone 6 contract, immutable provider snapshot, target-content resolution, and authoritative UCSC name resolution implemented; resource binding/profile projection pending.
 
 RCHECK-070 defines RefCompat's first ecosystem profile. The profile asks whether
 in-scope resources can satisfy the reference-coordinate and naming requirements
@@ -149,6 +149,19 @@ could still match. If comparable anchor coverage is incomplete, target identity
 is unavailable, or resolution is non-unique, the relationship remains unresolved
 rather than being guessed from names and lengths.
 
+The implemented Slice 3 target resolver reuses the generic
+`AnchorIdentityResolution` path that now also underlies ordinary content-derived
+`SequenceBinding`. A provider target is `BOUND` only when at least one comparable
+identity scheme covers the complete FASTA anchor, resolves uniquely there, every
+other known positive identity match agrees, the target remains in explicit scope,
+and the provider catalog length agrees with the content-bound FASTA sequence. A
+complete-scheme miss can become `PROVEN_ABSENT` only when no supplied provider
+identity positively matches any anchor sequence under another scheme. Missing
+identity, incomplete coverage, duplicate content, conflicting cross-scheme
+evidence, an out-of-scope unique target, or a provider length/content conflict
+remains `UNRESOLVED`. Exact UCSC names are not consulted during this content
+step.
+
 ## Authoritative alias semantics
 
 UCSC documents `chromAlias` as a mechanism for mapping alternate sequence-name
@@ -184,6 +197,17 @@ A missing alias in a complete provider alias table establishes only that the
 provider snapshot did not declare that naming relationship. It does not prove
 that the underlying biological sequence is absent or different. Incomplete or
 ambiguous alias evidence remains unresolved.
+
+Slice 3 implements this provider-name step separately from target identity. A
+represented canonical UCSC name resolves directly to that provider target but
+claims nothing about FASTA content. An alternate name resolves only when the
+snapshot declares the alias dimension `COMPLETE` and every matching alias row
+points to one canonical target; multiple authority columns may repeat the same
+relationship without creating ambiguity. A familiar but undeclared name, a
+partial/unknown alias dimension, or one alias pointing to multiple targets stays
+unresolved. The resolver returns provider source provenance but does not yet
+construct a resource-local `SequenceBinding`; that composition is the Slice 4
+end-to-end profile step.
 
 ## Profile projection into the generic reasoner
 

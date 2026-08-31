@@ -6,6 +6,8 @@ The project is currently pre-release; entries under `Unreleased` describe ongoin
 
 ## Unreleased
 
+- Add Milestone 6 UCSC target-content and authoritative-name reasoning: factor the reviewed complete-anchor identity/absence rules into a reusable anchor resolver, content-bind provider targets only through exhaustive comparable identity, preserve exact-name/content disagreement, require complete alias evidence for authoritative alternate-name resolution, and leave ambiguous, incomplete, out-of-scope, or provider-length-conflicting relationships unresolved.
+
 - Add the Milestone 6 UCSC provider-snapshot model with immutable canonical sequence, alias, dimensional completeness, and per-fact provenance values; reject cross-wired database/provider-context evidence and unsupported completeness claims while preserving duplicate sequence content and ambiguous aliases for later conservative reasoning.
 
 - Pin the Milestone 6 UCSC-preflight contract: require explicit native database selection, consume deterministic provenance-bearing provider snapshots, keep provider aliases separate from content identity, require a content-derived UCSC-target-to-FASTA bridge before authoritative aliases can resolve peer names, preserve generic core checks/verdicts, keep network acquisition outside reasoning, define adversarial/exit coverage and review checkpoints, and synchronize Milestone 5 documentation with its completed targeted external follow-up.

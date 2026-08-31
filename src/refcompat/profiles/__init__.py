@@ -2,6 +2,10 @@
 
 from refcompat.profiles.ucsc import (
     UcscDatabaseId,
+    UcscNameResolution,
+    UcscNameResolutionMethod,
+    UcscNameResolutionReason,
+    UcscNameResolutionState,
     UcscProviderCompleteness,
     UcscProviderContextId,
     UcscProviderDimension,
@@ -10,10 +14,23 @@ from refcompat.profiles.ucsc import (
     UcscProviderSourceId,
     UcscSequence,
     UcscSequenceAlias,
+    UcscTargetBinding,
+    UcscTargetBindingId,
+    UcscTargetResolution,
+    UcscTargetResolutionReason,
+    UcscTargetResolutionState,
+)
+from refcompat.profiles.ucsc_reasoning import (
+    resolve_ucsc_sequence_name,
+    resolve_ucsc_target,
 )
 
 __all__ = [
     "UcscDatabaseId",
+    "UcscNameResolution",
+    "UcscNameResolutionMethod",
+    "UcscNameResolutionReason",
+    "UcscNameResolutionState",
     "UcscProviderCompleteness",
     "UcscProviderContextId",
     "UcscProviderDimension",
@@ -22,4 +39,11 @@ __all__ = [
     "UcscProviderSourceId",
     "UcscSequence",
     "UcscSequenceAlias",
+    "UcscTargetBinding",
+    "UcscTargetBindingId",
+    "UcscTargetResolution",
+    "UcscTargetResolutionReason",
+    "UcscTargetResolutionState",
+    "resolve_ucsc_sequence_name",
+    "resolve_ucsc_target",
 ]

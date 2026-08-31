@@ -30,6 +30,8 @@ from refcompat.model.identity import (
     SnapshotSequence,
 )
 from refcompat.model.reference_context import (
+    AnchorIdentityResolution,
+    AnchorIdentityResolutionState,
     ReferenceContext,
     SequenceBinding,
     SequenceBindingId,
@@ -73,6 +75,95 @@ def build_reference_context(
     )
 
 
+def resolve_anchor_sequence_identity(
+    context: ReferenceContext,
+    identities: tuple[SequenceIdentityValue, ...],
+) -> AnchorIdentityResolution:
+    """Resolve content identity against the complete FASTA anchor conservatively.
+
+    A match requires at least one identity scheme that covers every sequence in
+    the complete FASTA snapshot, one unique full-anchor target, agreement from
+    every other known identity match, and a target that remains inside explicit
+    evaluation scope. Exhaustive absence likewise requires at least one complete
+    identity scheme and no positive match from any supplied identity.
+    """
+
+    if not identities:
+        raise ValueError("anchor identity resolution requires at least one identity")
+    if len(set(identities)) != len(identities):
+        raise ValueError("anchor identity resolution identities must be unique")
+
+    identities_by_scheme: dict[str, set[SequenceIdentityValue]] = defaultdict(set)
+    for identity in identities:
+        identities_by_scheme[_identity_scheme(identity)].add(identity)
+    if any(len(values) > 1 for values in identities_by_scheme.values()):
+        return AnchorIdentityResolution(AnchorIdentityResolutionState.UNRESOLVED)
+
+    anchor_by_name, identity_index, complete_identity_schemes = _anchor_identity_search(context)
+    scoped_anchor_names = {sequence.local_name for sequence in context.sequences}
+
+    complete_matches: dict[str, set[SequenceIdentityValue]] = defaultdict(set)
+    for identity in identities:
+        scheme = _identity_scheme(identity)
+        if scheme not in complete_identity_schemes:
+            continue
+        for anchor_capability in identity_index.get((scheme, identity), ()):
+            complete_matches[anchor_capability.sequence_name].add(identity)
+
+    if len(complete_matches) == 1:
+        anchor_name, supporting_set = next(iter(complete_matches.items()))
+        if _identity_values_match_outside_target(identities, identity_index, anchor_name):
+            return AnchorIdentityResolution(AnchorIdentityResolutionState.UNRESOLVED)
+        if _identity_values_contradict_target(identities, anchor_by_name[anchor_name]):
+            return AnchorIdentityResolution(AnchorIdentityResolutionState.UNRESOLVED)
+        if anchor_name not in scoped_anchor_names:
+            return AnchorIdentityResolution(AnchorIdentityResolutionState.UNRESOLVED)
+
+        supporting = tuple(sorted(supporting_set, key=_identity_token))
+        anchor_capability_ids = tuple(
+            sorted(
+                {
+                    capability.id
+                    for capability in anchor_by_name[anchor_name]
+                    if capability.identity in supporting_set
+                },
+                key=str,
+            )
+        )
+        return AnchorIdentityResolution(
+            AnchorIdentityResolutionState.MATCHED,
+            anchor_sequence_name=anchor_name,
+            supporting_identity_values=supporting,
+            anchor_capability_ids=anchor_capability_ids,
+        )
+
+    if complete_matches:
+        return AnchorIdentityResolution(AnchorIdentityResolutionState.UNRESOLVED)
+
+    if any(
+        identity_index.get((_identity_scheme(identity), identity), ()) for identity in identities
+    ):
+        return AnchorIdentityResolution(AnchorIdentityResolutionState.UNRESOLVED)
+
+    absence_identities = tuple(
+        sorted(
+            (
+                identity
+                for identity in identities
+                if _identity_scheme(identity) in complete_identity_schemes
+            ),
+            key=_identity_token,
+        )
+    )
+    if absence_identities:
+        return AnchorIdentityResolution(
+            AnchorIdentityResolutionState.PROVEN_ABSENT,
+            supporting_identity_values=absence_identities,
+        )
+
+    return AnchorIdentityResolution(AnchorIdentityResolutionState.UNRESOLVED)
+
+
 def derive_sequence_bindings(
     context: ReferenceContext,
     contracts: tuple[ResourceContract, ...],
@@ -82,18 +173,12 @@ def derive_sequence_bindings(
     Peer resources never vote on the anchor. Resource-local identity evidence
     may be content-derived or an explicitly marked metadata declaration, but the
     anchor side is always reconstructed from content-derived FASTA identities. A
-    binding exists only when the local identity scheme is available for every
-    sequence in the complete FASTA anchor snapshot, the identity resolves to
-    exactly one sequence there, and every other known local identity match agrees
-    on that target. The target must also be inside the selected evaluation scope.
-    Anchor-sequence scope may hide usable targets, but it must never manufacture
-    uniqueness by hiding an otherwise ambiguous or unobserved duplicate.
-    Conflicting local identities remain unbound.
+    binding exists only when the local identity resolves through
+    :func:`resolve_anchor_sequence_identity`; explicit scope therefore cannot
+    manufacture uniqueness or hide a positive match to another target.
     """
 
     contracts_by_id = _contracts_by_id(context, contracts)
-    anchor_by_name, identity_index, complete_identity_schemes = _anchor_identity_search(context)
-    scoped_anchor_names = {sequence.local_name for sequence in context.sequences}
 
     bindings: list[SequenceBinding] = []
     for resource_id in context.scope.resource_ids:
@@ -111,49 +196,24 @@ def derive_sequence_bindings(
             if _has_scheme_conflict(capabilities):
                 continue
 
-            targets: dict[
-                str,
-                list[tuple[SequenceIdentityCapability, SequenceIdentityCapability]],
-            ] = defaultdict(list)
-            for local_capability in capabilities:
-                scheme = _identity_scheme(local_capability.identity)
-                if scheme not in complete_identity_schemes:
-                    continue
-                matches = identity_index.get(
-                    (scheme, local_capability.identity),
-                    (),
-                )
-                for anchor_capability in matches:
-                    targets[anchor_capability.sequence_name].append(
-                        (local_capability, anchor_capability)
-                    )
-
-            if len(targets) != 1:
-                continue
-            anchor_name, matched_pairs = next(iter(targets.items()))
-            if _has_identity_match_outside_target(
-                capabilities,
-                identity_index,
-                anchor_name,
-            ):
-                continue
-            if anchor_name not in scoped_anchor_names:
-                continue
-            if _contradicts_target(capabilities, anchor_by_name[anchor_name]):
-                continue
-
             identities = tuple(
-                sorted(
-                    {local.identity for local, _anchor in matched_pairs},
-                    key=_identity_token,
-                )
+                sorted({capability.identity for capability in capabilities}, key=_identity_token)
             )
+            resolution = resolve_anchor_sequence_identity(context, identities)
+            if resolution.state is not AnchorIdentityResolutionState.MATCHED:
+                continue
+            assert resolution.anchor_sequence_name is not None
+
+            supporting = set(resolution.supporting_identity_values)
             capability_ids = tuple(
                 sorted(
                     {
-                        capability_id
-                        for local, anchor in matched_pairs
-                        for capability_id in (local.id, anchor.id)
+                        *resolution.anchor_capability_ids,
+                        *(
+                            capability.id
+                            for capability in capabilities
+                            if capability.identity in supporting
+                        ),
                     },
                     key=str,
                 )
@@ -164,15 +224,15 @@ def derive_sequence_bindings(
                         resource_id,
                         local_name,
                         context.anchor_resource_id,
-                        anchor_name,
-                        identities,
+                        resolution.anchor_sequence_name,
+                        resolution.supporting_identity_values,
                     ),
                     resource_id=resource_id,
                     local_sequence_name=local_name,
                     anchor_resource_id=context.anchor_resource_id,
-                    anchor_sequence_name=anchor_name,
+                    anchor_sequence_name=resolution.anchor_sequence_name,
                     method=SequenceBindingMethod.VERIFIED_SEQUENCE_IDENTITY,
-                    identity_values=identities,
+                    identity_values=resolution.supporting_identity_values,
                     capability_ids=capability_ids,
                 )
             )
@@ -449,6 +509,32 @@ def _has_scheme_conflict(capabilities: tuple[SequenceIdentityCapability, ...]) -
     for capability in capabilities:
         by_scheme[_identity_scheme(capability.identity)].add(capability.identity)
     return any(len(values) > 1 for values in by_scheme.values())
+
+
+def _identity_values_match_outside_target(
+    identities: tuple[SequenceIdentityValue, ...],
+    identity_index: dict[tuple[str, SequenceIdentityValue], tuple[SequenceIdentityCapability, ...]],
+    target_name: str,
+) -> bool:
+    return any(
+        anchor.sequence_name != target_name
+        for identity in identities
+        for anchor in identity_index.get((_identity_scheme(identity), identity), ())
+    )
+
+
+def _identity_values_contradict_target(
+    identities: tuple[SequenceIdentityValue, ...],
+    anchor: tuple[SequenceIdentityCapability, ...],
+) -> bool:
+    anchor_by_scheme: dict[str, set[SequenceIdentityValue]] = defaultdict(set)
+    for capability in anchor:
+        anchor_by_scheme[_identity_scheme(capability.identity)].add(capability.identity)
+    return any(
+        _identity_scheme(identity) in anchor_by_scheme
+        and identity not in anchor_by_scheme[_identity_scheme(identity)]
+        for identity in identities
+    )
 
 
 def _has_identity_match_outside_target(

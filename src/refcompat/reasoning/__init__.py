@@ -30,6 +30,7 @@ from refcompat.reasoning.reference_context import (
     build_reference_context,
     derive_sequence_bindings,
     derive_sequence_identity_absences,
+    resolve_anchor_sequence_identity,
 )
 from refcompat.reasoning.sequence_dictionary import evaluate_sequence_dictionary_integrity
 from refcompat.reasoning.vcf_binding import (
@@ -73,5 +74,6 @@ __all__ = [
     "project_annotation_contract",
     "project_vcf_contract",
     "reason_bundle",
+    "resolve_anchor_sequence_identity",
     "vcf_binding_identity_capabilities",
 ]

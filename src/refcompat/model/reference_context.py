@@ -31,6 +31,59 @@ from refcompat.model.resources import ResourceId
 SequenceBindingId = NewType("SequenceBindingId", str)
 
 
+class AnchorIdentityResolutionState(StrEnum):
+    """Outcome of matching sequence content identity against the full FASTA anchor."""
+
+    MATCHED = "matched"
+    PROVEN_ABSENT = "proven_absent"
+    UNRESOLVED = "unresolved"
+
+
+@dataclass(frozen=True, slots=True)
+class AnchorIdentityResolution:
+    """Content-identity relationship to the complete FASTA anchor.
+
+    ``supporting_identity_values`` contains only identities whose schemes cover
+    the complete FASTA anchor and therefore can establish a unique match or
+    exhaustive absence. A positive match from any other known scheme can still
+    block either conclusion when it points elsewhere.
+    """
+
+    state: AnchorIdentityResolutionState
+    anchor_sequence_name: str | None = None
+    supporting_identity_values: tuple[SequenceIdentityValue, ...] = ()
+    anchor_capability_ids: tuple[CapabilityId, ...] = ()
+
+    def __post_init__(self) -> None:
+        if len(set(self.supporting_identity_values)) != len(self.supporting_identity_values):
+            raise ValueError("anchor identity resolution values must be unique")
+        if len(set(self.anchor_capability_ids)) != len(self.anchor_capability_ids):
+            raise ValueError("anchor identity resolution capability IDs must be unique")
+        if self.state is AnchorIdentityResolutionState.MATCHED:
+            if not self.anchor_sequence_name:
+                raise ValueError("matched anchor identity resolution requires a sequence name")
+            if not self.supporting_identity_values:
+                raise ValueError("matched anchor identity resolution requires supporting identity")
+            if not self.anchor_capability_ids:
+                raise ValueError(
+                    "matched anchor identity resolution requires anchor capability IDs"
+                )
+        elif self.state is AnchorIdentityResolutionState.PROVEN_ABSENT:
+            if self.anchor_sequence_name is not None:
+                raise ValueError("proven-absent anchor identity resolution cannot name a target")
+            if not self.supporting_identity_values:
+                raise ValueError("proven-absent anchor identity resolution requires identity proof")
+            if self.anchor_capability_ids:
+                raise ValueError(
+                    "proven-absent anchor identity resolution cannot cite target capabilities"
+                )
+        elif self.state is AnchorIdentityResolutionState.UNRESOLVED:
+            if self.anchor_sequence_name is not None:
+                raise ValueError("unresolved anchor identity resolution cannot name a target")
+            if self.supporting_identity_values or self.anchor_capability_ids:
+                raise ValueError("unresolved anchor identity resolution cannot carry proof trace")
+
+
 class SequenceBindingMethod(StrEnum):
     """Evidence-backed mechanism establishing a local-to-anchor sequence mapping."""
 

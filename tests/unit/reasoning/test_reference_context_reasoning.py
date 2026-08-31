@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from refcompat.model import (
+    AnchorIdentityResolutionState,
     ArtifactIdentity,
     CapabilityId,
     CollectionCompleteness,
@@ -20,7 +21,11 @@ from refcompat.model import (
     SequenceIdentityProvenance,
     SnapshotSequence,
 )
-from refcompat.reasoning import build_reference_context, derive_sequence_bindings
+from refcompat.reasoning import (
+    build_reference_context,
+    derive_sequence_bindings,
+    resolve_anchor_sequence_identity,
+)
 
 _REFERENCE = ResourceId("reference")
 _CONSUMER = ResourceId("consumer")
@@ -449,3 +454,75 @@ def test_reference_context_rejects_missing_anchor_identity() -> None:
 
     with pytest.raises(ValueError, match="must match the selected anchor snapshot"):
         replace(context, anchor_capabilities=incomplete_capabilities)
+
+
+def test_anchor_identity_resolution_matches_only_with_complete_scheme() -> None:
+    context = build_reference_context(_request(), _snapshot())
+
+    resolution = resolve_anchor_sequence_identity(context, (_REFGET_A,))
+
+    assert resolution.state is AnchorIdentityResolutionState.MATCHED
+    assert resolution.anchor_sequence_name == "chr1"
+    assert resolution.supporting_identity_values == (_REFGET_A,)
+    assert resolution.anchor_capability_ids
+
+
+def test_anchor_identity_resolution_proves_absence_only_exhaustively() -> None:
+    context = build_reference_context(_request(), _snapshot())
+    missing = RefgetSequenceId("SQ." + "Z" * 32)
+
+    resolution = resolve_anchor_sequence_identity(context, (missing,))
+
+    assert resolution.state is AnchorIdentityResolutionState.PROVEN_ABSENT
+    assert resolution.supporting_identity_values == (missing,)
+
+
+def test_anchor_identity_resolution_incomplete_positive_match_blocks_absence() -> None:
+    md5 = Md5Digest("0" * 32)
+    snapshot = SequenceCollectionSnapshot(
+        _REFERENCE,
+        CollectionCompleteness.COMPLETE,
+        sequences=(
+            SnapshotSequence("chr1", 10, 0, _REFGET_A, md5),
+            SnapshotSequence("chr2", 20, 1, _REFGET_B),
+        ),
+    )
+    context = build_reference_context(_request(), snapshot)
+    missing_refget = RefgetSequenceId("SQ." + "Z" * 32)
+
+    resolution = resolve_anchor_sequence_identity(context, (missing_refget, md5))
+
+    assert resolution.state is AnchorIdentityResolutionState.UNRESOLVED
+
+
+def test_anchor_identity_resolution_scope_cannot_hide_duplicate_match() -> None:
+    snapshot = SequenceCollectionSnapshot(
+        _REFERENCE,
+        CollectionCompleteness.COMPLETE,
+        sequences=(
+            SnapshotSequence("chr1", 10, 0, _REFGET_A),
+            SnapshotSequence("chrDup", 10, 1, _REFGET_A),
+        ),
+    )
+    context = build_reference_context(_request(("chr1",)), snapshot)
+
+    resolution = resolve_anchor_sequence_identity(context, (_REFGET_A,))
+
+    assert resolution.state is AnchorIdentityResolutionState.UNRESOLVED
+
+
+def test_anchor_identity_resolution_incomplete_scheme_cannot_prove_absence() -> None:
+    snapshot = SequenceCollectionSnapshot(
+        _REFERENCE,
+        CollectionCompleteness.COMPLETE,
+        sequences=(
+            SnapshotSequence("chr1", 10, 0, _REFGET_A),
+            SnapshotSequence("unknown", 20, 1),
+        ),
+    )
+    context = build_reference_context(_request(), snapshot)
+    missing = RefgetSequenceId("SQ." + "Z" * 32)
+
+    resolution = resolve_anchor_sequence_identity(context, (missing,))
+
+    assert resolution.state is AnchorIdentityResolutionState.UNRESOLVED

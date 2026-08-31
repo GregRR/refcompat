@@ -127,6 +127,8 @@ from refcompat.model.observations import (
     SourceLocation,
 )
 from refcompat.model.reference_context import (
+    AnchorIdentityResolution,
+    AnchorIdentityResolutionState,
     ReferenceContext,
     SequenceBinding,
     SequenceBindingId,
@@ -183,6 +185,8 @@ __all__ = [
     "AlignmentOrderRelationship",
     "AlignmentProgramRecord",
     "AlignmentSequenceResolution",
+    "AnchorIdentityResolution",
+    "AnchorIdentityResolutionState",
     "AnnotationContextSnapshot",
     "AnnotationContractProjection",
     "AnnotationCoordinateCheck",
