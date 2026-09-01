@@ -3,6 +3,8 @@
 from datetime import datetime, timezone
 from pathlib import Path
 
+import pytest
+
 from refcompat.model import (
     ArtifactIdentity,
     CollectionCompleteness,
@@ -11,12 +13,16 @@ from refcompat.model import (
     EvaluationRequest,
     EvaluationScope,
     RefgetSequenceId,
+    RequirementId,
+    RequirementLevel,
+    RequirementOrigin,
     Resource,
     ResourceContract,
     ResourceId,
     ResourceKind,
     SequenceBindingMethod,
     SequenceCollectionSnapshot,
+    SequencePresenceRequirement,
     SnapshotSequence,
     VcfChromUsage,
     VcfContextSnapshot,
@@ -48,6 +54,7 @@ from refcompat.reasoning import (
 
 _FASTA = ResourceId("reference")
 _VCF = ResourceId("variants")
+_BAM = ResourceId("alignments")
 _DB = UcscDatabaseId("testDb")
 _CONTEXT = UcscProviderContextId("testDb@fixture-v1")
 _CATALOG_SOURCE = UcscProviderSourceId("catalog")
@@ -191,6 +198,94 @@ def test_ucsc_alias_binding_drives_existing_vcf_ref_and_bundle_reasoning() -> No
 
     assert all(evaluation.state is ConstraintState.SATISFIED for evaluation in bundle.evaluations)
     assert aggregate_bundle_verdict(bundle).verdict is CompatibilityVerdict.COMPATIBLE
+
+
+def test_multiresource_profile_bindings_are_filtered_before_vcf_validation() -> None:
+    request = EvaluationRequest(
+        resources=(
+            Resource(_FASTA, ResourceKind.FASTA, ArtifactIdentity(path=Path("reference.fa"))),
+            Resource(_VCF, ResourceKind.VCF, ArtifactIdentity(path=Path("variants.vcf"))),
+            Resource(_BAM, ResourceKind.BAM, ArtifactIdentity(path=Path("alignments.bam"))),
+        ),
+        anchor_resource_id=_FASTA,
+        scope=EvaluationScope((_FASTA, _VCF, _BAM)),
+        active_profiles=(UCSC_PREFLIGHT_PROFILE_ID,),
+    )
+    anchor_snapshot = _anchor_snapshot()
+    context = build_reference_context(request, anchor_snapshot)
+    vcf_snapshot = _vcf_snapshot("1")
+    vcf_contract = build_vcf_contract(vcf_snapshot, context)
+    bam_contract = ResourceContract(
+        _BAM,
+        requirements=(
+            SequencePresenceRequirement(
+                RequirementId("bam-presence:one"),
+                _BAM,
+                RequirementOrigin.CORE_FORMAT,
+                RequirementLevel.MANDATORY,
+                "one",
+            ),
+        ),
+    )
+    provider = UcscProviderSnapshot(
+        database_id=_DB,
+        context_id=_CONTEXT,
+        sequences=(
+            UcscSequence(
+                canonical_name="chr1",
+                length=4,
+                catalog_source_ids=(_CATALOG_SOURCE,),
+                refget_id=_REFGET,
+                identity_source_ids=(_IDENTITY_SOURCE,),
+            ),
+        ),
+        aliases=(
+            UcscSequenceAlias("1", "chr1", (_ALIAS_SOURCE,), authority="vcf"),
+            UcscSequenceAlias("one", "chr1", (_ALIAS_SOURCE,), authority="bam"),
+        ),
+        catalog_completeness=UcscProviderCompleteness.COMPLETE,
+        alias_completeness=UcscProviderCompleteness.COMPLETE,
+        identity_completeness=UcscProviderCompleteness.COMPLETE,
+        sources=(
+            _source(_CATALOG_SOURCE, UcscProviderDimension.SEQUENCE_CATALOG),
+            _source(_ALIAS_SOURCE, UcscProviderDimension.ALIASES),
+            _source(_IDENTITY_SOURCE, UcscProviderDimension.CONTENT_IDENTITY),
+        ),
+    )
+    preflight = project_ucsc_preflight(
+        request,
+        UcscPreflightTarget(_DB),
+        provider,
+        context,
+        (ResourceContract(_FASTA), vcf_contract, bam_contract),
+    )
+
+    assert {binding.resource_id for binding in preflight.sequence_bindings} == {_VCF, _BAM}
+    with pytest.raises(
+        ValueError,
+        match="VCF REF sequence bindings must belong to the VCF resource",
+    ):
+        evaluate_vcf_ref_records(
+            vcf_resource_id=_VCF,
+            fasta_resource_id=_FASTA,
+            records=(VcfRefRecord(_VCF, 0, "1", 1, "A"),),
+            reference=_Reference(),
+            sequence_bindings=preflight.sequence_bindings,
+        )
+
+    vcf_bindings = tuple(
+        binding for binding in preflight.sequence_bindings if binding.resource_id == _VCF
+    )
+    validation = evaluate_vcf_ref_records(
+        vcf_resource_id=_VCF,
+        fasta_resource_id=_FASTA,
+        records=(VcfRefRecord(_VCF, 0, "1", 1, "A"),),
+        reference=_Reference(),
+        sequence_bindings=vcf_bindings,
+    )
+
+    assert validation.match_count == 1
+    assert validation.sequence_binding_ids == (vcf_bindings[0].id,)
 
 
 def test_matching_vcf_ref_cannot_rescue_missing_ucsc_target_identity() -> None:

@@ -173,7 +173,8 @@ only when all of the following are true:
 
 1. the alias evidence belongs to the explicitly selected UCSC database;
 2. the alias resolves to exactly one canonical UCSC target in the complete
-   relevant provider alias context;
+   relevant provider naming context, including both the canonical catalog and
+   alias evidence;
 3. that UCSC target has already been content-bound to exactly one sequence in
    the complete FASTA anchor;
 4. that anchor target remains inside explicit evaluation scope; and
@@ -193,21 +194,32 @@ resource-local name
 The alias never short-circuits the content-derived UCSC-target-to-anchor step.
 String resemblance is not a fallback alias source.
 
-A missing alias in a complete provider alias table establishes only that the
+A missing alias in complete provider naming evidence establishes only that the
 provider snapshot did not declare that naming relationship. It does not prove
 that the underlying biological sequence is absent or different. Incomplete or
-ambiguous alias evidence remains unresolved.
+ambiguous naming evidence remains unresolved.
+
+Distinct canonical UCSC target names remain distinct coordinate axes even when
+the provider reports identical sequence content. If two distinct canonical
+targets required by the evaluated bundle would both resolve to the same single
+FASTA anchor sequence, the profile withholds positive binding validation for
+those relationships rather than collapsing the axes. An advisory colliding target
+remains unresolved without indirectly blocking an otherwise valid mandatory
+canonical relationship. Multiple resource-local aliases that resolve to the same
+canonical UCSC target are not such a collision.
 
 Slice 3 implements this provider-name step separately from target identity. A
 represented canonical UCSC name resolves directly to that provider target but
 claims nothing about FASTA content. An alternate name resolves only when the
-snapshot declares the alias dimension `COMPLETE` and every matching alias row
+snapshot declares both the canonical sequence catalog and alias dimension
+`COMPLETE` and every matching alias row
 points to one canonical target; multiple authority columns may repeat the same
-relationship without creating ambiguity. A familiar but undeclared name, a
-partial/unknown alias dimension, or one alias pointing to multiple targets stays
-unresolved. Slice 4 composes that naming result with the independently resolved
-provider target while retaining both provider source provenance and the
-anchor-content proof trace.
+relationship without creating ambiguity. Requiring the complete catalog prevents
+an omitted canonical name from colliding invisibly with a represented alternate
+name. A familiar but undeclared name, partial/unknown catalog or alias coverage,
+or one alias pointing to multiple targets stays unresolved. Slice 4 composes that
+naming result with the independently resolved provider target while retaining
+both provider source provenance and the anchor-content proof trace.
 
 ## Profile projection into the generic reasoner
 
@@ -337,9 +349,9 @@ and offline-reference semantics remain distinct. A UCSC alias cannot turn
 missing M5 into content verification or erase an M5/length contradiction.
 
 For GTF/GFF3, Milestone 5 sparse-coordinate, embedded-content, and circular
-contracts remain unchanged. M6 need not add annotation-specific UCSC policy to
-satisfy its exit criteria; generic coordinate machinery may consume a valid
-profile-provided binding once the binding model supports it.
+contracts remain unchanged. M6 does not add an annotation-specific UCSC path;
+the generic binding model can support such composition later without changing
+annotation coordinate semantics.
 
 ## Online, offline, freshness, and reproducibility
 
@@ -356,8 +368,9 @@ Therefore:
 - the ordinary test/quality gate uses frozen redistributable provider fixtures;
 - live provider smoke tests, if present, are separate from the authoritative
   deterministic gate;
-- provider source locations and acquisition/freshness metadata remain visible in
-  diagnostics;
+- provider source locations and acquisition/freshness metadata remain retained on
+  the snapshot/profile trace for later diagnostics or reporting; the current
+  generic diagnostics do not yet render UCSC-specific provider provenance;
 - age alone does not invalidate a snapshot unless a later explicit freshness
   policy requires it;
 - a newly changed UCSC source may legitimately produce a different *new*
@@ -385,9 +398,12 @@ minimum they should cover:
 - familiar `1`/`chr1`-style resemblance with no provider alias evidence;
 - ambiguous alias mappings;
 - alias evidence from the wrong database;
-- incomplete alias data;
+- incomplete alias data or complete alias rows over an incomplete canonical
+  catalog;
 - missing provider target identity;
 - duplicate target content in the complete FASTA anchor;
+- distinct required UCSC canonical targets with identical content attempting to
+  collapse onto one FASTA coordinate axis;
 - an otherwise unique target hidden outside explicit scope;
 - provider support contradicted by stronger VCF/BAM/content evidence;
 - network/provider unavailability producing unresolved evidence rather than
@@ -424,10 +440,17 @@ conflicting/non-bindable peer identity could be overridden by provider naming,
 and a deterministic validation-ID defect that omitted provider context. Broader
 profile integration may now proceed from the hardened relationship boundary.
 
-The full M6 adversarial suite is now implemented. RefCompat next performs the
-final internal milestone review; when that review and its authoritative gate are
-clean, RefCompat stops again for the required external milestone-boundary review
-before M7.
+The full M6 adversarial suite is implemented. The final internal milestone review
+found and corrected two additional false-positive paths: alternate aliases could
+be authorized from complete alias rows over an incomplete canonical catalog, and
+distinct required UCSC canonical targets with identical content could collapse
+onto one FASTA coordinate sequence. The hardened profile now requires complete
+canonical-plus-alias naming context for alternate aliases and withholds positive
+profile authorization when distinct required canonical targets collapse onto one
+anchor sequence, while preserving advisory isolation, hard peer-content conflicts,
+and multiple aliases of one canonical target. After the authoritative gate is
+clean, RefCompat stops
+for the required external milestone-boundary review before M7.
 
 ## Primary UCSC references
 

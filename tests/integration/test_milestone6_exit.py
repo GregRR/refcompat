@@ -86,17 +86,21 @@ def _provider_snapshot(
     *,
     sequences: tuple[tuple[str, RefgetSequenceId | None], ...] = (("chr1", _REFGET_A),),
     aliases: tuple[tuple[str, str], ...] = (("1", "chr1"),),
+    catalog_completeness: UcscProviderCompleteness = UcscProviderCompleteness.COMPLETE,
     alias_completeness: UcscProviderCompleteness = UcscProviderCompleteness.COMPLETE,
     identity_completeness: UcscProviderCompleteness | None = None,
     database_id: UcscDatabaseId = _DB,
     context_id: UcscProviderContextId = _CONTEXT,
 ) -> UcscProviderSnapshot:
     if identity_completeness is None:
-        identity_completeness = (
-            UcscProviderCompleteness.COMPLETE
-            if all(identity is not None for _name, identity in sequences)
-            else UcscProviderCompleteness.UNKNOWN
-        )
+        if all(identity is not None for _name, identity in sequences):
+            identity_completeness = (
+                UcscProviderCompleteness.COMPLETE
+                if catalog_completeness is UcscProviderCompleteness.COMPLETE
+                else UcscProviderCompleteness.PARTIAL
+            )
+        else:
+            identity_completeness = UcscProviderCompleteness.UNKNOWN
     return UcscProviderSnapshot(
         database_id=database_id,
         context_id=context_id,
@@ -114,7 +118,7 @@ def _provider_snapshot(
             UcscSequenceAlias(alias, target, (_ALIAS_SOURCE,), authority="fixture-authority")
             for alias, target in aliases
         ),
-        catalog_completeness=UcscProviderCompleteness.COMPLETE,
+        catalog_completeness=catalog_completeness,
         alias_completeness=alias_completeness,
         identity_completeness=identity_completeness,
         sources=(
@@ -380,6 +384,58 @@ def test_incomplete_alias_context_cannot_manufacture_binding() -> None:
     trace = projection.sequence_projections[0]
     assert trace.name_resolution.reason is UcscNameResolutionReason.ALIAS_EVIDENCE_INCOMPLETE
     assert trace.sequence_binding is None
+    assert verdict is CompatibilityVerdict.INDETERMINATE
+
+
+def test_complete_alias_rows_with_partial_catalog_cannot_manufacture_binding() -> None:
+    projection, verdict = _reason(
+        _provider_snapshot(
+            catalog_completeness=UcscProviderCompleteness.PARTIAL,
+            alias_completeness=UcscProviderCompleteness.COMPLETE,
+        ),
+        _anchor(SnapshotSequence("chr1", 4, 0, _REFGET_A)),
+        _peer_contract("1"),
+    )
+
+    trace = projection.sequence_projections[0]
+    assert trace.name_resolution.reason is UcscNameResolutionReason.ALIAS_EVIDENCE_INCOMPLETE
+    assert trace.sequence_binding is None
+    assert verdict is CompatibilityVerdict.INDETERMINATE
+
+
+def test_distinct_ucsc_canonical_targets_cannot_collapse_to_one_anchor_axis() -> None:
+    provider = _provider_snapshot(
+        sequences=(("chr1", _REFGET_A), ("chr2", _REFGET_A)),
+        aliases=(),
+    )
+    peer = ResourceContract(
+        _PEER,
+        requirements=(
+            SequencePresenceRequirement(
+                RequirementId("presence:chr1"),
+                _PEER,
+                RequirementOrigin.CORE_FORMAT,
+                RequirementLevel.MANDATORY,
+                "chr1",
+            ),
+            SequencePresenceRequirement(
+                RequirementId("presence:chr2"),
+                _PEER,
+                RequirementOrigin.CORE_FORMAT,
+                RequirementLevel.MANDATORY,
+                "chr2",
+            ),
+        ),
+    )
+
+    projection, verdict = _reason(
+        provider,
+        _anchor(SnapshotSequence("chrShared", 4, 0, _REFGET_A)),
+        peer,
+    )
+
+    assert len(projection.sequence_projections) == 2
+    assert all(trace.sequence_binding is None for trace in projection.sequence_projections)
     assert verdict is CompatibilityVerdict.INDETERMINATE
 
 

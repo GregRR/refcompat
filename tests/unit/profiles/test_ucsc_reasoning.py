@@ -86,6 +86,7 @@ def _snapshot(
     *,
     sequences: tuple[UcscSequence, ...],
     aliases: tuple[UcscSequenceAlias, ...] = (),
+    catalog_completeness: UcscProviderCompleteness = UcscProviderCompleteness.COMPLETE,
     alias_completeness: UcscProviderCompleteness = UcscProviderCompleteness.COMPLETE,
     identity_completeness: UcscProviderCompleteness = UcscProviderCompleteness.COMPLETE,
 ) -> UcscProviderSnapshot:
@@ -94,7 +95,7 @@ def _snapshot(
         context_id=_CONTEXT,
         sequences=sequences,
         aliases=aliases,
-        catalog_completeness=UcscProviderCompleteness.COMPLETE,
+        catalog_completeness=catalog_completeness,
         alias_completeness=alias_completeness,
         identity_completeness=identity_completeness,
         sources=(
@@ -166,7 +167,7 @@ def test_complete_unique_authoritative_alias_resolves() -> None:
     assert resolution.method is UcscNameResolutionMethod.AUTHORITATIVE_ALIAS
     assert resolution.reason is UcscNameResolutionReason.AUTHORITATIVE_ALIAS
     assert resolution.canonical_name == "chr1"
-    assert resolution.provider_source_ids == (_ALIAS_SOURCE,)
+    assert resolution.provider_source_ids == (_ALIAS_SOURCE, _CATALOG_SOURCE)
 
 
 def test_alias_repeated_by_multiple_authorities_can_resolve_same_target() -> None:
@@ -183,6 +184,22 @@ def test_alias_repeated_by_multiple_authorities_can_resolve_same_target() -> Non
 
     assert resolution.state is UcscNameResolutionState.RESOLVED
     assert resolution.canonical_name == "chr1"
+
+
+def test_authoritative_alias_requires_complete_canonical_catalog() -> None:
+    alias = UcscSequenceAlias("1", "chr1", (_ALIAS_SOURCE,), authority="ensembl")
+    snapshot = _snapshot(
+        sequences=(_ucsc_sequence("chr1", 10, refget_id=_REFGET_A),),
+        aliases=(alias,),
+        catalog_completeness=UcscProviderCompleteness.PARTIAL,
+        alias_completeness=UcscProviderCompleteness.COMPLETE,
+        identity_completeness=UcscProviderCompleteness.PARTIAL,
+    )
+
+    resolution = resolve_ucsc_sequence_name(snapshot, "1")
+
+    assert resolution.state is UcscNameResolutionState.UNRESOLVED
+    assert resolution.reason is UcscNameResolutionReason.ALIAS_EVIDENCE_INCOMPLETE
 
 
 def test_ambiguous_authoritative_alias_remains_unresolved() -> None:

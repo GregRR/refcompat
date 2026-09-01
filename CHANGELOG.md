@@ -6,6 +6,7 @@ The project is currently pre-release; entries under `Unreleased` describe ongoin
 
 ## Unreleased
 
+- Harden the Milestone 6 final internal-review boundary: require complete canonical-catalog plus alias evidence before an alternate UCSC name can authorize a relationship, prevent distinct required UCSC canonical targets with identical content from collapsing onto one FASTA coordinate sequence, preserve advisory isolation, stronger peer-content conflicts, and same-target multi-alias behavior, and document resource-local filtering when bundle-wide profile bindings are passed to format-specific validators.
 - Complete the Milestone 6 adversarial exit suite with network-independent coverage for explicit target selection, content-before-name proof, exhaustive target absence, ambiguous/incomplete/cross-wired provider evidence, full-anchor uniqueness before scope, stronger peer-content precedence, deterministic offline equivalence, provider unavailability, mixed hard/unresolved evidence, explicit scope conditions, and a non-reference invalid-hub negative control.
 
 - Harden Milestone 6 provider/offline behavior with a strict deterministic UCSC snapshot artifact boundary, frozen network-independent fixtures, exact artifact-digest verification, and an explicit unavailable-provider path that leaves profile requirements unresolved rather than manufacturing incompatibility.

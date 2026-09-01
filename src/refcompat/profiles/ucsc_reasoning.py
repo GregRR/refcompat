@@ -130,9 +130,10 @@ def resolve_ucsc_sequence_name(
     """Resolve one label to a canonical UCSC target without claiming identity.
 
     A represented canonical name is direct provider naming evidence. Alternate
-    names require a complete alias dimension and one unique target in that full
-    provider context. Missing, partial, or ambiguous alias evidence remains
-    unresolved and never implies biological absence.
+    names require a complete canonical catalog, a complete alias dimension, and
+    one unique target in that full provider naming context. Missing, partial, or
+    ambiguous alias evidence remains unresolved and never implies biological
+    absence.
     """
 
     if not local_name:
@@ -150,13 +151,16 @@ def resolve_ucsc_sequence_name(
         )
 
     matching_aliases = tuple(alias for alias in snapshot.aliases if alias.alias == local_name)
-    alias_source_ids = _alias_source_ids(snapshot, matching_aliases)
-    if snapshot.alias_completeness is not UcscProviderCompleteness.COMPLETE:
+    naming_source_ids = _alias_naming_source_ids(snapshot, matching_aliases)
+    if (
+        snapshot.catalog_completeness is not UcscProviderCompleteness.COMPLETE
+        or snapshot.alias_completeness is not UcscProviderCompleteness.COMPLETE
+    ):
         return UcscNameResolution(
             local_name,
             UcscNameResolutionState.UNRESOLVED,
             UcscNameResolutionReason.ALIAS_EVIDENCE_INCOMPLETE,
-            provider_source_ids=alias_source_ids,
+            provider_source_ids=naming_source_ids,
         )
 
     targets = tuple(dict.fromkeys(alias.canonical_name for alias in matching_aliases))
@@ -165,14 +169,14 @@ def resolve_ucsc_sequence_name(
             local_name,
             UcscNameResolutionState.UNRESOLVED,
             UcscNameResolutionReason.UNDECLARED_NAME,
-            provider_source_ids=alias_source_ids,
+            provider_source_ids=naming_source_ids,
         )
     if len(targets) != 1:
         return UcscNameResolution(
             local_name,
             UcscNameResolutionState.UNRESOLVED,
             UcscNameResolutionReason.AMBIGUOUS_ALIAS,
-            provider_source_ids=alias_source_ids,
+            provider_source_ids=naming_source_ids,
         )
 
     return UcscNameResolution(
@@ -181,7 +185,7 @@ def resolve_ucsc_sequence_name(
         UcscNameResolutionReason.AUTHORITATIVE_ALIAS,
         canonical_name=targets[0],
         method=UcscNameResolutionMethod.AUTHORITATIVE_ALIAS,
-        provider_source_ids=alias_source_ids,
+        provider_source_ids=naming_source_ids,
     )
 
 
@@ -189,6 +193,25 @@ def _target_source_ids(sequence: UcscSequence) -> tuple[UcscProviderSourceId, ..
     return tuple(
         sorted(
             {*sequence.catalog_source_ids, *sequence.identity_source_ids},
+            key=str,
+        )
+    )
+
+
+def _alias_naming_source_ids(
+    snapshot: UcscProviderSnapshot,
+    matching_aliases: tuple[UcscSequenceAlias, ...],
+) -> tuple[UcscProviderSourceId, ...]:
+    return tuple(
+        sorted(
+            {
+                *(
+                    source.id
+                    for source in snapshot.sources
+                    if UcscProviderDimension.SEQUENCE_CATALOG in source.dimensions
+                ),
+                *_alias_source_ids(snapshot, matching_aliases),
+            },
             key=str,
         )
     )

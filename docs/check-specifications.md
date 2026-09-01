@@ -673,7 +673,8 @@ ambiguous identity remains unresolved.
 A UCSC-authoritative alias can resolve a resource-local name only when:
 
 1. the alias belongs to the selected database context;
-2. it maps uniquely to one canonical UCSC target in the complete relevant alias
+2. it maps uniquely to one canonical UCSC target in the complete relevant naming
+   evidence, requiring both a complete canonical catalog and complete alias
    evidence;
 3. that UCSC target has already been content-bound to exactly one FASTA-anchor
    sequence;
@@ -684,9 +685,12 @@ The alias is naming evidence. It does not become a refget/MD5 identity for the
 peer resource. Familiar string transforms such as `1` ↔ `chr1`, `MT` ↔ `chrM`,
 or accession-version stripping remain unsupported without evidence.
 
-A missing alias, even from a complete provider alias table, does not prove that
+A missing alias, even from complete provider naming evidence, does not prove that
 the underlying biological sequence is absent or different. It establishes only
-that this provider snapshot did not declare the naming relationship.
+that this provider snapshot did not declare the naming relationship. An alternate
+alias cannot authorize a positive relationship when the canonical catalog is
+incomplete, because an omitted canonical name could otherwise collide with the
+queried alias.
 
 ### Profile projection
 
@@ -713,12 +717,21 @@ the provider-target-to-anchor leg and must not be reinterpreted as peer-owned
 content identity. Generic bundle reasoning accepts such a supplemental binding
 only when that trace itself uniquely resolves against the complete FASTA anchor
 and exactly one matching `BOUND` pair validation authorizes the relationship.
-Profile-specific provenance remains on the profile projection. The existing
-content-derived binding path is unchanged.
+Profile-specific provenance remains on the profile projection. Distinct required
+UCSC canonical targets are treated as distinct coordinate axes even when their
+provider content identities are equal: the profile withholds positive binding
+validation if two such targets would collapse onto one FASTA sequence. An
+advisory colliding target remains unresolved without indirectly blocking an
+otherwise valid mandatory canonical relationship. Multiple resource-local aliases
+resolving to the same canonical UCSC target are not such a collision. The
+existing content-derived binding path is unchanged.
 
 The resulting relationship is then reused by generic/core presence, length,
 identity, coordinate-bounds, VCF REF, BAM/CRAM dictionary, evidence, finding,
-and verdict behavior. For BAM/CRAM, a completed bundle may supply its validated
+and verdict behavior. Profile projections contain bundle-wide bindings; a
+resource-local validator such as the VCF REF evaluator must receive only the
+bindings belonging to that resource, and rejects cross-resource bindings rather
+than guessing. For BAM/CRAM, a completed bundle may supply its validated
 authoritative-name binding to dictionary relationship classification; that can
 resolve naming, membership, and order but does not convert provider target
 identity into alignment-owned M5 evidence. CRAM offline reference planning may
@@ -761,10 +774,12 @@ provider fixtures rather than live services.
 
 The deterministic exit suite exercises the profile proof chain across explicit
 target selection, exact and authoritative-alias naming, exhaustive target-content
-absence, ambiguous and incomplete provider evidence, cross-wired provider input,
-full-anchor uniqueness before scope, stronger peer-content precedence, explicit
-scope conditions, fixed-snapshot online/offline equivalence, complete provider
-unavailability, and mixed hard/unresolved evidence. Dedicated integration tests
+absence, ambiguous and incomplete provider evidence (including complete alias
+rows over an incomplete canonical catalog), cross-wired provider input,
+full-anchor uniqueness before scope, distinct-canonical-target collapse, stronger
+peer-content precedence, explicit scope conditions, fixed-snapshot online/offline
+equivalence, complete provider unavailability, and mixed hard/unresolved evidence.
+Dedicated integration tests
 continue to exercise the representative VCF and BAM/CRAM paths through their
 existing core validators. A synthetic invalid-hub negative control additionally
 pins that `COMPATIBLE` reference evidence is not a structural track-hub verdict;

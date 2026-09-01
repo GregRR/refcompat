@@ -267,6 +267,17 @@ def project_ucsc_preflight(
     effective_by_key = {
         (binding.resource_id, binding.local_sequence_name): binding for binding in existing_bindings
     }
+    provider_resolutions = _resolve_provider_relationships(
+        request,
+        provider_snapshot,
+        reference_context,
+        ordered_contracts,
+    )
+    requirement_levels = _profile_requirement_levels(request, ordered_contracts)
+    colliding_provider_keys = _colliding_provider_resolution_keys(
+        provider_resolutions,
+        requirement_levels,
+    )
 
     sequence_projections: list[UcscPreflightSequenceProjection] = []
     supplemental_bindings: list[SequenceBinding] = []
@@ -295,27 +306,14 @@ def project_ucsc_preflight(
             )
             profile_requirements.append(requirement)
 
-            name_resolution = (
-                resolve_ucsc_sequence_name(provider_snapshot, local_name)
-                if provider_snapshot is not None
-                else UcscNameResolution(
-                    local_name,
-                    UcscNameResolutionState.UNRESOLVED,
-                    UcscNameResolutionReason.PROVIDER_EVIDENCE_UNAVAILABLE,
-                )
-            )
-            target_resolution: UcscTargetResolution | None = None
+            name_resolution, target_resolution = provider_resolutions[
+                (contract.resource_id, local_name)
+            ]
             sequence_binding: SequenceBinding | None = None
             validation_capability: SequenceBindingValidationCapability | None = None
 
-            if name_resolution.state is UcscNameResolutionState.RESOLVED:
+            if target_resolution is not None:
                 assert provider_snapshot is not None
-                assert name_resolution.canonical_name is not None
-                target_resolution = resolve_ucsc_target(
-                    provider_snapshot,
-                    reference_context,
-                    name_resolution.canonical_name,
-                )
                 if target_resolution.state is UcscTargetResolutionState.BOUND:
                     assert target_resolution.binding is not None
                     target_binding = target_resolution.binding
@@ -327,11 +325,31 @@ def project_ucsc_preflight(
                         if isinstance(capability, SequenceIdentityCapability)
                         and capability.sequence_name == local_name
                     )
-                    if existing is None and not identity_evidence_is_consistent_with_anchor_target(
-                        reference_context,
-                        local_identities,
-                        target_binding.anchor_sequence_name,
+                    if (
+                        existing is not None
+                        and existing.anchor_sequence_name != target_binding.anchor_sequence_name
                     ):
+                        sequence_binding = existing
+                        validation_capability = _content_conflict_validation_capability(
+                            contract.resource_id,
+                            local_name,
+                            name_resolution,
+                            target_resolution,
+                            existing,
+                        )
+                    elif (
+                        existing is None
+                        and not identity_evidence_is_consistent_with_anchor_target(
+                            reference_context,
+                            local_identities,
+                            target_binding.anchor_sequence_name,
+                        )
+                    ):
+                        sequence_binding = None
+                    elif key in colliding_provider_keys:
+                        # Distinct UCSC canonical targets are distinct coordinate axes even
+                        # when their provider content is identical. One FASTA sequence cannot
+                        # positively authenticate conflicting required canonical targets.
                         sequence_binding = None
                     elif existing is None:
                         sequence_binding = _authoritative_sequence_binding(
@@ -342,17 +360,8 @@ def project_ucsc_preflight(
                         )
                         effective_by_key[key] = sequence_binding
                         supplemental_bindings.append(sequence_binding)
-                    elif existing.anchor_sequence_name == target_binding.anchor_sequence_name:
-                        sequence_binding = existing
                     else:
                         sequence_binding = existing
-                        validation_capability = _content_conflict_validation_capability(
-                            contract.resource_id,
-                            local_name,
-                            name_resolution,
-                            target_resolution,
-                            existing,
-                        )
 
                     if sequence_binding is not None and validation_capability is None:
                         validation_capability = _bound_validation_capability(
@@ -404,6 +413,112 @@ def project_ucsc_preflight(
         supplemental_sequence_bindings=tuple(supplemental_bindings),
         binding_capabilities=tuple(binding_capabilities),
     )
+
+
+def _resolve_provider_relationships(
+    request: EvaluationRequest,
+    provider_snapshot: UcscProviderSnapshot | None,
+    reference_context: ReferenceContext,
+    contracts: tuple[ResourceContract, ...],
+) -> dict[tuple[ResourceId, str], tuple[UcscNameResolution, UcscTargetResolution | None]]:
+    """Resolve provider naming and target content once for every peer-local name."""
+
+    resolutions: dict[
+        tuple[ResourceId, str],
+        tuple[UcscNameResolution, UcscTargetResolution | None],
+    ] = {}
+    for contract in contracts:
+        if contract.resource_id == request.anchor_resource_id:
+            continue
+        for local_name, _level in _required_sequence_names(contract):
+            target_resolution: UcscTargetResolution | None
+            if provider_snapshot is None:
+                name_resolution = UcscNameResolution(
+                    local_name,
+                    UcscNameResolutionState.UNRESOLVED,
+                    UcscNameResolutionReason.PROVIDER_EVIDENCE_UNAVAILABLE,
+                )
+                target_resolution = None
+            else:
+                name_resolution = resolve_ucsc_sequence_name(provider_snapshot, local_name)
+                target_resolution = (
+                    resolve_ucsc_target(
+                        provider_snapshot,
+                        reference_context,
+                        name_resolution.canonical_name,
+                    )
+                    if name_resolution.state is UcscNameResolutionState.RESOLVED
+                    and name_resolution.canonical_name is not None
+                    else None
+                )
+            resolutions[(contract.resource_id, local_name)] = (
+                name_resolution,
+                target_resolution,
+            )
+    return resolutions
+
+
+def _profile_requirement_levels(
+    request: EvaluationRequest,
+    contracts: tuple[ResourceContract, ...],
+) -> dict[tuple[ResourceId, str], RequirementLevel]:
+    return {
+        (contract.resource_id, local_name): level
+        for contract in contracts
+        if contract.resource_id != request.anchor_resource_id
+        for local_name, level in _required_sequence_names(contract)
+    }
+
+
+def _colliding_provider_resolution_keys(
+    resolutions: dict[
+        tuple[ResourceId, str],
+        tuple[UcscNameResolution, UcscTargetResolution | None],
+    ],
+    requirement_levels: dict[tuple[ResourceId, str], RequirementLevel],
+) -> frozenset[tuple[ResourceId, str]]:
+    """Find relationships that cannot share one anchor coordinate axis.
+
+    Distinct canonical targets may not both receive positive authorization for
+    one FASTA sequence. Advisory relationships must not indirectly block a
+    mandatory relationship, so a single mandatory canonical target wins over
+    colliding advisory targets while those advisory relationships stay
+    unresolved. If multiple mandatory canonical targets collide, all
+    relationships on that anchor stay unresolved.
+    """
+
+    by_anchor: dict[str, list[tuple[tuple[ResourceId, str], str]]] = {}
+    for key, (_name_resolution, target_resolution) in resolutions.items():
+        if (
+            target_resolution is None
+            or target_resolution.state is not UcscTargetResolutionState.BOUND
+            or target_resolution.binding is None
+        ):
+            continue
+        by_anchor.setdefault(target_resolution.binding.anchor_sequence_name, []).append(
+            (key, target_resolution.canonical_name)
+        )
+
+    blocked: set[tuple[ResourceId, str]] = set()
+    for relationships in by_anchor.values():
+        canonical_names = {canonical_name for _key, canonical_name in relationships}
+        if len(canonical_names) < 2:
+            continue
+        mandatory_canonical_names = {
+            canonical_name
+            for key, canonical_name in relationships
+            if requirement_levels[key] is RequirementLevel.MANDATORY
+        }
+        if len(mandatory_canonical_names) == 1:
+            mandatory_canonical_name = next(iter(mandatory_canonical_names))
+            blocked.update(
+                key
+                for key, canonical_name in relationships
+                if canonical_name != mandatory_canonical_name
+            )
+        else:
+            blocked.update(key for key, _canonical_name in relationships)
+    return frozenset(blocked)
 
 
 def _validate_projection_inputs(

@@ -579,6 +579,215 @@ def test_direct_peer_identity_mismatch_blocks_authoritative_name_binding() -> No
     assert aggregate_bundle_verdict(result).verdict is CompatibilityVerdict.INDETERMINATE
 
 
+def test_distinct_canonical_targets_cannot_collapse_to_one_anchor_sequence() -> None:
+    anchor = _anchor_snapshot((SnapshotSequence("chrShared", 10, 0, _A),))
+    provider = _provider_snapshot(
+        sequences=(
+            _provider_sequence("chr1", 10, _A),
+            _provider_sequence("chr2", 10, _A),
+        ),
+    )
+    request = _request(local_name="chr1")
+    context = build_reference_context(request, anchor)
+    peer = ResourceContract(
+        _PEER,
+        requirements=(
+            SequencePresenceRequirement(
+                RequirementId("presence:chr1"),
+                _PEER,
+                RequirementOrigin.CORE_FORMAT,
+                RequirementLevel.MANDATORY,
+                "chr1",
+            ),
+            SequencePresenceRequirement(
+                RequirementId("presence:chr2"),
+                _PEER,
+                RequirementOrigin.CORE_FORMAT,
+                RequirementLevel.MANDATORY,
+                "chr2",
+            ),
+        ),
+    )
+
+    projection = project_ucsc_preflight(
+        request,
+        UcscPreflightTarget(_DB),
+        provider,
+        context,
+        (ResourceContract(_REFERENCE), peer),
+    )
+
+    assert len(projection.sequence_projections) == 2
+    assert all(
+        trace.target_resolution is not None
+        and trace.target_resolution.state is UcscTargetResolutionState.BOUND
+        for trace in projection.sequence_projections
+    )
+    assert all(trace.sequence_binding is None for trace in projection.sequence_projections)
+    assert all(trace.validation_capability is None for trace in projection.sequence_projections)
+    result = _reason(request, anchor, projection)
+    assert aggregate_bundle_verdict(result).verdict is CompatibilityVerdict.INDETERMINATE
+
+
+def test_advisory_target_collision_does_not_block_mandatory_relationship() -> None:
+    anchor = _anchor_snapshot((SnapshotSequence("chrShared", 10, 0, _A),))
+    provider = _provider_snapshot(
+        sequences=(
+            _provider_sequence("chr1", 10, _A),
+            _provider_sequence("chr2", 10, _A),
+        ),
+    )
+    request = _request(local_name="chr1")
+    context = build_reference_context(request, anchor)
+    peer = ResourceContract(
+        _PEER,
+        requirements=(
+            SequencePresenceRequirement(
+                RequirementId("presence:chr1"),
+                _PEER,
+                RequirementOrigin.CORE_FORMAT,
+                RequirementLevel.MANDATORY,
+                "chr1",
+            ),
+            SequencePresenceRequirement(
+                RequirementId("presence:chr2"),
+                _PEER,
+                RequirementOrigin.CORE_FORMAT,
+                RequirementLevel.ADVISORY,
+                "chr2",
+            ),
+        ),
+    )
+
+    projection = project_ucsc_preflight(
+        request,
+        UcscPreflightTarget(_DB),
+        provider,
+        context,
+        (ResourceContract(_REFERENCE), peer),
+    )
+
+    by_name = {trace.local_sequence_name: trace for trace in projection.sequence_projections}
+    assert by_name["chr1"].sequence_binding is not None
+    assert by_name["chr1"].validation_capability is not None
+    assert by_name["chr2"].sequence_binding is None
+    assert by_name["chr2"].validation_capability is None
+    result = _reason(request, anchor, projection)
+    assert aggregate_bundle_verdict(result).verdict is CompatibilityVerdict.COMPATIBLE
+
+
+def test_multiple_aliases_to_same_canonical_target_can_share_anchor_sequence() -> None:
+    anchor = _anchor_snapshot((SnapshotSequence("chr1", 10, 0, _A),))
+    provider = _provider_snapshot(
+        sequences=(_provider_sequence("chr1", 10, _A),),
+        aliases=(
+            UcscSequenceAlias("1", "chr1", (_ALIAS_SOURCE,), authority="first"),
+            UcscSequenceAlias("one", "chr1", (_ALIAS_SOURCE,), authority="second"),
+        ),
+    )
+    request = _request(local_name="1")
+    context = build_reference_context(request, anchor)
+    peer = ResourceContract(
+        _PEER,
+        requirements=(
+            SequencePresenceRequirement(
+                RequirementId("presence:1"),
+                _PEER,
+                RequirementOrigin.CORE_FORMAT,
+                RequirementLevel.MANDATORY,
+                "1",
+            ),
+            SequencePresenceRequirement(
+                RequirementId("presence:one"),
+                _PEER,
+                RequirementOrigin.CORE_FORMAT,
+                RequirementLevel.MANDATORY,
+                "one",
+            ),
+        ),
+    )
+
+    projection = project_ucsc_preflight(
+        request,
+        UcscPreflightTarget(_DB),
+        provider,
+        context,
+        (ResourceContract(_REFERENCE), peer),
+    )
+
+    assert len(projection.supplemental_sequence_bindings) == 2
+    anchor_names = {
+        binding.anchor_sequence_name for binding in projection.supplemental_sequence_bindings
+    }
+    assert anchor_names == {"chr1"}
+    result = _reason(request, anchor, projection)
+    assert aggregate_bundle_verdict(result).verdict is CompatibilityVerdict.COMPATIBLE
+
+
+def test_content_conflict_still_wins_when_provider_targets_collapse() -> None:
+    anchor = _anchor_snapshot(
+        (
+            SnapshotSequence("chrShared", 10, 0, _A),
+            SnapshotSequence("peerTarget", 10, 1, _B),
+        )
+    )
+    provider = _provider_snapshot(
+        sequences=(
+            _provider_sequence("chr1", 10, _A),
+            _provider_sequence("chr2", 10, _A),
+        ),
+    )
+    request = _request(local_name="chr1")
+    context = build_reference_context(request, anchor)
+    peer = ResourceContract(
+        _PEER,
+        requirements=(
+            SequencePresenceRequirement(
+                RequirementId("presence:chr1"),
+                _PEER,
+                RequirementOrigin.CORE_FORMAT,
+                RequirementLevel.MANDATORY,
+                "chr1",
+            ),
+            SequencePresenceRequirement(
+                RequirementId("presence:chr2"),
+                _PEER,
+                RequirementOrigin.CORE_FORMAT,
+                RequirementLevel.MANDATORY,
+                "chr2",
+            ),
+        ),
+        capabilities=(
+            SequenceIdentityCapability(
+                CapabilityId("peer-identity:chr1"),
+                _PEER,
+                "chr1",
+                _B,
+                provenance=SequenceIdentityProvenance.CONTENT_DERIVED,
+            ),
+        ),
+    )
+
+    projection = project_ucsc_preflight(
+        request,
+        UcscPreflightTarget(_DB),
+        provider,
+        context,
+        (ResourceContract(_REFERENCE), peer),
+    )
+
+    by_name = {trace.local_sequence_name: trace for trace in projection.sequence_projections}
+    assert (
+        by_name["chr1"].validation_capability is not None
+        and by_name["chr1"].validation_capability.state
+        is SequenceBindingValidationState.CONTENT_CONFLICT
+    )
+    assert by_name["chr2"].sequence_binding is None
+    assert by_name["chr2"].validation_capability is None
+    result = _reason(request, anchor, projection)
+    assert aggregate_bundle_verdict(result).verdict is CompatibilityVerdict.INCOMPATIBLE
+
+
 def test_absence_validation_id_includes_provider_context() -> None:
     anchor = _anchor_snapshot((SnapshotSequence("chr1", 10, 0, _A),))
     first = _provider_snapshot(
