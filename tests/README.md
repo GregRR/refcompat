@@ -65,3 +65,13 @@ See [`../docs/check-specifications.md`](../docs/check-specifications.md) for the
 - Milestone 4 CRAM integration coverage writes a mapped CRAM against one FASTA, removes that writer-side reference, and verifies that a separately selected but content-identical anchor approved by the planner restores the record when passed explicitly to pysam.
 
 - Milestone 5 annotation tests cover streaming GTF/GFF3 observation, percent-decoded seqids, sparse exact-name and verified cross-name resolution, ordinary and sequence-region bounds, landmark-aware single-wrap circular semantics, rejection of malformed/repeated `Is_circular` control metadata, embedded-FASTA content identity, externally supplied `CONTENT_DERIVED` GTF identity, exhaustive full-anchor sequence-identity absence, safeguards against metadata/incomplete coverage/duplicate or scope-hidden matches/conflicting identities, non-redundant exact-name embedded-content conflicts, and end-to-end incompatibility when required sequence content is proven absent even though coordinate mapping remains unresolved.
+
+- Milestone 6 UCSC-preflight tests pin explicit target selection, immutable
+  provider-context provenance, content-before-name binding, authoritative alias
+  completeness/ambiguity, exhaustive full-anchor identity and absence, scope
+  non-manufacture plus positive conditional scope, peer-content precedence, VCF
+  REF reuse, BAM/CRAM dictionary reuse without promoting provider identity to M5,
+  strict CRAM decoder-reference deferral, deterministic snapshot serialization
+  and SHA-256 verification, online/offline fixed-snapshot equivalence, provider
+  unavailability, mixed hard/unresolved verdict precedence, and an invalid-hub
+  negative control that keeps structural UCSC validation outside RefCompat.

@@ -6,6 +6,8 @@ The project is currently pre-release; entries under `Unreleased` describe ongoin
 
 ## Unreleased
 
+- Complete the Milestone 6 adversarial exit suite with network-independent coverage for explicit target selection, content-before-name proof, exhaustive target absence, ambiguous/incomplete/cross-wired provider evidence, full-anchor uniqueness before scope, stronger peer-content precedence, deterministic offline equivalence, provider unavailability, mixed hard/unresolved evidence, explicit scope conditions, and a non-reference invalid-hub negative control.
+
 - Harden Milestone 6 provider/offline behavior with a strict deterministic UCSC snapshot artifact boundary, frozen network-independent fixtures, exact artifact-digest verification, and an explicit unavailable-provider path that leaves profile requirements unresolved rather than manufacturing incompatibility.
 
 - Extend Milestone 6 UCSC preflight across BAM/CRAM dictionary reasoning: reuse validated authoritative-name bindings in alignment relationship summaries while keeping M5 content claims separate and preserving strict CRAM offline-reference deferral for cross-name/provider-backed relationships.

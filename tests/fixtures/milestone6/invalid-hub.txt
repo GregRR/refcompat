@@ -1,0 +1,5 @@
+# Deliberately incomplete synthetic UCSC hub descriptor.
+# It is a non-reference negative control and is never parsed by RefCompat.
+shortLabel Synthetic invalid hub
+longLabel Reference-compatible data can still fail unrelated hub requirements
+email nobody@example.invalid

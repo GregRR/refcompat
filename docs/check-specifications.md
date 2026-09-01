@@ -757,6 +757,19 @@ provider fixtures rather than live services.
   alias evidence, unavailable required provider evidence, and other unresolved
   mandatory target relationships.
 
+### Milestone 6 exit coverage
+
+The deterministic exit suite exercises the profile proof chain across explicit
+target selection, exact and authoritative-alias naming, exhaustive target-content
+absence, ambiguous and incomplete provider evidence, cross-wired provider input,
+full-anchor uniqueness before scope, stronger peer-content precedence, explicit
+scope conditions, fixed-snapshot online/offline equivalence, complete provider
+unavailability, and mixed hard/unresolved evidence. Dedicated integration tests
+continue to exercise the representative VCF and BAM/CRAM paths through their
+existing core validators. A synthetic invalid-hub negative control additionally
+pins that `COMPATIBLE` reference evidence is not a structural track-hub verdict;
+structural hub validation remains outside RCHECK-070.
+
 ### Initial M6 non-goals
 
 The first profile does not implement bigBed/bigWig reference checks, full track

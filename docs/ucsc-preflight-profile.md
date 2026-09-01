@@ -1,6 +1,6 @@
 # UCSC preflight profile
 
-**Status:** Milestone 6 Slices 1–6 implemented: provider snapshot, target-content/name reasoning, generic profile binding, VCF and BAM/CRAM integration, and the deterministic provider/offline snapshot boundary are complete; the first internal scientific/code checkpoint and targeted Slice 4 external review are closed, including the reviewer-requested peer-identity regression coverage. CRAM offline decoder-reference eligibility remains intentionally stricter than profile compatibility.
+**Status:** Milestone 6 Slices 1–7 implemented: provider snapshot, target-content/name reasoning, generic profile binding, VCF and BAM/CRAM integration, deterministic provider/offline snapshot handling, and the adversarial milestone-exit suite are complete. The first internal scientific/code checkpoint and targeted Slice 4 external review are closed, including the reviewer-requested peer-identity regression coverage. CRAM offline decoder-reference eligibility remains intentionally stricter than profile compatibility. Final internal milestone review and the required external milestone-boundary review remain before M7.
 
 RCHECK-070 defines RefCompat's first ecosystem profile. The profile asks whether
 in-scope resources can satisfy the reference-coordinate and naming requirements
@@ -398,6 +398,17 @@ minimum they should cover:
 - a negative control where reference compatibility passes but UCSC hosting or
   hub configuration would still fail for a non-reference reason.
 
+Slice 7 implements this matrix in `tests/integration/test_milestone6_exit.py` with
+only synthetic or already-frozen Milestone 6 fixtures. The suite also pins the
+positive side of explicit scope: after full-anchor uniqueness is established, an
+otherwise-positive explicitly scoped evaluation may become
+`COMPATIBLE_WITH_CONDITIONS`; scope never converts an ambiguous or hidden target
+into a positive relationship. The invalid-hub control deliberately remains
+outside RefCompat parsing and verifies only that a positive reference verdict is
+not a claim of structural hub validity. Dedicated VCF, BAM/CRAM, and offline
+integration tests remain the format-level proof paths and are not replaced by
+this cross-cutting exit matrix.
+
 ## Review checkpoints
 
 The first internal scientific/code review occurred after:
@@ -413,8 +424,10 @@ conflicting/non-bindable peer identity could be overridden by provider naming,
 and a deterministic validation-ID defect that omitted provider context. Broader
 profile integration may now proceed from the hardened relationship boundary.
 
-After the full M6 adversarial suite and internal milestone review are clean,
-RefCompat stops again for an external milestone-boundary review before M7.
+The full M6 adversarial suite is now implemented. RefCompat next performs the
+final internal milestone review; when that review and its authoritative gate are
+clean, RefCompat stops again for the required external milestone-boundary review
+before M7.
 
 ## Primary UCSC references
 
