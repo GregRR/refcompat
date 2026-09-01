@@ -138,4 +138,4 @@ explicit-scope conditions. This exact evaluator still does not own:
 - conflict-core reporting;
 - stable `CompatibilityReport` serialization.
 
-The verdict and conflict-core layers are now implemented in later Milestone 2 slices; provenance claim assessment and stable report serialization remain later boundaries. None of them is hidden inside this exact evaluator.
+The verdict and conflict-core layers are implemented in later Milestone 2 slices; provenance claim assessment remains a separate boundary, while stable report serialization is now pinned for Milestone 7. None of them is hidden inside this exact evaluator.

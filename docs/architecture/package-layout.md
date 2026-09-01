@@ -68,7 +68,7 @@ Milestone 1 provides provisional human-readable and JSON diagnostics over the im
 
 ## CLI
 
-`refcompat.cli` is intentionally thin. It uses the Python standard library `argparse` and delegates scientific work to the same package APIs used by other callers. The Milestone 1 surface exposes `inspect-fasta`, `check-fai`, and `check-dict` with human or provisional JSON output; stable CI verdict/exit-code policy remains a later interface decision.
+`refcompat.cli` is intentionally thin. It uses the Python standard library `argparse` and delegates scientific work to the same package APIs used by other callers. The Milestone 1 surface exposes `inspect-fasta`, `check-fai`, and `check-dict` with human or provisional JSON output; stable whole-bundle report and CI/workflow exit behavior are now the pinned Milestone 7 interface boundary, while those legacy diagnostics remain unchanged until explicitly migrated.
 
 ## Directories intentionally not planned
 

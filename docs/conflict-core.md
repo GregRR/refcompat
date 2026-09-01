@@ -1,7 +1,7 @@
 # Milestone 2 conflict-core extraction
 
 **Status:** implemented as the sixth and final Milestone 2 reasoning slice.
-Analysis status and stable `CompatibilityReport` serialization remain later work.
+Analysis status and stable `CompatibilityReport` serialization are now the pinned Milestone 7 boundary; implementation remains pending.
 
 A conflict core is a compact trace of the mandatory relationship that actually
 determined a non-positive categorical verdict. It is intentionally not a dump

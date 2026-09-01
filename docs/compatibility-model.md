@@ -363,9 +363,13 @@ Peer-resource identity capabilities are consulted only to establish sequence bin
 
 ## `CompatibilityReport`
 
-The report is the immutable root result of an evaluation and should carry enough information for every conclusion to be traced to source evidence.
+Milestone 7 makes the report the immutable public root result of an evaluation. It carries enough information for every reported conclusion to be traced through RefCompat-owned IDs to source evidence/provenance while remaining insulated from internal dataclass layout and provider-library types. The stable external representation is projected explicitly; it is not `dataclasses.asdict()` over the reasoning graph.
 
-It contains resources, observations, claims, claim assessments, snapshots/reference contexts, contracts, evidence, constraints/evaluations, findings, conditions, analysis status, and compatibility verdict.
+The report includes the evaluation request/scope/profile selectors, resources, relevant observations/provenance records, reference/binding context, contracts, evidence, constraints/evaluations, findings, conditions, conflict cores, analysis status, compatibility verdict when scientifically reportable, and typed relationship context needed to explain the generic verdict. BAM/CRAM dictionary relationship context is one required M7 example because non-bijective or naming-only differences must remain visible without becoming a second verdict.
+
+Analysis status and compatibility are orthogonal. `COMPLETE` means the requested implemented analysis finished; it may still produce `INDETERMINATE`. `PARTIAL` means a requested analysis operation could not complete, rather than merely that evidence was insufficient. `INVALID_INPUT` means required input cannot support the requested scientific evaluation. M7 must prevent partial/invalid execution from masquerading as unconditional positive compatibility.
+
+The normative contract and planned implementation slices are in [`compatibility-report-contract.md`](compatibility-report-contract.md).
 
 ## Foundational invariants
 

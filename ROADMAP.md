@@ -128,6 +128,42 @@ Committed scope:
 
 The normative profile contract is recorded in [`docs/ucsc-preflight-profile.md`](docs/ucsc-preflight-profile.md) and RCHECK-070 in [`docs/check-specifications.md`](docs/check-specifications.md).
 
+## Milestone 7 — Stable compatibility report and workflow contract
+
+**Goal:** expose RefCompat's already-established reasoning through one immutable, traceable, versioned compatibility report and deterministic workflow-facing output without changing scientific verdict semantics.
+
+**Implementation status:** contract pinned; implementation pending. Milestone 6 is complete and independently reviewed. Milestone 7 begins by stabilizing the boundary above `BundleReasoningResult`, categorical verdict aggregation, and conflict-core extraction before adding more file formats.
+
+Committed scope:
+
+- Introduce an explicit `AnalysisStatus` axis separate from `CompatibilityVerdict`. A successfully completed analysis may still be `INDETERMINATE` because evidence is insufficient or ambiguous; that is not a partial execution.
+- Define `COMPLETE`, `PARTIAL`, and `INVALID_INPUT` analysis states without allowing execution status to become biological compatibility evidence.
+- Assemble one immutable `CompatibilityReport` from already-derived request, bundle, verdict, conflict-core, finding, condition, evidence, sequence-binding, and report-context values. Report assembly validates cross-object consistency but does not re-run inspectors, rebuild constraints, score evidence, or invent scientific conclusions.
+- Use explicit RefCompat-owned report DTOs/serialization rather than serializing internal dataclasses or upstream/provider objects directly. Internal model refactors must not silently mutate the stable external schema.
+- Provide deterministic machine-readable JSON with an independently versioned schema contract, canonical handling for unordered report collections, preservation of scientifically meaningful order, and checked-in schema/known-answer fixtures before the schema is declared stable.
+- Surface enough trace information for every reported conclusion to lead back through findings/evidence to the relevant requirements, capabilities, sequence bindings, resources, and source/provenance identifiers. Profile/provider details that materially authorize a conclusion must be projected into report-owned provenance/context records rather than leaking profile implementation objects.
+- Surface BAM/CRAM dictionary relationship context alongside the generic verdict, including non-bijective mappings and the separation between naming and M5-content dimensions, without creating an alignment-specific second verdict.
+- Define a workflow/CLI exit-code contract that separates valid scientific outcomes from command/input failures. Existing Milestone 1 diagnostic commands remain provisional until explicitly migrated; M7 must not silently change their behavior.
+- Keep human rendering a view over the same immutable report model. Presentation may summarize but may not add conclusions absent from the report.
+- Preserve the existing categorical verdict taxonomy, mandatory/advisory precedence, conflict-core semantics, explicit-scope conditions, selected-FASTA authority, and provider/core boundaries unchanged.
+- Hold an internal scientific/API review after the report root, analysis-status model, and deterministic draft serializer are implemented, before freezing the checked-in stable JSON Schema and workflow exit-code mapping.
+- Hold an external milestone-boundary review after the stable schema, CLI/workflow behavior, alignment relationship reporting, and adversarial exit suite are clean, before later milestones build additional formats on the stable reporting surface.
+
+Planned slices:
+
+1. pin the report, analysis-status, schema-versioning, traceability, and workflow boundary;
+2. implement immutable analysis-status/report-root models and consistency validation over existing M2–M6 reasoning results;
+3. implement explicit deterministic draft serialization and representative known-answer report fixtures;
+4. stop for an internal scientific/API review, then freeze the first checked-in stable JSON Schema/versioning rules;
+5. project alignment dictionary relationship context and profile/provider provenance needed for traceable M6 conclusions into report-owned records;
+6. add human report rendering plus an explicit CI/workflow exit-code policy without silently changing the provisional Milestone 1 diagnostic commands;
+7. exercise representative VCF, BAM/CRAM, annotation, scoped, UCSC-profile, incompatible, and indeterminate end-to-end report paths;
+8. close with adversarial schema/traceability/backward-compatibility coverage, final internal review, and an external milestone-boundary review.
+
+**Exit criteria:** one immutable report can represent completed whole-bundle reasoning without reinterpreting it; analysis completeness is explicitly separate from compatibility; stable JSON has a checked-in versioned schema and deterministic known-answer fixtures; every decisive conclusion is traceable through report-owned IDs to its evidence/provenance basis; BAM/CRAM non-bijective relationship context is visible alongside the generic verdict; workflow exit behavior is documented and tested; invalid/partial execution cannot masquerade as positive compatibility; provisional Milestone 1 diagnostics remain explicitly separate until migrated; and internal plus external milestone reviews are complete.
+
+The normative Milestone 7 contract is recorded in [`docs/compatibility-report-contract.md`](docs/compatibility-report-contract.md).
+
 ## v1.0 target
 
 A stable v1.0 should additionally include:

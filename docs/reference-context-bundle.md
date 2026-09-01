@@ -1,6 +1,6 @@
 # Milestone 2 anchor-driven reference context and bundle reasoning
 
-**Status:** implemented as the fourth Milestone 2 reasoning slice. The following categorical verdict-aggregation and conflict-core slices are also implemented; analysis status and stable `CompatibilityReport` serialization remain later work.
+**Status:** implemented as the fourth Milestone 2 reasoning slice. The following categorical verdict-aggregation and conflict-core slices are also implemented; analysis status and stable `CompatibilityReport` serialization are now the pinned Milestone 7 boundary.
 
 This slice establishes the bridge from per-resource contracts to one explicit
 FASTA-anchored bundle evaluation. It does not decide the bundle verdict.

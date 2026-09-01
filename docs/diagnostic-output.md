@@ -74,9 +74,12 @@ machine-readable `CompatibilityReport` schema described in `DESIGN.md`.
 Field names should still change deliberately and with tests, but pre-1.0
 consumers must not treat this shape as the final report-schema contract.
 
-The stable schema/versioning decision remains deferred until the stable report
-model is implemented. Top-level categorical verdict aggregation now exists as a
-separate reasoning layer and does not change this provisional CLI JSON shape.
+Milestone 7 now owns the stable whole-bundle report/schema boundary. Top-level
+categorical verdict aggregation already exists as a separate reasoning layer,
+but this provisional Milestone 1 JSON remains unchanged until an explicit M7
+CLI/reporting migration slice. The stable report will use explicit RefCompat-owned
+serialization rather than treating this diagnostic shape as a compatibility
+contract.
 
 ## Process exit status
 
@@ -86,5 +89,6 @@ conflict. Input, parsing, provider, or computation failures normalized by the
 implemented inspectors return `2` and a concise message on standard error.
 
 This keeps a scientific/compatibility observation separate from command
-execution failure. Stable CI/workflow exit-code behavior remains a later v1.0
-interface decision.
+execution failure. Milestone 7 will define the stable whole-bundle CI/workflow
+exit-code contract without silently changing these provisional diagnostic
+commands.

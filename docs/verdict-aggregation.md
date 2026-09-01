@@ -1,6 +1,6 @@
 # Milestone 2 categorical verdict aggregation
 
-**Status:** implemented as the fifth Milestone 2 reasoning slice. The following conflict-core extraction slice is also implemented; analysis status and stable `CompatibilityReport` serialization remain later work.
+**Status:** implemented as the fifth Milestone 2 reasoning slice. The following conflict-core extraction slice is also implemented; analysis status and stable `CompatibilityReport` serialization are now the pinned Milestone 7 boundary.
 
 This layer converts the already-established whole-bundle constraint states into
 one categorical compatibility verdict. It consumes `BundleReasoningResult`; it
