@@ -1,6 +1,6 @@
 # UCSC preflight profile
 
-**Status:** Milestone 6 Slices 1–7 implemented: provider snapshot, target-content/name reasoning, generic profile binding, VCF and BAM/CRAM integration, deterministic provider/offline snapshot handling, and the adversarial milestone-exit suite are complete. The first internal scientific/code checkpoint and targeted Slice 4 external review are closed, including the reviewer-requested peer-identity regression coverage. CRAM offline decoder-reference eligibility remains intentionally stricter than profile compatibility. Final internal milestone review and the required external milestone-boundary review remain before M7.
+**Status:** Milestone 6 Slices 1–7 implemented: provider snapshot, target-content/name reasoning, generic profile binding, VCF and BAM/CRAM integration, deterministic provider/offline snapshot handling, and the adversarial milestone-exit suite are complete. The first internal scientific/code checkpoint and targeted Slice 4 external review are closed, including the reviewer-requested peer-identity regression coverage. CRAM offline decoder-reference eligibility remains intentionally stricter than profile compatibility. The final internal milestone review and required external milestone-boundary review are complete; the external review found no MAJOR issue, and its one MINOR fail-loud alignment-binding invariant is regression-pinned before M7.
 
 RCHECK-070 defines RefCompat's first ecosystem profile. The profile asks whether
 in-scope resources can satisfy the reference-coordinate and naming requirements
@@ -448,9 +448,10 @@ onto one FASTA coordinate sequence. The hardened profile now requires complete
 canonical-plus-alias naming context for alternate aliases and withholds positive
 profile authorization when distinct required canonical targets collapse onto one
 anchor sequence, while preserving advisory isolation, hard peer-content conflicts,
-and multiple aliases of one canonical target. After the authoritative gate is
-clean, RefCompat stops
-for the required external milestone-boundary review before M7.
+and multiple aliases of one canonical target. The required external milestone-boundary review is now complete. It found no
+MAJOR issue and assessed the repository SAFE TO BEGIN M7. Its one MINOR finding
+identified an unpinned fail-loud BAM/CRAM classifier invariant; the follow-up test
+now locks that internal contract before M7.
 
 ## Primary UCSC references
 

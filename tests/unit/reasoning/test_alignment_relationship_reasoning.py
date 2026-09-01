@@ -1,5 +1,6 @@
 """Tests for descriptive BAM/CRAM header-dictionary relationship reasoning."""
 
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -19,6 +20,7 @@ from refcompat.model import (
     Md5Digest,
     ReferenceContext,
     Resource,
+    ResourceContract,
     ResourceId,
     ResourceKind,
     SequenceCollectionSnapshot,
@@ -26,8 +28,10 @@ from refcompat.model import (
     SnapshotSequence,
 )
 from refcompat.reasoning import (
+    build_alignment_contract,
     build_reference_context,
     classify_alignment_dictionary_relationship,
+    reason_bundle,
 )
 
 _FASTA = ResourceId("fasta")
@@ -344,3 +348,37 @@ def test_incomplete_anchor_m5_coverage_cannot_prove_superset() -> None:
     assert summary.membership is AlignmentMembershipRelationship.UNRESOLVED
     assert summary.unresolved_sequence_names == ("decoy",)
     assert summary.m5_distinct_extra_sequence_names == ()
+
+
+def test_bundle_identity_binding_must_be_backed_by_record_m5() -> None:
+    context = _context(scope_names=("chr1",))
+    snapshot = _alignment(SequenceDictionaryRecord("1", 4, md5=_MD5_A))
+    request = EvaluationRequest(
+        resources=(
+            Resource(_FASTA, ResourceKind.FASTA, ArtifactIdentity(Path("anchor.fa"))),
+            Resource(_ALIGNMENT, ResourceKind.BAM, ArtifactIdentity(Path("reads.bam"))),
+        ),
+        anchor_resource_id=_FASTA,
+        scope=context.scope,
+    )
+    contract = build_alignment_contract(snapshot, context)
+    bundle = reason_bundle(
+        request,
+        context.anchor_snapshot,
+        (ResourceContract(_FASTA), contract),
+    )
+
+    assert len(bundle.sequence_bindings) == 1
+    binding = bundle.sequence_bindings[0]
+    corrupted_binding = replace(binding, identity_values=(_MD5_B,))
+    corrupted_bundle = replace(bundle, sequence_bindings=(corrupted_binding,))
+
+    with pytest.raises(
+        ValueError,
+        match="alignment identity binding must be backed by the record M5",
+    ):
+        classify_alignment_dictionary_relationship(
+            snapshot,
+            context,
+            bundle_result=corrupted_bundle,
+        )
