@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import Counter
 
+from refcompat._compat import assert_never
 from refcompat.model.alignment import AlignmentHeaderSnapshot
 from refcompat.model.alignment_relationship import (
     AlignmentContentRelationship,
@@ -14,8 +15,13 @@ from refcompat.model.alignment_relationship import (
     AlignmentOrderRelationship,
     AlignmentSequenceResolution,
 )
+from refcompat.model.bundle import BundleReasoningResult
 from refcompat.model.identity import Md5Digest
-from refcompat.model.reference_context import ReferenceContext
+from refcompat.model.reference_context import (
+    ReferenceContext,
+    SequenceBinding,
+    SequenceBindingMethod,
+)
 from refcompat.model.sequence_dictionary import SequenceDictionaryRecord
 from refcompat.reasoning.alignment_binding import derive_alignment_sequence_bindings
 
@@ -23,13 +29,16 @@ from refcompat.reasoning.alignment_binding import derive_alignment_sequence_bind
 def classify_alignment_dictionary_relationship(
     snapshot: AlignmentHeaderSnapshot,
     context: ReferenceContext,
+    *,
+    bundle_result: BundleReasoningResult | None = None,
 ) -> AlignmentDictionaryRelationshipSummary:
     """Describe the alignment header dictionary relative to the FASTA anchor.
 
     Exact names are structurally resolvable in the selected anchor scope.
-    Cross-name resolution requires an already-verified M5-backed
-    ``SequenceBinding``. An unfamiliar local name becomes M5-distinct only when
-    its declared M5 is absent from a complete-MD5 FASTA anchor and the name does
+    Cross-name resolution may use an M5-backed binding derived from the header,
+    or an already-validated authoritative-name binding carried by a completed
+    ``BundleReasoningResult``. An unfamiliar local name becomes M5-distinct only
+    when its declared M5 is absent from a complete-MD5 FASTA anchor and the name does
     not identify any FASTA sequence outside the selected scope.
 
     This function is descriptive. It does not scan reads, change generic
@@ -45,7 +54,7 @@ def classify_alignment_dictionary_relationship(
 
     bindings = {
         binding.local_sequence_name: binding
-        for binding in derive_alignment_sequence_bindings(snapshot, context)
+        for binding in _alignment_sequence_bindings(snapshot, context, bundle_result)
     }
     scoped_anchor = {sequence.local_name: sequence for sequence in context.sequences}
     full_anchor_names = {sequence.local_name for sequence in context.anchor_snapshot.sequences}
@@ -67,8 +76,19 @@ def classify_alignment_dictionary_relationship(
         binding = bindings.get(record.name)
         if binding is not None:
             target_name = binding.anchor_sequence_name
-            method = AlignmentNameResolutionMethod.VERIFIED_M5_BINDING
-            sequence_binding_id = binding.id
+            if target_name == record.name:
+                method = AlignmentNameResolutionMethod.EXACT_NAME
+                sequence_binding_id = None
+            elif binding.method is SequenceBindingMethod.VERIFIED_SEQUENCE_IDENTITY:
+                if record.md5 is None or record.md5 not in binding.identity_values:
+                    raise ValueError("alignment identity binding must be backed by the record M5")
+                method = AlignmentNameResolutionMethod.VERIFIED_M5_BINDING
+                sequence_binding_id = binding.id
+            elif binding.method is SequenceBindingMethod.AUTHORITATIVE_NAME:
+                method = AlignmentNameResolutionMethod.AUTHORITATIVE_NAME_BINDING
+                sequence_binding_id = binding.id
+            else:
+                assert_never(binding.method)
         elif record.name in scoped_anchor:
             target_name = record.name
             method = AlignmentNameResolutionMethod.EXACT_NAME
@@ -149,6 +169,36 @@ def classify_alignment_dictionary_relationship(
         length_conflict_sequence_names=tuple(length_conflicts),
         identity_conflict_sequence_names=tuple(identity_conflicts),
     )
+
+
+def _alignment_sequence_bindings(
+    snapshot: AlignmentHeaderSnapshot,
+    context: ReferenceContext,
+    bundle_result: BundleReasoningResult | None,
+) -> tuple[SequenceBinding, ...]:
+    if bundle_result is None:
+        return derive_alignment_sequence_bindings(snapshot, context)
+
+    if bundle_result.reference_context != context:
+        raise ValueError("alignment relationship bundle must use the supplied reference context")
+    if snapshot.resource_id not in {contract.resource_id for contract in bundle_result.contracts}:
+        raise ValueError("alignment relationship bundle must contain the alignment resource")
+
+    declared_names = set(snapshot.declared_sequence_names)
+    bindings = tuple(
+        binding
+        for binding in bundle_result.sequence_bindings
+        if binding.resource_id == snapshot.resource_id
+    )
+    if any(binding.local_sequence_name not in declared_names for binding in bindings):
+        raise ValueError("alignment relationship bundle binding must address a declared @SQ name")
+
+    scoped_anchor_names = {sequence.local_name for sequence in context.sequences}
+    if any(binding.anchor_sequence_name not in scoped_anchor_names for binding in bindings):
+        raise ValueError(
+            "alignment relationship bundle binding must target the selected anchor scope"
+        )
+    return bindings
 
 
 def _is_m5_distinct_extra(

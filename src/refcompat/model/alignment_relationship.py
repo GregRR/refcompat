@@ -19,6 +19,7 @@ class AlignmentNameResolutionMethod(StrEnum):
     """Mechanism used to relate one alignment-local ``SN`` to the anchor."""
 
     EXACT_NAME = "exact_name"
+    AUTHORITATIVE_NAME_BINDING = "authoritative_name_binding"
     VERIFIED_M5_BINDING = "verified_m5_binding"
 
 
@@ -80,6 +81,16 @@ class AlignmentSequenceResolution:
                 raise ValueError("verified M5 alignment resolution requires a cross-name mapping")
             if self.sequence_binding_id is None:
                 raise ValueError("verified M5 alignment resolution requires a sequence-binding ID")
+            return
+        if self.method is AlignmentNameResolutionMethod.AUTHORITATIVE_NAME_BINDING:
+            if self.local_sequence_name == self.anchor_sequence_name:
+                raise ValueError(
+                    "authoritative-name alignment resolution requires a cross-name mapping"
+                )
+            if self.sequence_binding_id is None:
+                raise ValueError(
+                    "authoritative-name alignment resolution requires a sequence-binding ID"
+                )
             return
         assert_never(self.method)
 
@@ -184,7 +195,7 @@ class AlignmentDictionaryRelationshipSummary:
                 )
         else:
             has_verified_difference = any(
-                resolution.method is AlignmentNameResolutionMethod.VERIFIED_M5_BINDING
+                resolution.method is not AlignmentNameResolutionMethod.EXACT_NAME
                 for resolution in self.resolutions
             )
             expected_naming = (

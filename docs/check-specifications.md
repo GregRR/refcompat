@@ -718,10 +718,15 @@ content-derived binding path is unchanged.
 
 The resulting relationship is then reused by generic/core presence, length,
 identity, coordinate-bounds, VCF REF, BAM/CRAM dictionary, evidence, finding,
-and verdict behavior. Profile logic must not suppress a core-format requirement,
-create peer-owned content identity from provider metadata, or introduce
-UCSC-specific constraint or verdict policy. Existing direct content
-contradictions retain precedence.
+and verdict behavior. For BAM/CRAM, a completed bundle may supply its validated
+authoritative-name binding to dictionary relationship classification; that can
+resolve naming, membership, and order but does not convert provider target
+identity into alignment-owned M5 evidence. CRAM offline reference planning may
+report this relationship while still requiring exact primary names and complete
+matching M5 before authorizing the selected FASTA for future decoder use. Profile
+logic must not suppress a core-format requirement, create peer-owned content
+identity from provider metadata, or introduce UCSC-specific constraint or verdict
+policy. Existing direct content contradictions retain precedence.
 
 ### Online/offline rule
 

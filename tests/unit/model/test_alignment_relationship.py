@@ -286,3 +286,20 @@ def test_exact_membership_requires_at_least_one_resolution() -> None:
             order=AlignmentOrderRelationship.UNRESOLVED,
             content=AlignmentContentRelationship.UNRESOLVED,
         )
+
+
+def test_authoritative_name_resolution_requires_cross_name_binding() -> None:
+    with pytest.raises(ValueError, match="requires a cross-name mapping"):
+        AlignmentSequenceResolution(
+            "chr1",
+            "chr1",
+            AlignmentNameResolutionMethod.AUTHORITATIVE_NAME_BINDING,
+            SequenceBindingId("binding:authority"),
+        )
+
+    with pytest.raises(ValueError, match="requires a sequence-binding ID"):
+        AlignmentSequenceResolution(
+            "1",
+            "chr1",
+            AlignmentNameResolutionMethod.AUTHORITATIVE_NAME_BINDING,
+        )

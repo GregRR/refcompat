@@ -19,6 +19,7 @@ from refcompat.model.alignment_relationship import (
     AlignmentMembershipRelationship,
     AlignmentNamingRelationship,
 )
+from refcompat.model.bundle import BundleReasoningResult
 from refcompat.model.cram_reference import CramOfflineReferenceAction, CramOfflineReferencePlan
 from refcompat.model.evaluation import EvaluationRequest
 from refcompat.model.reference_context import ReferenceContext
@@ -30,6 +31,8 @@ def plan_cram_offline_reference(
     snapshot: AlignmentHeaderSnapshot,
     context: ReferenceContext,
     request: EvaluationRequest,
+    *,
+    bundle_result: BundleReasoningResult | None = None,
 ) -> CramOfflineReferencePlan:
     """Plan offline-safe handling if a future CRAM operation needs reference bases.
 
@@ -37,8 +40,11 @@ def plan_cram_offline_reference(
     so it deliberately does not decide whether an external reference is
     required. It decides only whether the selected FASTA anchor is eligible to
     pass explicitly as ``reference_filename`` if reference-dependent decoding is
-    later requested. Provider configuration and artifact-stability checks at the
-    eventual decode boundary remain separate responsibilities.
+    later requested. A completed bundle result may contribute an already-validated
+    authoritative naming relationship to the descriptive dictionary summary, but
+    it does not relax the exact-name/M5 requirements for decoder eligibility.
+    Provider configuration and artifact-stability checks at the eventual decode
+    boundary remain separate responsibilities.
     """
 
     if snapshot.resource_kind is not ResourceKind.CRAM:
@@ -47,6 +53,8 @@ def plan_cram_offline_reference(
         raise ValueError("CRAM reference planning request/context anchor mismatch")
     if request.scope != context.scope:
         raise ValueError("CRAM reference planning request/context scope mismatch")
+    if bundle_result is not None and bundle_result.request != request:
+        raise ValueError("CRAM reference planning bundle/request mismatch")
     if snapshot.resource_id not in request.scope.resource_ids:
         raise ValueError("CRAM reference planning requires the CRAM resource in evaluation scope")
 
@@ -58,7 +66,11 @@ def plan_cram_offline_reference(
     if anchor_resource is None or anchor_resource.kind is not ResourceKind.FASTA:
         raise ValueError("CRAM reference planning requires the selected FASTA anchor resource")
 
-    relationship = classify_alignment_dictionary_relationship(snapshot, context)
+    relationship = classify_alignment_dictionary_relationship(
+        snapshot,
+        context,
+        bundle_result=bundle_result,
+    )
     anchor_path = anchor_resource.artifact.path
     anchor_path_readable = _is_readable_file(anchor_path)
     can_use_anchor = anchor_path_readable and _relationship_supports_explicit_local_anchor(

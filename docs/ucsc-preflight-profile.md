@@ -1,6 +1,6 @@
 # UCSC preflight profile
 
-**Status:** Milestone 6 contract, immutable provider snapshot, target-content resolution, authoritative UCSC name resolution, resource binding/profile projection, and the first VCF end-to-end path implemented; the first internal scientific/code checkpoint and targeted external review are complete, with the reviewer finding no MAJOR issue and one non-blocking peer-identity regression gap hardened before broader integration.
+**Status:** Milestone 6 Slices 1–5 implemented: provider snapshot, target-content/name reasoning, generic profile binding, VCF end-to-end integration, and BAM/CRAM dictionary reuse are complete; the first internal scientific/code checkpoint and targeted Slice 4 external review are closed, including the reviewer-requested peer-identity regression coverage. CRAM offline decoder-reference eligibility remains intentionally stricter than profile compatibility.
 
 RCHECK-070 defines RefCompat's first ecosystem profile. The profile asks whether
 in-scope resources can satisfy the reference-coordinate and naming requirements
@@ -250,6 +250,22 @@ the complete FASTA anchor and requires exactly one matching `BOUND` pair
 validation before the supplemental binding may affect ordinary core checks. The
 existing `VERIFIED_SEQUENCE_IDENTITY` path and its full-anchor rules are
 unchanged.
+
+Slice 5 extends that reuse into BAM/CRAM dictionary interpretation. After generic
+bundle reasoning has validated a profile-supplied `AUTHORITATIVE_NAME` binding,
+the alignment relationship classifier may consume the completed bundle result and
+record the cross-name relationship as an authoritative-name binding rather than
+re-deriving or pretending it is M5 evidence. Membership and order can therefore be
+described using the verified relationship while the independent M5-content
+dimension remains `UNRESOLVED` when the SAM header does not declare comparable
+M5. A direct M5 disagreement remains a content conflict.
+
+CRAM offline-reference planning may carry that richer relationship trace when a
+completed bundle result is supplied, but it still authorizes the selected FASTA
+for future reference-dependent decoding only under the pre-existing strict rule:
+exact primary names, complete matching M5, acceptable membership, matching
+lengths, and a readable selected anchor. A profile-compatible authoritative alias
+therefore does not imply that HTSlib can safely address a differently named FASTA.
 
 The profile adds one binding requirement for each peer sequence already required
 by a core presence requirement. A provider target proven absent by exhaustive

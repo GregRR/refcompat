@@ -1,18 +1,24 @@
 # BAM/CRAM dictionary relationship reasoning
 
-**Status:** Milestone 4 header-dictionary relationship reasoning implemented.
+**Status:** Milestone 4 relationship reasoning implemented; Milestone 6 profile-binding reuse added.
 
 RefCompat interprets the BAM/CRAM SAM `@SQ` dictionary relative to the selected
-FASTA `ReferenceContext` after conservative M5-backed sequence bindings have
-been derived. This layer is descriptive: it summarizes the declared header
-relationship and does not introduce a second alignment-specific compatibility
-verdict.
+FASTA `ReferenceContext`. By default it derives conservative M5-backed sequence
+bindings from the header. After whole-bundle reasoning, it may additionally reuse
+already-validated generic `SequenceBinding` values, including an
+`AUTHORITATIVE_NAME` binding established by a consumer profile. This layer is
+descriptive: it summarizes the declared header relationship and does not
+introduce a second alignment-specific compatibility verdict.
 
 ## Resolution boundary
 
 Each alignment-local `SN` is considered in header order.
 
-1. A verified M5-backed `SequenceBinding` takes precedence when one exists.
+1. A validated `SequenceBinding` takes precedence when one exists. In the
+   standalone Milestone 4 path this is an M5-backed binding derived from the
+   header; when a completed bundle result is supplied it may also be an
+   independently authorized naming relationship already validated by generic
+   bundle reasoning.
 2. Otherwise an exact `SN` match may resolve structurally to an in-scope FASTA
    sequence.
 3. No `AN` value, naming convention, length equality, assembly label, URI, or
@@ -67,7 +73,9 @@ rather than letting RefCompat ignore internally competing header claims.
 
 - `EXACT` — every resolved shared sequence uses the anchor-local name.
 - `VERIFIED_DIFFERENCE` — at least one shared sequence uses a different local
-  name resolved through verified M5 identity.
+  name resolved through a validated sequence binding. The per-sequence resolution
+  records whether that binding came from verified M5 identity or an authoritative
+  naming relationship.
 - `UNRESOLVED` — naming cannot be stated safely for the complete shared mapping.
 
 `verified_naming_only_difference` is true only when membership is exact, order
@@ -97,7 +105,10 @@ make order a mandatory core constraint; order policy remains separate.
 
 Length disagreement is retained separately in
 `length_conflict_sequence_names`. A matching M5 does not erase a contradictory
-`LN`, and a length disagreement does not rewrite the M5 observation.
+`LN`, and a length disagreement does not rewrite the M5 observation. An
+authoritative-name binding resolves naming only: if the header does not declare
+M5, the M5-content dimension remains `UNRESOLVED` rather than borrowing provider
+target identity as if it were alignment-owned content evidence.
 
 ## Exact identity
 

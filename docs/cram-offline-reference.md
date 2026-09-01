@@ -1,6 +1,6 @@
 # CRAM offline reference policy
 
-**Status:** Milestone 4 deterministic offline reference planning implemented.
+**Status:** Milestone 4 deterministic offline reference planning implemented; Milestone 6 profile relationship trace supported without relaxing decoder eligibility.
 
 RefCompat keeps CRAM header reasoning separate from any operation that would
 actually decode records against reference bases. This distinction is necessary
@@ -56,9 +56,13 @@ inside RefCompat. It does not by itself prove that an external CRAM provider can
 address sequences in one FASTA using the CRAM header's different `SN` labels.
 
 RefCompat therefore does not turn a cross-name semantic binding into permission
-to hand that FASTA to a record decoder. Provider-level name/addressing support
-would need its own explicit, tested mechanism rather than being inferred from
-biological identity.
+to hand that FASTA to a record decoder. The same rule applies to an
+`AUTHORITATIVE_NAME` binding validated by a consumer profile: the CRAM plan may
+report that richer dictionary relationship when given the completed bundle
+result, but still returns `DEFER_REFERENCE_DEPENDENT_DECODING` unless the original
+exact-name and complete-M5 eligibility rule is met. Provider-level
+name/addressing support would need its own explicit, tested mechanism rather than
+being inferred from biological identity or provider naming authority.
 
 ## No ambient or network fallback
 
