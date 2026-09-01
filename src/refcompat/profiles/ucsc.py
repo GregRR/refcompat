@@ -292,6 +292,7 @@ class UcscNameResolutionReason(StrEnum):
     ALIAS_EVIDENCE_INCOMPLETE = "alias_evidence_incomplete"
     AMBIGUOUS_ALIAS = "ambiguous_alias"
     UNDECLARED_NAME = "undeclared_name"
+    PROVIDER_EVIDENCE_UNAVAILABLE = "provider_evidence_unavailable"
 
 
 @dataclass(frozen=True, slots=True)

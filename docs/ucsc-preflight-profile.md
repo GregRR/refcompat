@@ -1,6 +1,6 @@
 # UCSC preflight profile
 
-**Status:** Milestone 6 Slices 1–5 implemented: provider snapshot, target-content/name reasoning, generic profile binding, VCF end-to-end integration, and BAM/CRAM dictionary reuse are complete; the first internal scientific/code checkpoint and targeted Slice 4 external review are closed, including the reviewer-requested peer-identity regression coverage. CRAM offline decoder-reference eligibility remains intentionally stricter than profile compatibility.
+**Status:** Milestone 6 Slices 1–6 implemented: provider snapshot, target-content/name reasoning, generic profile binding, VCF and BAM/CRAM integration, and the deterministic provider/offline snapshot boundary are complete; the first internal scientific/code checkpoint and targeted Slice 4 external review are closed, including the reviewer-requested peer-identity regression coverage. CRAM offline decoder-reference eligibility remains intentionally stricter than profile compatibility.
 
 RCHECK-070 defines RefCompat's first ecosystem profile. The profile asks whether
 in-scope resources can satisfy the reference-coordinate and naming requirements
@@ -343,7 +343,10 @@ profile-provided binding once the binding model supports it.
 
 ## Online, offline, freshness, and reproducibility
 
-Scientific reasoning operates on the provider snapshot, not on live HTTP state.
+Scientific reasoning operates on the provider snapshot, not on live HTTP state. Slice 6 adds a strict versioned JSON artifact boundary for an already-materialized snapshot. The renderer canonicalizes provider-fact ordering and normalizes acquisition timestamps to UTC for reproducible bytes; the loader rejects unknown/duplicate fields, re-runs all immutable snapshot invariants, and may verify an expected exact-file SHA-256 before parsing. This is deliberately not a network client or persistent cache. A live acquisition adapter, if later added, must finish by producing the same immutable snapshot model.
+
+If acquisition produces no usable snapshot at all, `project_ucsc_preflight` accepts provider evidence as unavailable. It still projects the mandatory `SequenceBindingRequirement` values but emits no provider-authorized binding or pair-validation capability. The corresponding requirements therefore remain unresolved and can make an otherwise positive evaluation `INDETERMINATE`; provider unavailability itself contributes no negative biological evidence.
+
 Therefore:
 
 - the same snapshot must yield the same compatibility result online or offline;
@@ -389,7 +392,8 @@ minimum they should cover:
 - provider support contradicted by stronger VCF/BAM/content evidence;
 - network/provider unavailability producing unresolved evidence rather than
   incompatibility;
-- a fixed snapshot yielding the same result regardless of acquisition mode;
+- a fixed snapshot yielding the same result whether loaded from a frozen file or supplied as the same already-materialized provider document;
+- complete provider unavailability yielding unresolved profile requirements rather than incompatibility;
 - mixed hard contradiction plus unrelated unresolved provider evidence;
 - a negative control where reference compatibility passes but UCSC hosting or
   hub configuration would still fail for a non-reference reason.

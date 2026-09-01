@@ -36,6 +36,7 @@ from refcompat.model.resources import ResourceId
 from refcompat.profiles.ucsc import (
     UcscDatabaseId,
     UcscNameResolution,
+    UcscNameResolutionReason,
     UcscNameResolutionState,
     UcscProviderContextId,
     UcscProviderSnapshot,
@@ -159,7 +160,7 @@ class UcscPreflightProjection:
     """Generic-reasoner inputs plus provider trace for one UCSC preflight target."""
 
     target: UcscPreflightTarget
-    provider_snapshot: UcscProviderSnapshot
+    provider_snapshot: UcscProviderSnapshot | None
     reference_context: ReferenceContext
     contracts: tuple[ResourceContract, ...]
     sequence_projections: tuple[UcscPreflightSequenceProjection, ...]
@@ -168,8 +169,24 @@ class UcscPreflightProjection:
     binding_capabilities: tuple[SequenceBindingValidationCapability, ...]
 
     def __post_init__(self) -> None:
-        if self.target.database_id != self.provider_snapshot.database_id:
+        if (
+            self.provider_snapshot is not None
+            and self.target.database_id != self.provider_snapshot.database_id
+        ):
             raise ValueError("UCSC preflight target must match the provider snapshot database")
+        if self.provider_snapshot is None:
+            if self.binding_capabilities or self.supplemental_sequence_bindings:
+                raise ValueError(
+                    "unavailable UCSC provider evidence cannot produce profile binding evidence"
+                )
+            if any(
+                projection.name_resolution.reason
+                is not UcscNameResolutionReason.PROVIDER_EVIDENCE_UNAVAILABLE
+                for projection in self.sequence_projections
+            ):
+                raise ValueError(
+                    "unavailable UCSC provider evidence requires unresolved name traces"
+                )
         contract_ids = tuple(contract.resource_id for contract in self.contracts)
         if len(set(contract_ids)) != len(contract_ids):
             raise ValueError("UCSC preflight contracts must have unique resource IDs")
@@ -227,7 +244,7 @@ class UcscPreflightProjection:
 def project_ucsc_preflight(
     request: EvaluationRequest,
     target: UcscPreflightTarget,
-    provider_snapshot: UcscProviderSnapshot,
+    provider_snapshot: UcscProviderSnapshot | None,
     reference_context: ReferenceContext,
     contracts: tuple[ResourceContract, ...],
 ) -> UcscPreflightProjection:
@@ -278,12 +295,21 @@ def project_ucsc_preflight(
             )
             profile_requirements.append(requirement)
 
-            name_resolution = resolve_ucsc_sequence_name(provider_snapshot, local_name)
+            name_resolution = (
+                resolve_ucsc_sequence_name(provider_snapshot, local_name)
+                if provider_snapshot is not None
+                else UcscNameResolution(
+                    local_name,
+                    UcscNameResolutionState.UNRESOLVED,
+                    UcscNameResolutionReason.PROVIDER_EVIDENCE_UNAVAILABLE,
+                )
+            )
             target_resolution: UcscTargetResolution | None = None
             sequence_binding: SequenceBinding | None = None
             validation_capability: SequenceBindingValidationCapability | None = None
 
             if name_resolution.state is UcscNameResolutionState.RESOLVED:
+                assert provider_snapshot is not None
                 assert name_resolution.canonical_name is not None
                 target_resolution = resolve_ucsc_target(
                     provider_snapshot,
@@ -383,7 +409,7 @@ def project_ucsc_preflight(
 def _validate_projection_inputs(
     request: EvaluationRequest,
     target: UcscPreflightTarget,
-    provider_snapshot: UcscProviderSnapshot,
+    provider_snapshot: UcscProviderSnapshot | None,
     reference_context: ReferenceContext,
     contracts: tuple[ResourceContract, ...],
 ) -> None:
@@ -396,7 +422,7 @@ def _validate_projection_inputs(
     )
     if unsupported_profiles:
         raise ValueError("UCSC preflight projection cannot silently ignore other active profiles")
-    if target.database_id != provider_snapshot.database_id:
+    if provider_snapshot is not None and target.database_id != provider_snapshot.database_id:
         raise ValueError("selected UCSC database must match the provider snapshot")
     if reference_context.anchor_resource_id != request.anchor_resource_id:
         raise ValueError("UCSC preflight reference context must use the request FASTA anchor")

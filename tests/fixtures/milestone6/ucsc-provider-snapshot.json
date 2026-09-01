@@ -1,0 +1,66 @@
+{
+  "aliases": [
+    {
+      "alias": "1",
+      "authority": "fixture-authority",
+      "canonical_name": "chr1",
+      "source_ids": [
+        "aliases"
+      ]
+    }
+  ],
+  "completeness": {
+    "aliases": "complete",
+    "content_identity": "complete",
+    "sequence_catalog": "complete"
+  },
+  "context_id": "testDb@frozen-v1",
+  "database_id": "testDb",
+  "schema": "refcompat.ucsc-provider-snapshot.v1",
+  "sequences": [
+    {
+      "canonical_name": "chr1",
+      "catalog_source_ids": [
+        "catalog"
+      ],
+      "identity_source_ids": [
+        "identity"
+      ],
+      "length": 4,
+      "md5": "11111111111111111111111111111111",
+      "refget_id": "SQ.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    }
+  ],
+  "sources": [
+    {
+      "acquired_at": "2026-08-31T12:00:00+00:00",
+      "context_id": "testDb@frozen-v1",
+      "database_id": "testDb",
+      "dimensions": [
+        "aliases"
+      ],
+      "id": "aliases",
+      "locator": "fixture://milestone6/aliases"
+    },
+    {
+      "acquired_at": "2026-08-31T12:00:00+00:00",
+      "context_id": "testDb@frozen-v1",
+      "database_id": "testDb",
+      "dimensions": [
+        "sequence_catalog"
+      ],
+      "id": "catalog",
+      "locator": "fixture://milestone6/catalog"
+    },
+    {
+      "acquired_at": "2026-08-31T12:00:00+00:00",
+      "context_id": "testDb@frozen-v1",
+      "database_id": "testDb",
+      "dimensions": [
+        "content_identity"
+      ],
+      "id": "identity",
+      "locator": "fixture://milestone6/identity"
+    }
+  ]
+}

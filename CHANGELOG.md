@@ -6,6 +6,8 @@ The project is currently pre-release; entries under `Unreleased` describe ongoin
 
 ## Unreleased
 
+- Harden Milestone 6 provider/offline behavior with a strict deterministic UCSC snapshot artifact boundary, frozen network-independent fixtures, exact artifact-digest verification, and an explicit unavailable-provider path that leaves profile requirements unresolved rather than manufacturing incompatibility.
+
 - Extend Milestone 6 UCSC preflight across BAM/CRAM dictionary reasoning: reuse validated authoritative-name bindings in alignment relationship summaries while keeping M5 content claims separate and preserving strict CRAM offline-reference deferral for cross-name/provider-backed relationships.
 
 - Record the targeted external review of the first Milestone 6 `ucsc-preflight` path: no MAJOR correctness or proof-chain defect was found, and add direct plus profile-level regression coverage proving that a same-scheme peer identity contradiction blocks authoritative provider naming without being promoted into a false hard conflict.

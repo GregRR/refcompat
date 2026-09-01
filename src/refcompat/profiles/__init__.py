@@ -31,9 +31,17 @@ from refcompat.profiles.ucsc_reasoning import (
     resolve_ucsc_sequence_name,
     resolve_ucsc_target,
 )
+from refcompat.profiles.ucsc_snapshot_io import (
+    UCSC_PROVIDER_SNAPSHOT_SCHEMA,
+    load_ucsc_provider_snapshot,
+    parse_ucsc_provider_snapshot,
+    render_ucsc_provider_snapshot,
+    ucsc_provider_snapshot_sha256,
+)
 
 __all__ = [
     "UCSC_PREFLIGHT_PROFILE_ID",
+    "UCSC_PROVIDER_SNAPSHOT_SCHEMA",
     "UcscDatabaseId",
     "UcscNameResolution",
     "UcscNameResolutionMethod",
@@ -55,7 +63,11 @@ __all__ = [
     "UcscTargetResolution",
     "UcscTargetResolutionReason",
     "UcscTargetResolutionState",
+    "load_ucsc_provider_snapshot",
+    "parse_ucsc_provider_snapshot",
     "project_ucsc_preflight",
+    "render_ucsc_provider_snapshot",
     "resolve_ucsc_sequence_name",
     "resolve_ucsc_target",
+    "ucsc_provider_snapshot_sha256",
 ]

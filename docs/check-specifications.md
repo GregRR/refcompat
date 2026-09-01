@@ -731,11 +731,16 @@ policy. Existing direct content contradictions retain precedence.
 ### Online/offline rule
 
 Provider acquisition occurs outside scientific reasoning. A fixed provider
-snapshot must produce the same result regardless of network availability. A
-network failure or unavailable enrichment may leave a mandatory UCSC
-relationship unresolved and therefore contribute to `INDETERMINATE`; it is not
-an `INCOMPATIBLE` result by itself. Automated exit tests use frozen
-redistributable provider fixtures rather than live services.
+snapshot must produce the same result regardless of network availability. The
+implemented adapter boundary can serialize/load a strict versioned snapshot
+artifact, optionally verify its exact SHA-256, and reapply all snapshot
+invariants on load; it does not fetch UCSC or act as a persistent cache. If no
+usable provider snapshot is available, profile projection still emits the
+mandatory UCSC binding requirements but no provider validation capability, so
+the affected relationships remain unresolved. A network failure or unavailable
+enrichment may therefore contribute to `INDETERMINATE`; it is not an
+`INCOMPATIBLE` result by itself. Automated exit tests use frozen redistributable
+provider fixtures rather than live services.
 
 ### Verdict effect
 
