@@ -137,6 +137,13 @@ from refcompat.model.reference_context import (
     SequenceBindingId,
     SequenceBindingMethod,
 )
+from refcompat.model.report import (
+    AnalysisIssue,
+    AnalysisIssueId,
+    AnalysisIssueKind,
+    AnalysisStatus,
+    CompatibilityReport,
+)
 from refcompat.model.resources import (
     ArtifactDigest,
     ArtifactDigestAlgorithm,
@@ -188,6 +195,10 @@ __all__ = [
     "AlignmentOrderRelationship",
     "AlignmentProgramRecord",
     "AlignmentSequenceResolution",
+    "AnalysisIssue",
+    "AnalysisIssueId",
+    "AnalysisIssueKind",
+    "AnalysisStatus",
     "AnchorIdentityResolution",
     "AnchorIdentityResolutionState",
     "AnnotationContextSnapshot",
@@ -209,6 +220,7 @@ __all__ = [
     "CompatibilityCondition",
     "CompatibilityConstraint",
     "CompatibilityFinding",
+    "CompatibilityReport",
     "CompatibilityVerdict",
     "ComputedFastaIndex",
     "ConditionId",

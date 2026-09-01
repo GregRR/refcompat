@@ -1,6 +1,6 @@
 # Milestone 7 compatibility report and workflow contract
 
-**Status:** contract pinned in Milestone 7 Slice 1; implementation pending.
+**Status:** contract pinned in Slice 1; immutable analysis-status/report-root model implemented in Slice 2; deterministic draft serialization pending.
 
 Milestone 7 stabilizes how RefCompat exposes already-established compatibility
 reasoning to people, automation, and downstream software. It does not add a new
@@ -49,6 +49,12 @@ the modeled input to a successfully completed evaluation, the analysis may be
 `COMPLETE` with verdict `INDETERMINATE`. `PARTIAL` is reserved for an analysis
 operation that was requested but failed to execute or produce its modeled
 result.
+
+The Slice 2 report root requires a `PARTIAL` report to retain one coherent
+bundle/verdict/conflict-core result from the work that did complete. That retained
+verdict may be only `INCOMPATIBLE` or `INDETERMINATE`; an execution failure that
+prevents any bundle-level scientific result is not converted into a synthetic
+compatibility verdict merely so a report can be emitted.
 
 ## 2. Report assembly boundary
 
@@ -236,7 +242,7 @@ Those remain separate roadmap capabilities.
 
 1. **Contract** — pin this report/status/schema/workflow boundary.
 2. **Report root** — add immutable analysis-status/report-root models and
-   cross-object validation over existing reasoning results.
+   cross-object validation over existing reasoning results. **Implemented.**
 3. **Draft serialization** — add explicit deterministic report DTO/JSON
    projection and representative known-answer fixtures without yet claiming the
    schema is frozen.

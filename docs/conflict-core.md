@@ -1,7 +1,7 @@
 # Milestone 2 conflict-core extraction
 
 **Status:** implemented as the sixth and final Milestone 2 reasoning slice.
-Analysis status and stable `CompatibilityReport` serialization are now the pinned Milestone 7 boundary; implementation remains pending.
+Milestone 7 Slice 2 now adds analysis status and the immutable `CompatibilityReport` root above this extraction; stable serialization remains pending.
 
 A conflict core is a compact trace of the mandatory relationship that actually
 determined a non-positive categorical verdict. It is intentionally not a dump
@@ -60,7 +60,7 @@ Conflict-core extraction does not implement:
 
 - numeric scoring, weighting, or voting;
 - evidence-count minimization;
-- analysis status (`COMPLETE`, `PARTIAL`, `INVALID_INPUT`);
 - stable `CompatibilityReport` serialization;
+- workflow/CLI exit policy over the now-implemented analysis-status axis;
 - CLI exit-code policy;
 - format-specific VCF/BAM/CRAM/GTF reasoning.

@@ -132,7 +132,7 @@ The normative profile contract is recorded in [`docs/ucsc-preflight-profile.md`]
 
 **Goal:** expose RefCompat's already-established reasoning through one immutable, traceable, versioned compatibility report and deterministic workflow-facing output without changing scientific verdict semantics.
 
-**Implementation status:** contract pinned; implementation pending. Milestone 6 is complete and independently reviewed. Milestone 7 begins by stabilizing the boundary above `BundleReasoningResult`, categorical verdict aggregation, and conflict-core extraction before adding more file formats.
+**Implementation status:** Slices 1–2 implemented. The report/workflow contract is pinned and the immutable `AnalysisStatus`/`AnalysisIssue`/`CompatibilityReport` root now validates already-derived bundle, verdict, and conflict-core results without recomputing reasoning. Draft deterministic serialization remains pending. Milestone 6 is complete and independently reviewed.
 
 Committed scope:
 
@@ -152,7 +152,7 @@ Committed scope:
 Planned slices:
 
 1. pin the report, analysis-status, schema-versioning, traceability, and workflow boundary;
-2. implement immutable analysis-status/report-root models and consistency validation over existing M2–M6 reasoning results;
+2. implement immutable analysis-status/report-root models and consistency validation over existing M2–M6 reasoning results; **implemented**
 3. implement explicit deterministic draft serialization and representative known-answer report fixtures;
 4. stop for an internal scientific/API review, then freeze the first checked-in stable JSON Schema/versioning rules;
 5. project alignment dictionary relationship context and profile/provider provenance needed for traceable M6 conclusions into report-owned records;
