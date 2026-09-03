@@ -64,7 +64,7 @@ No concrete profile module is required until the core reasoning model is stable.
 
 ## `reporting/`
 
-Milestone 1 provides provisional human-readable and JSON diagnostics over the immutable identity and integrity result models in `reporting/diagnostics.py`. Presentation must not introduce conclusions absent from those models. Once the whole-bundle report model exists, reporting should converge on views over that shared immutable report rather than grow a parallel reasoning layer.
+Milestone 1 provides provisional human-readable and JSON diagnostics over the immutable identity and integrity result models in `reporting/diagnostics.py`. Presentation must not introduce conclusions absent from those models. Milestone 7 adds `reporting/report_json.py`, an explicit deterministic draft JSON projection over the immutable `CompatibilityReport`; it intentionally serializes RefCompat-owned report concepts rather than recursively dumping internal dataclasses. The draft format/revision is provisional until the planned API review freezes the first stable schema. Reporting must continue to converge on views over the shared immutable report rather than grow a parallel reasoning layer.
 
 ## CLI
 

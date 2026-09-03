@@ -132,7 +132,7 @@ The normative profile contract is recorded in [`docs/ucsc-preflight-profile.md`]
 
 **Goal:** expose RefCompat's already-established reasoning through one immutable, traceable, versioned compatibility report and deterministic workflow-facing output without changing scientific verdict semantics.
 
-**Implementation status:** Slices 1–2 implemented. The report/workflow contract is pinned and the immutable `AnalysisStatus`/`AnalysisIssue`/`CompatibilityReport` root now validates already-derived bundle, verdict, and conflict-core results without recomputing reasoning. Draft deterministic serialization remains pending. Milestone 6 is complete and independently reviewed.
+**Implementation status:** Slices 1–3 implemented. The report/workflow contract is pinned; the immutable `AnalysisStatus`/`AnalysisIssue`/`CompatibilityReport` root validates already-derived bundle, verdict, and conflict-core results without recomputing reasoning; and an explicit deterministic draft JSON projection plus known-answer fixture now exercises the prospective machine-report shape. The draft is self-identified as provisional and does not yet claim a stable schema version. The planned internal scientific/API checkpoint and schema freeze are next. Milestone 6 is complete and independently reviewed.
 
 Committed scope:
 
@@ -153,7 +153,7 @@ Planned slices:
 
 1. pin the report, analysis-status, schema-versioning, traceability, and workflow boundary;
 2. implement immutable analysis-status/report-root models and consistency validation over existing M2–M6 reasoning results; **implemented**
-3. implement explicit deterministic draft serialization and representative known-answer report fixtures;
+3. implement explicit deterministic draft serialization and representative known-answer report fixtures; **implemented;**
 4. stop for an internal scientific/API review, then freeze the first checked-in stable JSON Schema/versioning rules;
 5. project alignment dictionary relationship context and profile/provider provenance needed for traceable M6 conclusions into report-owned records;
 6. add human report rendering plus an explicit CI/workflow exit-code policy without silently changing the provisional Milestone 1 diagnostic commands;

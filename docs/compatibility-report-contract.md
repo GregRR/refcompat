@@ -1,6 +1,6 @@
 # Milestone 7 compatibility report and workflow contract
 
-**Status:** contract pinned in Slice 1; immutable analysis-status/report-root model implemented in Slice 2; deterministic draft serialization pending.
+**Status:** contract pinned in Slice 1; immutable analysis-status/report-root model implemented in Slice 2; explicit deterministic draft JSON projection and a known-answer fixture implemented in Slice 3. The draft format is provisional; the first stable schema/version remains pending the Slice 4 internal scientific/API review.
 
 Milestone 7 stabilizes how RefCompat exposes already-established compatibility
 reasoning to people, automation, and downstream software. It does not add a new
@@ -146,6 +146,23 @@ inputs.
 Known-answer fixtures must pin deterministic bytes or normalized JSON values for
 representative reports before the schema is frozen.
 
+The Slice 3 draft projection is intentionally self-identifying as
+`refcompat.compatibility_report` with `stability = "draft"` and an integer draft
+revision. That marker is not the stable report schema version and does not create
+backward-compatibility guarantees. The draft projection is explicit rather than
+a recursive dataclass dump: it emits request/resource context, analysis
+status/issues, verdict basis, typed requirements/constraints/evaluations,
+trace-relevant capabilities, evidence/findings/conditions, verified sequence
+bindings, and conflict cores. Internal `ResourceContract`, `ReferenceContext`,
+and profile/provider implementation objects are not serialized directly.
+
+Capabilities are included when they are referenced by constraints, evaluations,
+evidence, sequence-binding traces, or transitive identity-absence provenance;
+the draft does not serialize the complete anchor capability graph merely because
+it exists internally. Source-observation IDs are retained where already present,
+while report-owned observation/provenance records remain part of the planned
+relationship/provenance slice.
+
 ## 6. Schema versioning
 
 The report schema version is independent of the Python package version. The
@@ -245,7 +262,7 @@ Those remain separate roadmap capabilities.
    cross-object validation over existing reasoning results. **Implemented.**
 3. **Draft serialization** — add explicit deterministic report DTO/JSON
    projection and representative known-answer fixtures without yet claiming the
-   schema is frozen.
+   schema is frozen. **Implemented.**
 4. **Internal checkpoint + schema freeze** — conduct scientific/API review, fix
    any model/trace defects, then check in the first stable JSON Schema and
    versioning rules.
