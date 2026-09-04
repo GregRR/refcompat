@@ -1,6 +1,6 @@
 # Milestone 7 compatibility report and workflow contract
 
-**Status:** contract pinned in Slice 1; immutable analysis-status/report-root model implemented in Slice 2; explicit deterministic draft JSON projection and a known-answer fixture implemented in Slice 3. The first Slice 4 internal scientific/API review pass identified and hardened report-boundary trace cross-wiring, global stable-ID collisions, local artifact-path leakage, and one remaining unordered condition trace. The draft format remains provisional at revision 2; the first stable schema/version is not yet frozen.
+**Status:** contract pinned in Slice 1; immutable analysis-status/report-root model implemented in Slice 2; explicit deterministic draft JSON projection implemented in Slice 3; and Slice 4 internal scientific/API review hardening plus the first stable schema freeze are complete. The stable core report is schema version `1.0.0`; draft revision 2 remains a separate provisional surface and carries no stable compatibility guarantee.
 
 Milestone 7 stabilizes how RefCompat exposes already-established compatibility
 reasoning to people, automation, and downstream software. It does not add a new
@@ -177,25 +177,71 @@ it exists internally. Source-observation IDs are retained where already present,
 while report-owned observation/provenance records remain part of the planned
 relationship/provenance slice.
 
+After the Slice 4 checkpoint, `compatibility_report_payload()` and
+`render_compatibility_report_json()` expose the same hardened core body through
+the stable `1.0.0` header. The draft payload/rendering functions remain separate
+and continue to emit revision 2; callers are never silently migrated from draft
+to stable semantics.
+
 ## 6. Schema versioning
 
-The report schema version is independent of the Python package version. The
-first Slice 4 review/hardening pass is complete, but the exact first stable
-version identifier and compatibility rules remain deliberately unfrozen until
-the hardened report boundary passes the authoritative gate and the remaining
-schema-design checkpoint is complete.
+Stable report schema versions are independent of the Python package version and
+use semantic `MAJOR.MINOR.PATCH` identifiers. A stable report identifies itself
+before the body through:
 
-At minimum, the frozen rules must define:
+```json
+{
+  "report_format": {
+    "name": "refcompat.compatibility_report",
+    "schema_version": "1.0.0"
+  }
+}
+```
 
-- how a consumer identifies the schema version before interpreting the body;
-- what constitutes a breaking versus additive schema change;
-- whether unknown additive fields may be ignored by consumers;
-- how enum additions are treated;
-- which fields are required, optional, or nullable; and
-- how checked-in JSON Schema files map to emitted reports.
+The first frozen stable schema is `1.0.0`. Its exact JSON Schema is packaged as
+`refcompat.schemas/compatibility-report-1.0.0.schema.json` and uses JSON Schema
+Draft 2020-12 with the stable identifier
+`urn:refcompat:schema:compatibility-report:1.0.0`. Stable compatible and incompatible known-answer fixtures pin the emitted bytes
+separately from the still-provisional draft revision-2 fixture.
 
-The project must not claim schema stability before those rules and adversarial
-compatibility tests exist.
+Version compatibility rules are:
+
+- **MAJOR** increments for breaking wire or semantic changes: removing or
+  renaming fields, making optional data required, changing a field's JSON type
+  or nullability, adding or removing values from an existing closed enum or
+  discriminated union, changing the meaning of an existing value, or changing
+  scientifically meaningful ordering semantics. Existing `1.x` enums and typed
+  unions are closed unless a future major version explicitly says otherwise.
+- **MINOR** increments for backward-preserving extensions such as new optional
+  fields or sections. A new optional section may define its own new enums or
+  record types because older tolerant consumers can ignore that entire unknown
+  section; an existing closed enum/union is not widened under a minor bump.
+  Slice 5 relationship/provenance additions therefore require at least a minor
+  schema advance rather than silently redefining `1.0.0`.
+- **PATCH** increments only when emitted stable JSON instances and their meanings
+  are unchanged, for example documentation/schema corrections that bring the
+  checked-in schema into agreement with the already-frozen serializer without
+  requiring consumer logic changes.
+
+Each checked-in schema is an **exact-version validator**. Version `1.0.0` is
+closed against unknown object fields and closed over its current enum/type
+variants, so a `1.1.0` report is validated against the `1.1.0` schema rather than
+being relabeled as `1.0.0`. Consumers may deliberately implement same-major
+forward tolerance by ignoring unknown optional fields, but they must inspect
+`schema_version` first. Unknown values in an existing closed enum or typed union
+are not a same-major extension and must not be silently reinterpreted. Consumers
+that require an exact contract should reject versions for which they do not
+possess the matching schema.
+
+Requiredness and nullability are defined only by the versioned JSON Schema. A
+required field is always present; a nullable field is present with JSON `null`
+when no value is available. Absence and `null` are not interchangeable unless a
+later schema explicitly says so. The stable serializer continues to use UTF-8,
+strict JSON numbers, deterministic key ordering, and a trailing newline.
+
+The draft marker (`stability = "draft"`, integer `revision`) is intentionally
+not a schema version. Draft reports do not satisfy the stable schema and carry no
+backward-compatibility promise.
 
 ## 7. Traceability
 
@@ -280,8 +326,7 @@ Those remain separate roadmap capabilities.
    schema is frozen. **Implemented.**
 4. **Internal checkpoint + schema freeze** — conduct scientific/API review, fix
    any model/trace defects, then check in the first stable JSON Schema and
-   versioning rules. **Review hardening implemented; authoritative gate and
-   schema freeze still pending.**
+   versioning rules. **Complete; stable core schema `1.0.0`.**
 5. **Relationship/provenance context** — include BAM/CRAM dictionary relationship
    context and the report-owned provenance needed to trace the existing UCSC
    profile without leaking profile internals.

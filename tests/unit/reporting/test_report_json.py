@@ -1,4 +1,4 @@
-"""Tests for the provisional Milestone 7 compatibility-report JSON projection."""
+"""Tests for stable and provisional Milestone 7 report JSON projections."""
 
 from __future__ import annotations
 
@@ -34,13 +34,20 @@ from refcompat.reasoning import aggregate_bundle_verdict, extract_conflict_cores
 from refcompat.reporting import (
     DRAFT_REPORT_FORMAT,
     DRAFT_REPORT_REVISION,
+    REPORT_FORMAT,
+    REPORT_SCHEMA_VERSION,
     compatibility_report_draft_payload,
+    compatibility_report_payload,
     render_compatibility_report_draft_json,
+    render_compatibility_report_json,
 )
 
 _REFERENCE = ResourceId("reference")
 _CONSUMER = ResourceId("consumer")
-_FIXTURE = Path(__file__).parents[2] / "fixtures" / "milestone7" / "draft-compatible-report.json"
+_FIXTURE_DIR = Path(__file__).parents[2] / "fixtures" / "milestone7"
+_DRAFT_FIXTURE = _FIXTURE_DIR / "draft-compatible-report.json"
+_STABLE_FIXTURE = _FIXTURE_DIR / "stable-compatible-report-1.0.0.json"
+_STABLE_INCOMPATIBLE_FIXTURE = _FIXTURE_DIR / "stable-incompatible-report-1.0.0.json"
 
 
 def _resource(resource_id: ResourceId, kind: ResourceKind) -> Resource:
@@ -112,6 +119,17 @@ def _invalid_report(*issues: AnalysisIssue) -> CompatibilityReport:
     )
 
 
+def test_stable_payload_is_self_identifying() -> None:
+    payload = compatibility_report_payload(_complete_report())
+
+    assert payload["report_format"] == {
+        "name": REPORT_FORMAT,
+        "schema_version": REPORT_SCHEMA_VERSION,
+    }
+    assert "stability" not in cast(dict[str, object], payload["report_format"])
+    assert "revision" not in cast(dict[str, object], payload["report_format"])
+
+
 def test_draft_payload_is_explicit_and_self_identifying() -> None:
     payload = compatibility_report_draft_payload(_complete_report())
 
@@ -180,6 +198,17 @@ def test_issue_order_is_canonicalized_by_stable_id() -> None:
     assert left == right
 
 
+def test_stable_rendered_json_is_utf8_deterministic_and_strict() -> None:
+    report = _complete_report()
+
+    first = render_compatibility_report_json(report)
+    second = render_compatibility_report_json(report)
+
+    assert first == second
+    assert first.endswith(b"\n")
+    assert json.loads(first.decode("utf-8")) == compatibility_report_payload(report)
+
+
 def test_rendered_json_is_utf8_deterministic_and_strict() -> None:
     report = _complete_report()
 
@@ -219,7 +248,26 @@ def test_rendered_json_does_not_depend_on_local_artifact_paths() -> None:
 
 
 def test_known_answer_fixture_pins_draft_bytes() -> None:
-    assert render_compatibility_report_draft_json(_complete_report()) == _FIXTURE.read_bytes()
+    assert render_compatibility_report_draft_json(_complete_report()) == _DRAFT_FIXTURE.read_bytes()
+
+
+def test_known_answer_fixture_pins_stable_bytes() -> None:
+    assert render_compatibility_report_json(_complete_report()) == _STABLE_FIXTURE.read_bytes()
+
+
+def test_incompatible_known_answer_fixture_pins_stable_bytes() -> None:
+    assert render_compatibility_report_json(_complete_report(length=11)) == (
+        _STABLE_INCOMPATIBLE_FIXTURE.read_bytes()
+    )
+
+
+def test_stable_and_draft_payloads_share_only_the_report_body() -> None:
+    stable = compatibility_report_payload(_complete_report())
+    draft = compatibility_report_draft_payload(_complete_report())
+
+    stable_body = {key: value for key, value in stable.items() if key != "report_format"}
+    draft_body = {key: value for key, value in draft.items() if key != "report_format"}
+    assert stable_body == draft_body
 
 
 def test_incompatible_report_preserves_decisive_trace() -> None:

@@ -6,6 +6,7 @@ The project is currently pre-release; entries under `Unreleased` describe ongoin
 
 ## Unreleased
 
+- Freeze the first stable Milestone 7 compatibility-report schema at `1.0.0`: add separate stable report payload/rendering APIs, package a strict JSON Schema, pin stable known-answer bytes, define semantic schema-version compatibility rules, and keep draft revision 2 explicitly separate for provisional callers.
 - Harden the Milestone 7 pre-schema report boundary after internal scientific/API review: require report-global requirement/capability IDs, reject cross-wired requirement/capability/binding/evaluation/evidence/finding/condition traces before serialization, omit machine-local artifact paths from portable output, canonicalize condition exclusion IDs, and advance the still-provisional draft wire revision to 2 without yet freezing the stable schema.
 - Add Milestone 7 deterministic draft compatibility-report JSON projection with an explicit provisional format/revision marker, canonical ordering for unordered trace collections, typed requirement/capability/binding/evidence projections, invalid-input reports without scientific verdicts, and a checked-in known-answer fixture without claiming stable schema compatibility.
 - Add the Milestone 7 immutable report root: introduce separate `AnalysisStatus` and explicit analysis issues, require complete reports to carry one cross-consistent bundle/verdict/conflict-core result, prevent partial execution from presenting positive compatibility, and keep invalid input outside scientific verdict semantics.

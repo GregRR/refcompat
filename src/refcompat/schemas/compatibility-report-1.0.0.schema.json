@@ -1,0 +1,1478 @@
+{
+  "$defs": {
+    "analysis": {
+      "additionalProperties": false,
+      "properties": {
+        "issues": {
+          "items": {
+            "$ref": "#/$defs/analysisIssue"
+          },
+          "type": "array"
+        },
+        "status": {
+          "enum": [
+            "complete",
+            "partial",
+            "invalid_input"
+          ]
+        }
+      },
+      "required": [
+        "status",
+        "issues"
+      ],
+      "type": "object"
+    },
+    "analysisIssue": {
+      "additionalProperties": false,
+      "properties": {
+        "detail": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "enum": [
+            "incomplete_operation",
+            "invalid_input"
+          ]
+        },
+        "resource_ids": {
+          "$ref": "#/$defs/idArray"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "detail",
+        "resource_ids"
+      ],
+      "type": "object"
+    },
+    "artifact": {
+      "additionalProperties": false,
+      "properties": {
+        "byte_size": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "digest": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/artifactDigest"
+            }
+          ]
+        }
+      },
+      "required": [
+        "byte_size",
+        "digest"
+      ],
+      "type": "object"
+    },
+    "artifactDigest": {
+      "additionalProperties": false,
+      "properties": {
+        "algorithm": {
+          "const": "sha256"
+        },
+        "value": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      },
+      "required": [
+        "algorithm",
+        "value"
+      ],
+      "type": "object"
+    },
+    "capability": {
+      "oneOf": [
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/capabilityBase"
+            },
+            {
+              "properties": {
+                "present": {
+                  "type": "boolean"
+                },
+                "sequence_name": {
+                  "$ref": "#/$defs/sequenceName"
+                },
+                "type": {
+                  "const": "sequence_presence"
+                }
+              },
+              "required": [
+                "type",
+                "sequence_name",
+                "present"
+              ],
+              "type": "object"
+            }
+          ],
+          "unevaluatedProperties": false
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/capabilityBase"
+            },
+            {
+              "properties": {
+                "length": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "sequence_name": {
+                  "$ref": "#/$defs/sequenceName"
+                },
+                "type": {
+                  "const": "sequence_length"
+                }
+              },
+              "required": [
+                "type",
+                "sequence_name",
+                "length"
+              ],
+              "type": "object"
+            }
+          ],
+          "unevaluatedProperties": false
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/capabilityBase"
+            },
+            {
+              "properties": {
+                "identity": {
+                  "$ref": "#/$defs/sequenceIdentity"
+                },
+                "provenance": {
+                  "enum": [
+                    "content_derived",
+                    "declared_metadata"
+                  ]
+                },
+                "sequence_name": {
+                  "$ref": "#/$defs/sequenceName"
+                },
+                "type": {
+                  "const": "sequence_identity"
+                }
+              },
+              "required": [
+                "type",
+                "sequence_name",
+                "identity",
+                "provenance"
+              ],
+              "type": "object"
+            }
+          ],
+          "unevaluatedProperties": false
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/capabilityBase"
+            },
+            {
+              "properties": {
+                "identity_values": {
+                  "items": {
+                    "$ref": "#/$defs/sequenceIdentity"
+                  },
+                  "minItems": 1,
+                  "type": "array",
+                  "uniqueItems": true
+                },
+                "sequence_name": {
+                  "$ref": "#/$defs/sequenceName"
+                },
+                "source_identity_capability_ids": {
+                  "$ref": "#/$defs/nonEmptyIdArray"
+                },
+                "subject_resource_id": {
+                  "$ref": "#/$defs/id"
+                },
+                "type": {
+                  "const": "sequence_identity_absence"
+                }
+              },
+              "required": [
+                "type",
+                "subject_resource_id",
+                "sequence_name",
+                "identity_values",
+                "source_identity_capability_ids"
+              ],
+              "type": "object"
+            }
+          ],
+          "unevaluatedProperties": false
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/capabilityBase"
+            },
+            {
+              "properties": {
+                "anchor_sequence_name": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/$defs/sequenceName"
+                    }
+                  ]
+                },
+                "sequence_name": {
+                  "$ref": "#/$defs/sequenceName"
+                },
+                "state": {
+                  "enum": [
+                    "bound",
+                    "content_conflict",
+                    "proven_absent"
+                  ]
+                },
+                "subject_resource_id": {
+                  "$ref": "#/$defs/id"
+                },
+                "type": {
+                  "const": "sequence_binding_validation"
+                }
+              },
+              "required": [
+                "type",
+                "subject_resource_id",
+                "sequence_name",
+                "state",
+                "anchor_sequence_name"
+              ],
+              "type": "object"
+            },
+            {
+              "else": {
+                "properties": {
+                  "anchor_sequence_name": {
+                    "$ref": "#/$defs/sequenceName"
+                  }
+                }
+              },
+              "if": {
+                "properties": {
+                  "state": {
+                    "const": "proven_absent"
+                  }
+                },
+                "required": [
+                  "state"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "anchor_sequence_name": {
+                    "type": "null"
+                  }
+                }
+              }
+            }
+          ],
+          "unevaluatedProperties": false
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/capabilityBase"
+            },
+            {
+              "properties": {
+                "sequence_names": {
+                  "$ref": "#/$defs/sequenceNames"
+                },
+                "type": {
+                  "const": "sequence_order"
+                }
+              },
+              "required": [
+                "type",
+                "sequence_names"
+              ],
+              "type": "object"
+            }
+          ],
+          "unevaluatedProperties": false
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/capabilityBase"
+            },
+            {
+              "properties": {
+                "checked_count": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "conflict_count": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "representable_count": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "subject_resource_id": {
+                  "$ref": "#/$defs/id"
+                },
+                "type": {
+                  "const": "coordinate_bounds_validation"
+                },
+                "unresolved_count": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "type",
+                "subject_resource_id",
+                "checked_count",
+                "representable_count",
+                "conflict_count",
+                "unresolved_count"
+              ],
+              "type": "object"
+            }
+          ],
+          "unevaluatedProperties": false
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/capabilityBase"
+            },
+            {
+              "properties": {
+                "checked_count": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "match_count": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "mismatch_count": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "subject_resource_id": {
+                  "$ref": "#/$defs/id"
+                },
+                "type": {
+                  "const": "reference_base_validation"
+                },
+                "unresolved_count": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "type",
+                "subject_resource_id",
+                "checked_count",
+                "match_count",
+                "mismatch_count",
+                "unresolved_count"
+              ],
+              "type": "object"
+            }
+          ],
+          "unevaluatedProperties": false
+        }
+      ]
+    },
+    "capabilityBase": {
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "resource_id": {
+          "$ref": "#/$defs/id"
+        },
+        "source_observation_ids": {
+          "$ref": "#/$defs/idArray"
+        }
+      },
+      "required": [
+        "id",
+        "resource_id",
+        "source_observation_ids"
+      ],
+      "type": "object"
+    },
+    "condition": {
+      "additionalProperties": false,
+      "properties": {
+        "anchor_resource_id": {
+          "$ref": "#/$defs/id"
+        },
+        "constraint_ids": {
+          "$ref": "#/$defs/idArray"
+        },
+        "excluded_resource_ids": {
+          "$ref": "#/$defs/idArray"
+        },
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "enum": [
+            "explicit_resource_scope",
+            "explicit_anchor_sequence_scope"
+          ]
+        },
+        "scope": {
+          "$ref": "#/$defs/scope"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "scope",
+        "anchor_resource_id",
+        "constraint_ids",
+        "excluded_resource_ids"
+      ],
+      "type": "object"
+    },
+    "conflictCore": {
+      "additionalProperties": false,
+      "properties": {
+        "constraint_ids": {
+          "$ref": "#/$defs/nonEmptyIdArray"
+        },
+        "evidence_ids": {
+          "$ref": "#/$defs/idArray"
+        },
+        "finding_ids": {
+          "$ref": "#/$defs/nonEmptyIdArray"
+        },
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "enum": [
+            "contradiction",
+            "unresolved"
+          ]
+        },
+        "requirement_ids": {
+          "$ref": "#/$defs/nonEmptyIdArray"
+        },
+        "resource_ids": {
+          "$ref": "#/$defs/nonEmptyIdArray"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "constraint_ids",
+        "requirement_ids",
+        "finding_ids",
+        "evidence_ids",
+        "resource_ids"
+      ],
+      "type": "object"
+    },
+    "constraint": {
+      "additionalProperties": false,
+      "properties": {
+        "candidate_capability_ids": {
+          "$ref": "#/$defs/idArray"
+        },
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "requirement_id": {
+          "$ref": "#/$defs/id"
+        },
+        "rule": {
+          "enum": [
+            "sequence_presence",
+            "sequence_length",
+            "sequence_identity",
+            "sequence_order",
+            "coordinate_bounds",
+            "reference_bases",
+            "sequence_binding"
+          ]
+        },
+        "sequence_binding_ids": {
+          "$ref": "#/$defs/idArray"
+        }
+      },
+      "required": [
+        "id",
+        "requirement_id",
+        "rule",
+        "candidate_capability_ids",
+        "sequence_binding_ids"
+      ],
+      "type": "object"
+    },
+    "constraintStates": {
+      "additionalProperties": false,
+      "properties": {
+        "not_applicable": {
+          "$ref": "#/$defs/idArray"
+        },
+        "satisfied": {
+          "$ref": "#/$defs/idArray"
+        },
+        "unresolved": {
+          "$ref": "#/$defs/idArray"
+        },
+        "unsatisfied": {
+          "$ref": "#/$defs/idArray"
+        }
+      },
+      "required": [
+        "satisfied",
+        "unsatisfied",
+        "unresolved",
+        "not_applicable"
+      ],
+      "type": "object"
+    },
+    "evaluation": {
+      "additionalProperties": false,
+      "properties": {
+        "constraint_id": {
+          "$ref": "#/$defs/id"
+        },
+        "relevant_capability_ids": {
+          "$ref": "#/$defs/idArray"
+        },
+        "requirement_id": {
+          "$ref": "#/$defs/id"
+        },
+        "satisfaction_mode": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "enum": [
+                "exact",
+                "verified_alias",
+                "verified_sequence_identity",
+                "verified_sequence_binding",
+                "verified_subset",
+                "exhaustive_direct"
+              ]
+            }
+          ]
+        },
+        "state": {
+          "enum": [
+            "satisfied",
+            "unsatisfied",
+            "unresolved",
+            "not_applicable"
+          ]
+        }
+      },
+      "required": [
+        "constraint_id",
+        "requirement_id",
+        "state",
+        "satisfaction_mode",
+        "relevant_capability_ids"
+      ],
+      "type": "object"
+    },
+    "evidenceAggregate": {
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/evidenceItem"
+          },
+          "type": "array"
+        },
+        "not_applicable_constraint_ids": {
+          "$ref": "#/$defs/idArray"
+        },
+        "unresolved_constraint_ids": {
+          "$ref": "#/$defs/idArray"
+        }
+      },
+      "required": [
+        "items",
+        "unresolved_constraint_ids",
+        "not_applicable_constraint_ids"
+      ],
+      "type": "object"
+    },
+    "evidenceItem": {
+      "additionalProperties": false,
+      "properties": {
+        "capability_id": {
+          "$ref": "#/$defs/id"
+        },
+        "constraint_id": {
+          "$ref": "#/$defs/id"
+        },
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "enum": [
+            "sequence_presence",
+            "sequence_length",
+            "sequence_identity",
+            "sequence_binding",
+            "sequence_order",
+            "coordinate_bounds",
+            "reference_bases"
+          ]
+        },
+        "method": {
+          "enum": [
+            "exact_typed_constraint",
+            "verified_sequence_binding",
+            "exhaustive_sequence_identity_absence",
+            "exhaustive_coordinate_bounds_validation",
+            "exhaustive_reference_base_validation"
+          ]
+        },
+        "polarity": {
+          "enum": [
+            "supports",
+            "contradicts"
+          ]
+        },
+        "requirement_id": {
+          "$ref": "#/$defs/id"
+        },
+        "sequence_binding_ids": {
+          "$ref": "#/$defs/idArray"
+        },
+        "source_observation_ids": {
+          "$ref": "#/$defs/idArray"
+        },
+        "strength": {
+          "enum": [
+            "tier_a_conclusive_content",
+            "tier_b_direct_structural",
+            "tier_c_provenance_metadata",
+            "tier_d_heuristic_context"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "method",
+        "strength",
+        "polarity",
+        "constraint_id",
+        "requirement_id",
+        "capability_id",
+        "source_observation_ids",
+        "sequence_binding_ids"
+      ],
+      "type": "object"
+    },
+    "finding": {
+      "additionalProperties": false,
+      "properties": {
+        "constraint_ids": {
+          "$ref": "#/$defs/nonEmptyIdArray"
+        },
+        "evidence_ids": {
+          "$ref": "#/$defs/idArray"
+        },
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "enum": [
+            "missing_required_sequence",
+            "sequence_length_conflict",
+            "sequence_identity_conflict",
+            "sequence_binding_conflict",
+            "sequence_order_conflict",
+            "coordinate_bounds_conflict",
+            "reference_base_conflict",
+            "unresolved_requirement"
+          ]
+        },
+        "requirement_ids": {
+          "$ref": "#/$defs/nonEmptyIdArray"
+        },
+        "resource_ids": {
+          "$ref": "#/$defs/nonEmptyIdArray"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "constraint_ids",
+        "requirement_ids",
+        "evidence_ids",
+        "resource_ids"
+      ],
+      "type": "object"
+    },
+    "id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "idArray": {
+      "items": {
+        "$ref": "#/$defs/id"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "nonEmptyIdArray": {
+      "items": {
+        "$ref": "#/$defs/id"
+      },
+      "minItems": 1,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "nonEmptyString": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "reportFormat": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "const": "refcompat.compatibility_report"
+        },
+        "schema_version": {
+          "const": "1.0.0"
+        }
+      },
+      "required": [
+        "name",
+        "schema_version"
+      ],
+      "type": "object"
+    },
+    "request": {
+      "additionalProperties": false,
+      "properties": {
+        "active_profiles": {
+          "$ref": "#/$defs/idArray"
+        },
+        "anchor_resource_id": {
+          "$ref": "#/$defs/id"
+        },
+        "policy_id": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/id"
+            }
+          ]
+        },
+        "resources": {
+          "items": {
+            "$ref": "#/$defs/resource"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "scope": {
+          "$ref": "#/$defs/scope"
+        }
+      },
+      "required": [
+        "resources",
+        "anchor_resource_id",
+        "scope",
+        "active_profiles",
+        "policy_id"
+      ],
+      "type": "object"
+    },
+    "requirement": {
+      "oneOf": [
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/requirementBase"
+            },
+            {
+              "properties": {
+                "sequence_name": {
+                  "$ref": "#/$defs/sequenceName"
+                },
+                "type": {
+                  "const": "sequence_presence"
+                }
+              },
+              "required": [
+                "type",
+                "sequence_name"
+              ],
+              "type": "object"
+            }
+          ],
+          "unevaluatedProperties": false
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/requirementBase"
+            },
+            {
+              "properties": {
+                "length": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "sequence_name": {
+                  "$ref": "#/$defs/sequenceName"
+                },
+                "type": {
+                  "const": "sequence_length"
+                }
+              },
+              "required": [
+                "type",
+                "sequence_name",
+                "length"
+              ],
+              "type": "object"
+            }
+          ],
+          "unevaluatedProperties": false
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/requirementBase"
+            },
+            {
+              "properties": {
+                "identity": {
+                  "$ref": "#/$defs/sequenceIdentity"
+                },
+                "sequence_name": {
+                  "$ref": "#/$defs/sequenceName"
+                },
+                "type": {
+                  "const": "sequence_identity"
+                }
+              },
+              "required": [
+                "type",
+                "sequence_name",
+                "identity"
+              ],
+              "type": "object"
+            }
+          ],
+          "unevaluatedProperties": false
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/requirementBase"
+            },
+            {
+              "properties": {
+                "anchor_resource_id": {
+                  "$ref": "#/$defs/id"
+                },
+                "sequence_name": {
+                  "$ref": "#/$defs/sequenceName"
+                },
+                "type": {
+                  "const": "sequence_binding"
+                }
+              },
+              "required": [
+                "type",
+                "anchor_resource_id",
+                "sequence_name"
+              ],
+              "type": "object"
+            }
+          ],
+          "unevaluatedProperties": false
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/requirementBase"
+            },
+            {
+              "properties": {
+                "sequence_names": {
+                  "$ref": "#/$defs/sequenceNames"
+                },
+                "type": {
+                  "const": "sequence_order"
+                }
+              },
+              "required": [
+                "type",
+                "sequence_names"
+              ],
+              "type": "object"
+            }
+          ],
+          "unevaluatedProperties": false
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/requirementBase"
+            },
+            {
+              "properties": {
+                "anchor_resource_id": {
+                  "$ref": "#/$defs/id"
+                },
+                "coordinate_count": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "type": {
+                  "const": "coordinate_bounds"
+                }
+              },
+              "required": [
+                "type",
+                "anchor_resource_id",
+                "coordinate_count"
+              ],
+              "type": "object"
+            }
+          ],
+          "unevaluatedProperties": false
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/requirementBase"
+            },
+            {
+              "properties": {
+                "anchor_resource_id": {
+                  "$ref": "#/$defs/id"
+                },
+                "record_count": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "type": {
+                  "const": "reference_bases"
+                }
+              },
+              "required": [
+                "type",
+                "anchor_resource_id",
+                "record_count"
+              ],
+              "type": "object"
+            }
+          ],
+          "unevaluatedProperties": false
+        }
+      ]
+    },
+    "requirementBase": {
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "level": {
+          "enum": [
+            "mandatory",
+            "advisory"
+          ]
+        },
+        "origin": {
+          "enum": [
+            "core_format",
+            "profile",
+            "user_policy"
+          ]
+        },
+        "resource_id": {
+          "$ref": "#/$defs/id"
+        }
+      },
+      "required": [
+        "id",
+        "resource_id",
+        "origin",
+        "level"
+      ],
+      "type": "object"
+    },
+    "resource": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact": {
+          "$ref": "#/$defs/artifact"
+        },
+        "display_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "enum": [
+            "fasta",
+            "fasta_index",
+            "sequence_dictionary",
+            "vcf",
+            "bam",
+            "cram",
+            "gtf",
+            "gff3"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "display_name",
+        "artifact"
+      ],
+      "type": "object"
+    },
+    "scientificResult": {
+      "additionalProperties": false,
+      "properties": {
+        "capabilities": {
+          "items": {
+            "$ref": "#/$defs/capability"
+          },
+          "type": "array"
+        },
+        "conditions": {
+          "items": {
+            "$ref": "#/$defs/condition"
+          },
+          "type": "array"
+        },
+        "conflict_cores": {
+          "items": {
+            "$ref": "#/$defs/conflictCore"
+          },
+          "type": "array"
+        },
+        "constraints": {
+          "items": {
+            "$ref": "#/$defs/constraint"
+          },
+          "type": "array"
+        },
+        "evaluations": {
+          "items": {
+            "$ref": "#/$defs/evaluation"
+          },
+          "type": "array"
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidenceAggregate"
+        },
+        "findings": {
+          "items": {
+            "$ref": "#/$defs/finding"
+          },
+          "type": "array"
+        },
+        "requirements": {
+          "items": {
+            "$ref": "#/$defs/requirement"
+          },
+          "type": "array"
+        },
+        "sequence_bindings": {
+          "items": {
+            "$ref": "#/$defs/sequenceBinding"
+          },
+          "type": "array"
+        },
+        "verdict": {
+          "$ref": "#/$defs/verdict"
+        }
+      },
+      "required": [
+        "verdict",
+        "requirements",
+        "capabilities",
+        "sequence_bindings",
+        "constraints",
+        "evaluations",
+        "evidence",
+        "findings",
+        "conditions",
+        "conflict_cores"
+      ],
+      "type": "object"
+    },
+    "scope": {
+      "additionalProperties": false,
+      "properties": {
+        "anchor_sequence_names": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/sequenceNames"
+            }
+          ]
+        },
+        "resource_ids": {
+          "$ref": "#/$defs/nonEmptyIdArray"
+        }
+      },
+      "required": [
+        "resource_ids",
+        "anchor_sequence_names"
+      ],
+      "type": "object"
+    },
+    "sequenceBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "anchor_resource_id": {
+          "$ref": "#/$defs/id"
+        },
+        "anchor_sequence_name": {
+          "$ref": "#/$defs/sequenceName"
+        },
+        "capability_ids": {
+          "$ref": "#/$defs/nonEmptyIdArray"
+        },
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "identity_values": {
+          "items": {
+            "$ref": "#/$defs/sequenceIdentity"
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "local_sequence_name": {
+          "$ref": "#/$defs/sequenceName"
+        },
+        "method": {
+          "enum": [
+            "authoritative_name",
+            "verified_sequence_identity"
+          ]
+        },
+        "resource_id": {
+          "$ref": "#/$defs/id"
+        }
+      },
+      "required": [
+        "id",
+        "resource_id",
+        "local_sequence_name",
+        "anchor_resource_id",
+        "anchor_sequence_name",
+        "method",
+        "identity_values",
+        "capability_ids"
+      ],
+      "type": "object"
+    },
+    "sequenceIdentity": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "scheme": {
+              "const": "refget"
+            },
+            "value": {
+              "pattern": "^SQ\\\\.[A-Za-z0-9_-]{32}$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "scheme",
+            "value"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "scheme": {
+              "const": "md5"
+            },
+            "value": {
+              "pattern": "^[0-9a-f]{32}$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "scheme",
+            "value"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "sequenceName": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "sequenceNames": {
+      "items": {
+        "$ref": "#/$defs/sequenceName"
+      },
+      "minItems": 1,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "verdict": {
+      "additionalProperties": false,
+      "properties": {
+        "basis_finding_ids": {
+          "$ref": "#/$defs/idArray"
+        },
+        "condition_ids": {
+          "$ref": "#/$defs/idArray"
+        },
+        "constraint_states": {
+          "$ref": "#/$defs/constraintStates"
+        },
+        "mandatory_constraint_ids": {
+          "$ref": "#/$defs/idArray"
+        },
+        "value": {
+          "enum": [
+            "compatible",
+            "compatible_with_conditions",
+            "incompatible",
+            "indeterminate"
+          ]
+        }
+      },
+      "required": [
+        "value",
+        "mandatory_constraint_ids",
+        "constraint_states",
+        "condition_ids",
+        "basis_finding_ids"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "urn:refcompat:schema:compatibility-report:1.0.0",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "analysis": {
+            "properties": {
+              "status": {
+                "const": "complete"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "analysis": {
+            "properties": {
+              "issues": {
+                "maxItems": 0
+              }
+            }
+          },
+          "scientific_result": {
+            "$ref": "#/$defs/scientificResult"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "analysis": {
+            "properties": {
+              "status": {
+                "const": "partial"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "analysis": {
+            "properties": {
+              "issues": {
+                "items": {
+                  "allOf": [
+                    {
+                      "$ref": "#/$defs/analysisIssue"
+                    },
+                    {
+                      "properties": {
+                        "kind": {
+                          "const": "incomplete_operation"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "minItems": 1
+              }
+            }
+          },
+          "scientific_result": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/scientificResult"
+              },
+              {
+                "properties": {
+                  "verdict": {
+                    "properties": {
+                      "value": {
+                        "enum": [
+                          "incompatible",
+                          "indeterminate"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "analysis": {
+            "properties": {
+              "status": {
+                "const": "invalid_input"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "analysis": {
+            "properties": {
+              "issues": {
+                "items": {
+                  "allOf": [
+                    {
+                      "$ref": "#/$defs/analysisIssue"
+                    },
+                    {
+                      "properties": {
+                        "kind": {
+                          "const": "invalid_input"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "minItems": 1
+              }
+            }
+          },
+          "scientific_result": {
+            "type": "null"
+          }
+        }
+      }
+    }
+  ],
+  "description": "Stable RefCompat compatibility report schema version 1.0.0.",
+  "properties": {
+    "analysis": {
+      "$ref": "#/$defs/analysis"
+    },
+    "report_format": {
+      "$ref": "#/$defs/reportFormat"
+    },
+    "request": {
+      "$ref": "#/$defs/request"
+    },
+    "scientific_result": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/scientificResult"
+        }
+      ]
+    },
+    "tool_version": {
+      "$ref": "#/$defs/nonEmptyString"
+    }
+  },
+  "required": [
+    "report_format",
+    "tool_version",
+    "analysis",
+    "request",
+    "scientific_result"
+  ],
+  "title": "RefCompat compatibility report",
+  "type": "object"
+}

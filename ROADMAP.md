@@ -132,7 +132,7 @@ The normative profile contract is recorded in [`docs/ucsc-preflight-profile.md`]
 
 **Goal:** expose RefCompat's already-established reasoning through one immutable, traceable, versioned compatibility report and deterministic workflow-facing output without changing scientific verdict semantics.
 
-**Implementation status:** Slices 1–3 implemented and the first Slice 4 internal scientific/API review pass has produced a report-boundary hardening correction. Review found that globally duplicated requirement/capability IDs and several cross-wired trace references could survive report construction, that local `ArtifactIdentity.path` values should not enter a portable stable report, and that condition exclusion order still needed canonicalization. The hardened draft advances to revision 2 and remains explicitly provisional. The authoritative gate and the remaining Slice 4 stable-schema/versioning freeze are next. Milestone 6 is complete and independently reviewed.
+**Implementation status:** Slices 1–3 are implemented and Slice 4 internal scientific/API review hardening is committed. The hardened boundary rejects global requirement/capability ID collisions and cross-wired trace references, omits local artifact paths, and canonicalizes condition exclusions. The first stable core report schema is now frozen at `1.0.0` with a separate stable serializer, packaged JSON Schema, semantic schema-versioning rules, and stable known-answer fixtures; draft revision 2 remains explicitly provisional. Slice 5 report-owned alignment relationship and provider/provenance projection is next and must evolve the stable schema additively under those rules. Milestone 6 is complete and independently reviewed.
 
 Committed scope:
 
@@ -154,7 +154,7 @@ Planned slices:
 1. pin the report, analysis-status, schema-versioning, traceability, and workflow boundary;
 2. implement immutable analysis-status/report-root models and consistency validation over existing M2–M6 reasoning results; **implemented**
 3. implement explicit deterministic draft serialization and representative known-answer report fixtures; **implemented;**
-4. stop for an internal scientific/API review, harden any report-boundary defects, then freeze the first checked-in stable JSON Schema/versioning rules; **review hardening implemented; gate/schema freeze pending;**
+4. stop for an internal scientific/API review, harden any report-boundary defects, then freeze the first checked-in stable JSON Schema/versioning rules; **implemented; stable core schema `1.0.0`;**
 5. project alignment dictionary relationship context and profile/provider provenance needed for traceable M6 conclusions into report-owned records;
 6. add human report rendering plus an explicit CI/workflow exit-code policy without silently changing the provisional Milestone 1 diagnostic commands;
 7. exercise representative VCF, BAM/CRAM, annotation, scoped, UCSC-profile, incompatible, and indeterminate end-to-end report paths;

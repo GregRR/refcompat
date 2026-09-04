@@ -1,9 +1,8 @@
-"""Explicit deterministic draft JSON projection for compatibility reports.
+"""Explicit deterministic stable and draft JSON compatibility reports.
 
 Milestone 7 serializes report-owned concepts deliberately rather than dumping
-Python dataclasses recursively.  The wire shape in this module is still a
-*draft*: Slice 4 will review it before the first stable JSON Schema/version is
-frozen.
+Python dataclasses recursively. Stable output is independently schema-versioned;
+the retained draft projection remains explicitly provisional.
 """
 
 from __future__ import annotations
@@ -41,13 +40,54 @@ from refcompat.model.reference_context import SequenceBinding
 from refcompat.model.report import AnalysisIssue, CompatibilityReport
 from refcompat.model.resources import ArtifactIdentity, Resource
 
-DRAFT_REPORT_FORMAT = "refcompat.compatibility_report"
+REPORT_FORMAT = "refcompat.compatibility_report"
+REPORT_SCHEMA_VERSION = "1.0.0"
+DRAFT_REPORT_FORMAT = REPORT_FORMAT
 DRAFT_REPORT_REVISION = 2
+
+
+def compatibility_report_payload(report: CompatibilityReport) -> dict[str, object]:
+    """Project one validated report root into the stable report schema."""
+
+    return _compatibility_report_payload(
+        report,
+        report_format={
+            "name": REPORT_FORMAT,
+            "schema_version": REPORT_SCHEMA_VERSION,
+        },
+    )
+
+
+def render_compatibility_report_json(report: CompatibilityReport) -> bytes:
+    """Render deterministic UTF-8 stable report JSON with a trailing newline."""
+
+    return _render_json(compatibility_report_payload(report))
 
 
 def compatibility_report_draft_payload(report: CompatibilityReport) -> dict[str, object]:
     """Project one validated report root into the provisional M7 JSON shape."""
 
+    return _compatibility_report_payload(
+        report,
+        report_format={
+            "name": DRAFT_REPORT_FORMAT,
+            "stability": "draft",
+            "revision": DRAFT_REPORT_REVISION,
+        },
+    )
+
+
+def render_compatibility_report_draft_json(report: CompatibilityReport) -> bytes:
+    """Render deterministic UTF-8 draft JSON with a trailing newline."""
+
+    return _render_json(compatibility_report_draft_payload(report))
+
+
+def _compatibility_report_payload(
+    report: CompatibilityReport,
+    *,
+    report_format: dict[str, object],
+) -> dict[str, object]:
     scientific_result: dict[str, object] | None = None
     if report.bundle is not None:
         assert report.verdict is not None
@@ -55,11 +95,7 @@ def compatibility_report_draft_payload(report: CompatibilityReport) -> dict[str,
         scientific_result = _scientific_result_payload(report.bundle, report)
 
     return {
-        "report_format": {
-            "name": DRAFT_REPORT_FORMAT,
-            "stability": "draft",
-            "revision": DRAFT_REPORT_REVISION,
-        },
+        "report_format": report_format,
         "tool_version": report.tool_version,
         "analysis": {
             "status": report.analysis_status.value,
@@ -73,10 +109,7 @@ def compatibility_report_draft_payload(report: CompatibilityReport) -> dict[str,
     }
 
 
-def render_compatibility_report_draft_json(report: CompatibilityReport) -> bytes:
-    """Render deterministic UTF-8 draft JSON with a trailing newline."""
-
-    payload = compatibility_report_draft_payload(report)
+def _render_json(payload: dict[str, object]) -> bytes:
     text = json.dumps(
         payload,
         ensure_ascii=False,

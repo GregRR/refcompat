@@ -1,0 +1,167 @@
+{
+  "analysis": {
+    "issues": [],
+    "status": "complete"
+  },
+  "report_format": {
+    "name": "refcompat.compatibility_report",
+    "schema_version": "1.0.0"
+  },
+  "request": {
+    "active_profiles": [],
+    "anchor_resource_id": "reference",
+    "policy_id": null,
+    "resources": [
+      {
+        "artifact": {
+          "byte_size": null,
+          "digest": null
+        },
+        "display_name": null,
+        "id": "reference",
+        "kind": "fasta"
+      },
+      {
+        "artifact": {
+          "byte_size": null,
+          "digest": null
+        },
+        "display_name": null,
+        "id": "consumer",
+        "kind": "sequence_dictionary"
+      }
+    ],
+    "scope": {
+      "anchor_sequence_names": null,
+      "resource_ids": [
+        "reference",
+        "consumer"
+      ]
+    }
+  },
+  "scientific_result": {
+    "capabilities": [
+      {
+        "id": "anchor-capability:ec0852152031acd4d3121bf34658b29f6003b91083fbe839cdf812b13e71ca8d",
+        "length": 10,
+        "resource_id": "reference",
+        "sequence_name": "chr1",
+        "source_observation_ids": [],
+        "type": "sequence_length"
+      }
+    ],
+    "conditions": [],
+    "conflict_cores": [
+      {
+        "constraint_ids": [
+          "constraint:f587d536333c49900b9635f3f1c8f94f3802b06e5d2fa491f3ee6eb091f37286"
+        ],
+        "evidence_ids": [
+          "evidence:7a095f79d4df06fc6e73eb2dfcbe270dc21dc7d66e3722ce463441816863199f"
+        ],
+        "finding_ids": [
+          "finding:d797baadb3505f78f85b4aad9aadeaa42ccb8d203b7fdae0eb010df536871277"
+        ],
+        "id": "conflict-core:ba3e472bfbb62426d0a2a24d8a21bfe114dcb189bb2390db1c5f4064578e76ff",
+        "kind": "contradiction",
+        "requirement_ids": [
+          "consumer:length:chr1"
+        ],
+        "resource_ids": [
+          "consumer",
+          "reference"
+        ]
+      }
+    ],
+    "constraints": [
+      {
+        "candidate_capability_ids": [
+          "anchor-capability:ec0852152031acd4d3121bf34658b29f6003b91083fbe839cdf812b13e71ca8d"
+        ],
+        "id": "constraint:f587d536333c49900b9635f3f1c8f94f3802b06e5d2fa491f3ee6eb091f37286",
+        "requirement_id": "consumer:length:chr1",
+        "rule": "sequence_length",
+        "sequence_binding_ids": []
+      }
+    ],
+    "evaluations": [
+      {
+        "constraint_id": "constraint:f587d536333c49900b9635f3f1c8f94f3802b06e5d2fa491f3ee6eb091f37286",
+        "relevant_capability_ids": [
+          "anchor-capability:ec0852152031acd4d3121bf34658b29f6003b91083fbe839cdf812b13e71ca8d"
+        ],
+        "requirement_id": "consumer:length:chr1",
+        "satisfaction_mode": null,
+        "state": "unsatisfied"
+      }
+    ],
+    "evidence": {
+      "items": [
+        {
+          "capability_id": "anchor-capability:ec0852152031acd4d3121bf34658b29f6003b91083fbe839cdf812b13e71ca8d",
+          "constraint_id": "constraint:f587d536333c49900b9635f3f1c8f94f3802b06e5d2fa491f3ee6eb091f37286",
+          "id": "evidence:7a095f79d4df06fc6e73eb2dfcbe270dc21dc7d66e3722ce463441816863199f",
+          "kind": "sequence_length",
+          "method": "exact_typed_constraint",
+          "polarity": "contradicts",
+          "requirement_id": "consumer:length:chr1",
+          "sequence_binding_ids": [],
+          "source_observation_ids": [],
+          "strength": "tier_b_direct_structural"
+        }
+      ],
+      "not_applicable_constraint_ids": [],
+      "unresolved_constraint_ids": []
+    },
+    "findings": [
+      {
+        "constraint_ids": [
+          "constraint:f587d536333c49900b9635f3f1c8f94f3802b06e5d2fa491f3ee6eb091f37286"
+        ],
+        "evidence_ids": [
+          "evidence:7a095f79d4df06fc6e73eb2dfcbe270dc21dc7d66e3722ce463441816863199f"
+        ],
+        "id": "finding:d797baadb3505f78f85b4aad9aadeaa42ccb8d203b7fdae0eb010df536871277",
+        "kind": "sequence_length_conflict",
+        "requirement_ids": [
+          "consumer:length:chr1"
+        ],
+        "resource_ids": [
+          "consumer",
+          "reference"
+        ]
+      }
+    ],
+    "requirements": [
+      {
+        "id": "consumer:length:chr1",
+        "length": 11,
+        "level": "mandatory",
+        "origin": "core_format",
+        "resource_id": "consumer",
+        "sequence_name": "chr1",
+        "type": "sequence_length"
+      }
+    ],
+    "sequence_bindings": [],
+    "verdict": {
+      "basis_finding_ids": [
+        "finding:d797baadb3505f78f85b4aad9aadeaa42ccb8d203b7fdae0eb010df536871277"
+      ],
+      "condition_ids": [],
+      "constraint_states": {
+        "not_applicable": [],
+        "satisfied": [],
+        "unresolved": [],
+        "unsatisfied": [
+          "constraint:f587d536333c49900b9635f3f1c8f94f3802b06e5d2fa491f3ee6eb091f37286"
+        ]
+      },
+      "mandatory_constraint_ids": [
+        "constraint:f587d536333c49900b9635f3f1c8f94f3802b06e5d2fa491f3ee6eb091f37286"
+      ],
+      "value": "incompatible"
+    }
+  },
+  "tool_version": "0.1.0.dev0"
+}

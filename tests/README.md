@@ -78,8 +78,9 @@ See [`../docs/check-specifications.md`](../docs/check-specifications.md) for the
 
 - Milestone 7 report tests pin the separation of analysis status from compatibility,
   report-global requirement/capability IDs, rejection of cross-wired evaluation/evidence/
-  finding/condition trace, explicit deterministic draft JSON projection, local artifact-
+  finding/condition trace, deterministic stable and draft JSON projections, local artifact-
   path independence, canonical ordering of identifier-set trace collections including
   condition exclusions, invalid-input reports without scientific verdicts, decisive
-  incompatible trace retention, and a checked-in revision-2 draft report before the
-  first stable JSON Schema is frozen.
+  incompatible trace retention, the revision-2 draft fixture, and stable `1.0.0`
+  compatible/incompatible known-answer schema coverage including exact-version
+  rejection of draft, mismatched, and unknown-field payloads.
