@@ -14,7 +14,8 @@ src/refcompat/
 ├── inspectors/
 ├── reasoning/
 ├── profiles/
-└── reporting/
+├── reporting/
+└── schemas/
 ```
 
 ## `model/`
@@ -23,7 +24,7 @@ Owns RefCompat's stable immutable domain vocabulary: resources, observations, cl
 
 Core domain objects use standard-library immutable dataclasses, enums, and typed value objects. Domain objects must not expose upstream `refget`, `gtars`, `pysam`, transport-validation, or CLI-framework types.
 
-`model/observations.py` owns the format-neutral `ResourceObservation`, `ObservationId`, `ObservationKind`, and `SourceLocation` primitives. `model/evaluation.py`, `model/contracts.py`, and `model/constraints.py` own the first Milestone 2 request/scope, typed requirement/capability contract, and question/result boundaries. `model/evidence.py` owns generalized qualitative evidence items and aggregates. `model/interpretation.py` owns structured findings and explicit-scope conditions. `model/reference_context.py` owns the FASTA-anchored `ReferenceContext` and evidence-backed `SequenceBinding`; `model/bundle.py` groups the whole-bundle reasoning result. `model/verdict.py` owns categorical verdict aggregation output, `model/conflict_core.py` owns compact decisive failure cores, and `model/report.py` owns the Milestone 7 analysis-status/issues plus immutable whole-evaluation report root. `model/alignment_relationship.py` owns the descriptive BAM/CRAM declared-dictionary relationship summary, `model/cram_reference.py` owns the deterministic offline CRAM reference plan, while `model/vcf_contract.py` owns the VCF-specific projection result; these reuse format-neutral reasoning types rather than defining parallel verdict systems.
+`model/observations.py` owns the format-neutral `ResourceObservation`, `ObservationId`, `ObservationKind`, and `SourceLocation` primitives. `model/evaluation.py`, `model/contracts.py`, and `model/constraints.py` own the first Milestone 2 request/scope, typed requirement/capability contract, and question/result boundaries. `model/evidence.py` owns generalized qualitative evidence items and aggregates. `model/interpretation.py` owns structured findings and explicit-scope conditions. `model/reference_context.py` owns the FASTA-anchored `ReferenceContext` and evidence-backed `SequenceBinding`; `model/bundle.py` groups the whole-bundle reasoning result. `model/verdict.py` owns categorical verdict aggregation output, `model/conflict_core.py` owns compact decisive failure cores, `model/report.py` owns the Milestone 7 analysis-status/issues plus immutable whole-evaluation report root, and `model/report_context.py` owns report-specific provider/source/profile provenance DTOs that preserve trace without exposing profile implementation objects. `model/alignment_relationship.py` owns the descriptive BAM/CRAM declared-dictionary relationship summary, `model/cram_reference.py` owns the deterministic offline CRAM reference plan, while `model/vcf_contract.py` owns the VCF-specific projection result; these reuse format-neutral reasoning types rather than defining parallel verdict systems.
 
 ## `identity/`
 
@@ -64,7 +65,7 @@ No concrete profile module is required until the core reasoning model is stable.
 
 ## `reporting/`
 
-Milestone 1 provides provisional human-readable and JSON diagnostics over the immutable identity and integrity result models in `reporting/diagnostics.py`. Presentation must not introduce conclusions absent from those models. Milestone 7 adds `reporting/report_json.py`, explicit deterministic stable and draft JSON projections over the immutable `CompatibilityReport`; both serialize RefCompat-owned report concepts rather than recursively dumping internal dataclasses. The stable core surface is schema `1.0.0`, while draft revision 2 remains provisional. Versioned JSON Schema resources live under `refcompat.schemas` and are packaged with the library. Reporting must continue to converge on views over the shared immutable report rather than grow a parallel reasoning layer.
+Milestone 1 provides provisional human-readable and JSON diagnostics over the immutable identity and integrity result models in `reporting/diagnostics.py`. Presentation must not introduce conclusions absent from those models. Milestone 7 adds `reporting/report_json.py`, explicit deterministic stable and draft JSON projections over the immutable `CompatibilityReport`; both serialize RefCompat-owned report concepts rather than recursively dumping internal dataclasses. `reporting/report_context.py` projects the already-derived UCSC preflight trace into report-owned provenance DTOs without re-running profile reasoning. The first stable core surface remains available as exact schema `1.0.0`; the current additive surface is `1.1.0`, which includes observations, BAM/CRAM relationship context, and profile/provider provenance. Draft revision 3 remains provisional. Versioned JSON Schema resources live under `refcompat.schemas` and are packaged with the library. Reporting must continue to converge on views over the shared immutable report rather than grow a parallel reasoning layer.
 
 ## CLI
 

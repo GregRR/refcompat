@@ -5,8 +5,7 @@
   },
   "report_format": {
     "name": "refcompat.compatibility_report",
-    "revision": 3,
-    "stability": "draft"
+    "schema_version": "1.1.0"
   },
   "request": {
     "active_profiles": [],

@@ -46,8 +46,8 @@ _REFERENCE = ResourceId("reference")
 _CONSUMER = ResourceId("consumer")
 _FIXTURE_DIR = Path(__file__).parents[2] / "fixtures" / "milestone7"
 _DRAFT_FIXTURE = _FIXTURE_DIR / "draft-compatible-report.json"
-_STABLE_FIXTURE = _FIXTURE_DIR / "stable-compatible-report-1.0.0.json"
-_STABLE_INCOMPATIBLE_FIXTURE = _FIXTURE_DIR / "stable-incompatible-report-1.0.0.json"
+_STABLE_FIXTURE = _FIXTURE_DIR / "stable-compatible-report-1.1.0.json"
+_STABLE_INCOMPATIBLE_FIXTURE = _FIXTURE_DIR / "stable-incompatible-report-1.1.0.json"
 
 
 def _resource(resource_id: ResourceId, kind: ResourceKind) -> Resource:

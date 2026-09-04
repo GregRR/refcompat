@@ -1,6 +1,6 @@
 # Milestone 7 compatibility report and workflow contract
 
-**Status:** contract pinned in Slice 1; immutable analysis-status/report-root model implemented in Slice 2; explicit deterministic draft JSON projection implemented in Slice 3; and Slice 4 internal scientific/API review hardening plus the first stable schema freeze are complete. The stable core report is schema version `1.0.0`; draft revision 2 remains a separate provisional surface and carries no stable compatibility guarantee.
+**Status:** contract pinned in Slice 1; immutable analysis-status/report-root model implemented in Slice 2; explicit deterministic draft JSON projection implemented in Slice 3; Slice 4 internal scientific/API review hardening plus the first stable schema freeze are complete; and Slice 5 report-owned relationship/provenance context is implemented. The first stable core report remains exact schema `1.0.0`; the current additive stable report is `1.1.0`, and draft revision 3 remains a separate provisional surface with no stable compatibility guarantee.
 
 Milestone 7 stabilizes how RefCompat exposes already-established compatibility
 reasoning to people, automation, and downstream software. It does not add a new
@@ -128,11 +128,24 @@ compatibility verdict. The relationship summary remains descriptive: it never
 replaces or overrides the generic constraints/evidence/verdict.
 
 M6 provider/profile provenance that materially authorizes a reported conclusion
-must eventually be projected into report-owned provenance/context records. The
-stable report must not embed `UcscProviderSnapshot` or other profile
-implementation dataclasses directly. The separate stable-profile-interface
-work remains a later v1.0 boundary; M7 only needs a reporting projection that
-preserves traceability for the already-implemented profile.
+is projected in Slice 5 into report-owned provenance/context records. The
+current UCSC projection records the selected provider context, dimensional
+completeness, source provenance, resource-local name-resolution trace, and the
+target-content proof that authorized any profile binding. Naming-source
+provenance is retained separately from target-content provenance. The stable
+report does not embed `UcscProviderSnapshot` or other profile implementation
+dataclasses directly. The separate stable-profile-interface work remains a
+later v1.0 boundary; these records preserve traceability for the already-
+implemented profile without freezing its implementation API.
+
+Slice 5 also accepts report-owned `ResourceObservation` values when the caller
+retains them, and validates BAM/CRAM `AlignmentDictionaryRelationshipSummary`
+records against the already-derived bundle and sequence bindings before
+serialization. These context arrays are additive trace surfaces; their presence
+does not cause the report assembler to re-run an inspector or classifier. A
+source-observation ID already carried by evidence/capabilities is not claimed to
+be globally resolvable unless its observation record was actually supplied to
+the report.
 
 ## 5. Determinism and ordering
 
@@ -161,27 +174,30 @@ representative reports before the schema is frozen.
 The draft projection is intentionally self-identifying as
 `refcompat.compatibility_report` with `stability = "draft"` and an integer draft
 revision. That marker is not the stable report schema version and does not create
-backward-compatibility guarantees. The Slice 4 review hardening advances the
-draft revision from 1 to 2 because omitting local artifact paths changes the
-provisional wire shape. The draft projection is explicit rather than
-a recursive dataclass dump: it emits request/resource context, analysis
-status/issues, verdict basis, typed requirements/constraints/evaluations,
-trace-relevant capabilities, evidence/findings/conditions, verified sequence
-bindings, and conflict cores. Internal `ResourceContract`, `ReferenceContext`,
+backward-compatibility guarantees. The Slice 4 review hardening advanced the
+draft revision from 1 to 2 because omitting local artifact paths changed the
+provisional wire shape. Slice 5 advances the draft again to revision 3 because
+report-owned observations, alignment relationship summaries, and profile/
+provider provenance are added to the scientific-result body. The draft
+projection is explicit rather than a recursive dataclass dump: it emits request/
+resource context, analysis status/issues, verdict basis, typed requirements/
+constraints/evaluations, trace-relevant capabilities, evidence/findings/
+conditions, verified sequence bindings, conflict cores, and the same supplied
+report-owned context records. Internal `ResourceContract`, `ReferenceContext`,
 and profile/provider implementation objects are not serialized directly.
 
 Capabilities are included when they are referenced by constraints, evaluations,
 evidence, sequence-binding traces, or transitive identity-absence provenance;
 the draft does not serialize the complete anchor capability graph merely because
 it exists internally. Source-observation IDs are retained where already present,
-while report-owned observation/provenance records remain part of the planned
-relationship/provenance slice.
+and Slice 5 emits any report-owned observation/provenance records explicitly
+supplied to the validated report root.
 
-After the Slice 4 checkpoint, `compatibility_report_payload()` and
-`render_compatibility_report_json()` expose the same hardened core body through
-the stable `1.0.0` header. The draft payload/rendering functions remain separate
-and continue to emit revision 2; callers are never silently migrated from draft
-to stable semantics.
+`compatibility_report_payload()` and `render_compatibility_report_json()` now
+identify the current additive stable body as schema `1.1.0`. Exact schema
+`1.0.0` remains packaged and its frozen known-answer reports remain unchanged.
+The draft payload/rendering functions remain separate and emit revision 3;
+callers are never silently migrated from draft to stable semantics.
 
 ## 6. Schema versioning
 
@@ -193,31 +209,47 @@ before the body through:
 {
   "report_format": {
     "name": "refcompat.compatibility_report",
-    "schema_version": "1.0.0"
+    "schema_version": "1.1.0"
   }
 }
 ```
 
-The first frozen stable schema is `1.0.0`. Its exact JSON Schema is packaged as
-`refcompat.schemas/compatibility-report-1.0.0.schema.json` and uses JSON Schema
-Draft 2020-12 with the stable identifier
-`urn:refcompat:schema:compatibility-report:1.0.0`. Stable compatible and incompatible known-answer fixtures pin the emitted bytes
-separately from the still-provisional draft revision-2 fixture.
+The first frozen stable schema is `1.0.0`. Its exact JSON Schema remains packaged
+as `refcompat.schemas/compatibility-report-1.0.0.schema.json` with the stable
+identifier `urn:refcompat:schema:compatibility-report:1.0.0`. Slice 5 adds the
+current exact schema `1.1.0` at
+`refcompat.schemas/compatibility-report-1.1.0.schema.json`, with identifier
+`urn:refcompat:schema:compatibility-report:1.1.0`. Both use JSON Schema Draft
+2020-12. Stable 1.0.0 known-answer bytes are retained, while 1.1.0 adds
+compatible, incompatible, and representative UCSC/BAM contextual fixtures. The
+draft fixture is now revision 3.
+
+One schema-only pre-release erratum is applied to the retained 1.0.0 validator:
+its refget identity regex was originally over-escaped and rejected the already-
+defined serializer's valid `SQ.<32-character>` representation. RefCompat is
+still pre-release and no package release has shipped schema 1.0.0, so the
+checked-in validator is corrected in place before the first release without
+changing emitted 1.0.0 JSON or field meaning. Once a schema version has shipped
+in a package release, its checked-in bytes are immutable; the same kind of
+correction then requires a PATCH schema version.
 
 Version compatibility rules are:
 
 - **MAJOR** increments for breaking wire or semantic changes: removing or
-  renaming fields, making optional data required, changing a field's JSON type
+  renaming fields, making an existing optional field required, changing a field's JSON type
   or nullability, adding or removing values from an existing closed enum or
   discriminated union, changing the meaning of an existing value, or changing
   scientifically meaningful ordering semantics. Existing `1.x` enums and typed
   unions are closed unless a future major version explicitly says otherwise.
-- **MINOR** increments for backward-preserving extensions such as new optional
-  fields or sections. A new optional section may define its own new enums or
-  record types because older tolerant consumers can ignore that entire unknown
-  section; an existing closed enum/union is not widened under a minor bump.
-  Slice 5 relationship/provenance additions therefore require at least a minor
-  schema advance rather than silently redefining `1.0.0`.
+- **MINOR** increments for backward-preserving extensions such as new fields or
+  sections whose meaning is independent of existing fields. A newly introduced
+  section may be required by the newer exact-version schema when every report
+  claiming that new version can emit it (including as an empty collection);
+  older same-major consumers remain forward-tolerant only if they deliberately
+  ignore that unknown section. A new section may define its own new enums or
+  record types, but an existing closed enum/union is not widened under a minor
+  bump. Slice 5 relationship/provenance additions therefore advance the current
+  schema to `1.1.0` rather than silently redefining `1.0.0`.
 - **PATCH** increments only when emitted stable JSON instances and their meanings
   are unchanged, for example documentation/schema corrections that bring the
   checked-in schema into agreement with the already-frozen serializer without
@@ -329,7 +361,8 @@ Those remain separate roadmap capabilities.
    versioning rules. **Complete; stable core schema `1.0.0`.**
 5. **Relationship/provenance context** — include BAM/CRAM dictionary relationship
    context and the report-owned provenance needed to trace the existing UCSC
-   profile without leaking profile internals.
+   profile without leaking profile internals. **Complete; current additive stable
+   schema `1.1.0`, with exact `1.0.0` retained.**
 6. **Human/CLI workflow surface** — render the same report for people and pin the
    stable whole-bundle exit-code contract while leaving provisional legacy
    diagnostics unchanged until explicitly migrated.

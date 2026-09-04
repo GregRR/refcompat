@@ -9,6 +9,7 @@ from refcompat.reporting.diagnostics import (
     sequence_collection_snapshot_payload,
     sequence_dictionary_integrity_payload,
 )
+from refcompat.reporting.report_context import project_ucsc_preflight_report_context
 from refcompat.reporting.report_json import (
     DRAFT_REPORT_FORMAT,
     DRAFT_REPORT_REVISION,
@@ -28,6 +29,7 @@ __all__ = [
     "compatibility_report_draft_payload",
     "compatibility_report_payload",
     "fasta_index_integrity_payload",
+    "project_ucsc_preflight_report_context",
     "render_compatibility_report_draft_json",
     "render_compatibility_report_json",
     "render_fasta_index_integrity",

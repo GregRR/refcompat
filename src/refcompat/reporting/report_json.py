@@ -8,8 +8,13 @@ the retained draft projection remains explicitly provisional.
 from __future__ import annotations
 
 import json
+from datetime import timezone
 
 from refcompat._compat import assert_never
+from refcompat.model.alignment_relationship import (
+    AlignmentDictionaryRelationshipSummary,
+    AlignmentSequenceResolution,
+)
 from refcompat.model.bundle import BundleReasoningResult
 from refcompat.model.constraints import CompatibilityConstraint, ConstraintEvaluation
 from refcompat.model.contracts import (
@@ -36,14 +41,20 @@ from refcompat.model.contracts import (
 from refcompat.model.evaluation import EvaluationRequest, EvaluationScope
 from refcompat.model.evidence import Evidence
 from refcompat.model.identity import Md5Digest, RefgetSequenceId
+from refcompat.model.observations import ResourceObservation, SourceLocation
 from refcompat.model.reference_context import SequenceBinding
 from refcompat.model.report import AnalysisIssue, CompatibilityReport
+from refcompat.model.report_context import (
+    ProfileProvenanceContext,
+    ProfileSequenceTrace,
+    ProviderSourceProvenance,
+)
 from refcompat.model.resources import ArtifactIdentity, Resource
 
 REPORT_FORMAT = "refcompat.compatibility_report"
-REPORT_SCHEMA_VERSION = "1.0.0"
+REPORT_SCHEMA_VERSION = "1.1.0"
 DRAFT_REPORT_FORMAT = REPORT_FORMAT
-DRAFT_REPORT_REVISION = 2
+DRAFT_REPORT_REVISION = 3
 
 
 def compatibility_report_payload(report: CompatibilityReport) -> dict[str, object]:
@@ -224,6 +235,29 @@ def _scientific_result_payload(
         "sequence_bindings": [
             _sequence_binding_payload(binding)
             for binding in sorted(bundle.sequence_bindings, key=lambda item: str(item.id))
+        ],
+        "observations": [
+            _observation_payload(observation)
+            for observation in sorted(report.observations, key=lambda item: str(item.id))
+        ],
+        "alignment_relationships": [
+            _alignment_relationship_payload(relationship)
+            for relationship in sorted(
+                report.alignment_relationships,
+                key=lambda item: str(item.alignment_resource_id),
+            )
+        ],
+        "profile_contexts": [
+            _profile_context_payload(context)
+            for context in sorted(
+                report.profile_contexts,
+                key=lambda item: (
+                    item.kind.value,
+                    str(item.profile_id),
+                    item.target,
+                    str(item.provider_context_id or ""),
+                ),
+            )
         ],
         "constraints": [
             _constraint_payload(constraint)
@@ -484,6 +518,147 @@ def _sequence_binding_payload(binding: SequenceBinding) -> dict[str, object]:
             for value in sorted(binding.identity_values, key=_identity_sort_key)
         ],
         "capability_ids": sorted(str(value) for value in binding.capability_ids),
+    }
+
+
+def _observation_payload(observation: ResourceObservation) -> dict[str, object]:
+    return {
+        "id": str(observation.id),
+        "resource_id": str(observation.resource_id),
+        "kind": str(observation.kind),
+        "value": observation.value,
+        "source_location": (
+            _source_location_payload(observation.source_location)
+            if observation.source_location is not None
+            else None
+        ),
+    }
+
+
+def _source_location_payload(location: SourceLocation) -> dict[str, object]:
+    return {
+        "line_number": location.line_number,
+        "record_index": location.record_index,
+        "field": location.field,
+        "locator": location.locator,
+    }
+
+
+def _alignment_relationship_payload(
+    relationship: AlignmentDictionaryRelationshipSummary,
+) -> dict[str, object]:
+    return {
+        "alignment_resource_id": str(relationship.alignment_resource_id),
+        "fasta_resource_id": str(relationship.fasta_resource_id),
+        "membership": relationship.membership.value,
+        "naming": relationship.naming.value,
+        "order": relationship.order.value,
+        "content": relationship.content.value,
+        "resolutions": [
+            _alignment_resolution_payload(resolution) for resolution in relationship.resolutions
+        ],
+        "unresolved_sequence_names": list(relationship.unresolved_sequence_names),
+        "m5_distinct_extra_sequence_names": list(relationship.m5_distinct_extra_sequence_names),
+        "duplicate_anchor_target_names": list(relationship.duplicate_anchor_target_names),
+        "length_conflict_sequence_names": list(relationship.length_conflict_sequence_names),
+        "identity_conflict_sequence_names": list(relationship.identity_conflict_sequence_names),
+    }
+
+
+def _alignment_resolution_payload(
+    resolution: AlignmentSequenceResolution,
+) -> dict[str, object]:
+    return {
+        "local_sequence_name": resolution.local_sequence_name,
+        "anchor_sequence_name": resolution.anchor_sequence_name,
+        "method": resolution.method.value,
+        "sequence_binding_id": (
+            str(resolution.sequence_binding_id)
+            if resolution.sequence_binding_id is not None
+            else None
+        ),
+    }
+
+
+def _profile_context_payload(context: ProfileProvenanceContext) -> dict[str, object]:
+    return {
+        "type": context.kind.value,
+        "profile_id": str(context.profile_id),
+        "provider": context.provider,
+        "target": context.target,
+        "provider_context_id": (
+            str(context.provider_context_id) if context.provider_context_id is not None else None
+        ),
+        "completeness": [
+            {"dimension": item.dimension.value, "state": item.state.value}
+            for item in sorted(context.completeness, key=lambda item: item.dimension)
+        ],
+        "sources": [
+            _provider_source_payload(source)
+            for source in sorted(context.sources, key=lambda item: str(item.id))
+        ],
+        "sequence_traces": [
+            _profile_sequence_trace_payload(trace)
+            for trace in sorted(
+                context.sequence_traces,
+                key=lambda item: str(item.requirement_id),
+            )
+        ],
+    }
+
+
+def _provider_source_payload(source: ProviderSourceProvenance) -> dict[str, object]:
+    return {
+        "id": str(source.id),
+        "context_id": str(source.context_id),
+        "locator": source.locator,
+        "acquired_at": source.acquired_at.astimezone(timezone.utc).isoformat(),
+        "dimensions": sorted(dimension.value for dimension in source.dimensions),
+    }
+
+
+def _profile_sequence_trace_payload(trace: ProfileSequenceTrace) -> dict[str, object]:
+    return {
+        "requirement_id": str(trace.requirement_id),
+        "resource_id": str(trace.resource_id),
+        "local_sequence_name": trace.local_sequence_name,
+        "name_resolution_state": trace.name_resolution_state.value,
+        "name_resolution_reason": trace.name_resolution_reason.value,
+        "name_resolution_method": (
+            trace.name_resolution_method.value if trace.name_resolution_method is not None else None
+        ),
+        "provider_target_name": trace.provider_target_name,
+        "target_resolution_state": (
+            trace.target_resolution_state.value
+            if trace.target_resolution_state is not None
+            else None
+        ),
+        "target_resolution_reason": (
+            trace.target_resolution_reason.value
+            if trace.target_resolution_reason is not None
+            else None
+        ),
+        "target_binding_id": trace.target_binding_id,
+        "target_anchor_sequence_name": trace.target_anchor_sequence_name,
+        "target_identity_values": [
+            _identity_payload(value)
+            for value in sorted(trace.target_identity_values, key=_identity_sort_key)
+        ],
+        "target_anchor_capability_ids": sorted(
+            str(value) for value in trace.target_anchor_capability_ids
+        ),
+        "name_provider_source_ids": sorted(str(value) for value in trace.name_provider_source_ids),
+        "target_provider_source_ids": sorted(
+            str(value) for value in trace.target_provider_source_ids
+        ),
+        "sequence_binding_id": (
+            str(trace.sequence_binding_id) if trace.sequence_binding_id is not None else None
+        ),
+        "validation_capability_id": (
+            str(trace.validation_capability_id)
+            if trace.validation_capability_id is not None
+            else None
+        ),
     }
 
 

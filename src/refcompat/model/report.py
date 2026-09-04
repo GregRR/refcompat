@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from typing import NewType
 
 from refcompat._compat import StrEnum, assert_never
+from refcompat.model.alignment_relationship import AlignmentDictionaryRelationshipSummary
 from refcompat.model.bundle import BundleReasoningResult
 from refcompat.model.conflict_core import ConflictCoreExtraction
 from refcompat.model.constraints import ConstraintId, ConstraintRule, ConstraintState
@@ -19,11 +20,22 @@ from refcompat.model.contracts import (
     Capability,
     CapabilityId,
     RequirementLevel,
+    RequirementOrigin,
+    SequenceBindingRequirement,
+    SequenceBindingValidationCapability,
+    SequenceBindingValidationState,
     SequenceIdentityCapability,
 )
 from refcompat.model.evaluation import EvaluationRequest
 from refcompat.model.evidence import Evidence, EvidencePolarity
 from refcompat.model.interpretation import ConditionKind, FindingId, FindingKind
+from refcompat.model.observations import ResourceObservation
+from refcompat.model.reference_context import SequenceBinding
+from refcompat.model.report_context import (
+    ProfileContextKind,
+    ProfileProvenanceContext,
+    ProfileTargetResolutionState,
+)
 from refcompat.model.resources import ResourceId
 from refcompat.model.verdict import CompatibilityVerdict, VerdictAggregation
 
@@ -89,6 +101,9 @@ class CompatibilityReport:
     bundle: BundleReasoningResult | None = None
     verdict: VerdictAggregation | None = None
     conflict_cores: ConflictCoreExtraction | None = None
+    observations: tuple[ResourceObservation, ...] = ()
+    alignment_relationships: tuple[AlignmentDictionaryRelationshipSummary, ...] = ()
+    profile_contexts: tuple[ProfileProvenanceContext, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.tool_version:
@@ -107,6 +122,7 @@ class CompatibilityReport:
             if self.analysis_issues:
                 raise ValueError("complete analysis cannot carry analysis issues")
             self._validate_complete_scientific_result()
+            self._validate_report_context()
             return
 
         if not self.analysis_issues:
@@ -119,6 +135,8 @@ class CompatibilityReport:
                 raise ValueError("invalid-input report requires invalid-input analysis issues")
             if any(value is not None for value in (self.bundle, self.verdict, self.conflict_cores)):
                 raise ValueError("invalid-input report cannot carry a scientific result")
+            if self.observations or self.alignment_relationships or self.profile_contexts:
+                raise ValueError("invalid-input report cannot carry scientific report context")
             return
 
         if self.analysis_status is AnalysisStatus.PARTIAL:
@@ -128,6 +146,7 @@ class CompatibilityReport:
             ):
                 raise ValueError("partial report requires incomplete-operation issues")
             self._validate_partial_scientific_result()
+            self._validate_report_context()
             return
 
         assert_never(self.analysis_status)
@@ -161,6 +180,16 @@ class CompatibilityReport:
             self.bundle,
             self.verdict,
             self.conflict_cores,
+        )
+
+    def _validate_report_context(self) -> None:
+        assert self.bundle is not None
+        _validate_report_context(
+            self.request,
+            self.bundle,
+            self.observations,
+            self.alignment_relationships,
+            self.profile_contexts,
         )
 
 
@@ -476,6 +505,196 @@ def _validate_bundle_trace(request: EvaluationRequest, bundle: BundleReasoningRe
             raise ValueError(
                 "compatibility report resource-scope exclusions do not match the request"
             )
+
+
+def _validate_report_context(
+    request: EvaluationRequest,
+    bundle: BundleReasoningResult,
+    observations: tuple[ResourceObservation, ...],
+    alignment_relationships: tuple[AlignmentDictionaryRelationshipSummary, ...],
+    profile_contexts: tuple[ProfileProvenanceContext, ...],
+) -> None:
+    scoped_resource_ids = set(request.scope.resource_ids)
+    observation_ids = tuple(observation.id for observation in observations)
+    _validate_unique(observation_ids, noun="compatibility report observation IDs")
+    if any(observation.resource_id not in scoped_resource_ids for observation in observations):
+        raise ValueError("compatibility report observations may reference only scoped resources")
+
+    relationship_resource_ids = tuple(
+        relationship.alignment_resource_id for relationship in alignment_relationships
+    )
+    _validate_unique(
+        relationship_resource_ids,
+        noun="compatibility report alignment relationship resource IDs",
+    )
+    bindings_by_id = {binding.id: binding for binding in bundle.sequence_bindings}
+    for relationship in alignment_relationships:
+        if relationship.fasta_resource_id != request.anchor_resource_id:
+            raise ValueError(
+                "compatibility report alignment relationship must use the FASTA anchor"
+            )
+        if relationship.alignment_resource_id not in scoped_resource_ids:
+            raise ValueError(
+                "compatibility report alignment relationship must describe a scoped resource"
+            )
+        for resolution in relationship.resolutions:
+            if resolution.sequence_binding_id is None:
+                continue
+            binding = bindings_by_id.get(resolution.sequence_binding_id)
+            if binding is None:
+                raise ValueError(
+                    "compatibility report alignment relationship cites an unknown sequence binding"
+                )
+            if (
+                binding.resource_id != relationship.alignment_resource_id
+                or binding.local_sequence_name != resolution.local_sequence_name
+                or binding.anchor_resource_id != relationship.fasta_resource_id
+                or binding.anchor_sequence_name != resolution.anchor_sequence_name
+            ):
+                raise ValueError(
+                    "compatibility report alignment relationship sequence binding is cross-wired"
+                )
+
+    context_keys = tuple(
+        (context.kind, context.profile_id, context.target) for context in profile_contexts
+    )
+    if len(set(context_keys)) != len(context_keys):
+        raise ValueError("compatibility report profile contexts must be unique")
+    active_profiles = set(request.active_profiles)
+    requirements_by_id = {
+        requirement.id: requirement
+        for contract in bundle.contracts
+        for requirement in contract.requirements
+    }
+    capabilities_by_id = _report_capability_index(bundle)
+    anchor_capability_ids = {
+        capability.id for capability in bundle.reference_context.anchor_capabilities
+    }
+
+    for context in profile_contexts:
+        if context.profile_id not in active_profiles:
+            raise ValueError("compatibility report profile context must be active in the request")
+        if context.kind is ProfileContextKind.UCSC_PREFLIGHT:
+            if str(context.profile_id) != "ucsc-preflight" or context.provider != "ucsc":
+                raise ValueError("UCSC report context must identify the ucsc-preflight profile")
+        else:
+            assert_never(context.kind)
+
+        for trace in context.sequence_traces:
+            requirement = requirements_by_id.get(trace.requirement_id)
+            if requirement is None:
+                raise ValueError("compatibility report profile trace cites an unknown requirement")
+            if not isinstance(requirement, SequenceBindingRequirement):
+                raise ValueError(
+                    "compatibility report profile trace must cite a binding requirement"
+                )
+            if requirement.origin is not RequirementOrigin.PROFILE:
+                raise ValueError(
+                    "compatibility report profile trace must cite a profile requirement"
+                )
+            if (
+                requirement.resource_id != trace.resource_id
+                or requirement.sequence_name != trace.local_sequence_name
+            ):
+                raise ValueError("compatibility report profile trace requirement is cross-wired")
+
+            trace_binding: SequenceBinding | None = None
+            if trace.sequence_binding_id is not None:
+                trace_binding = bindings_by_id.get(trace.sequence_binding_id)
+                if trace_binding is None:
+                    raise ValueError(
+                        "compatibility report profile trace cites an unknown sequence binding"
+                    )
+                if (
+                    trace_binding.resource_id != trace.resource_id
+                    or trace_binding.local_sequence_name != trace.local_sequence_name
+                ):
+                    raise ValueError(
+                        "compatibility report profile trace sequence binding is cross-wired"
+                    )
+
+            validation_capability: SequenceBindingValidationCapability | None = None
+            if trace.validation_capability_id is not None:
+                candidate_capability = capabilities_by_id.get(trace.validation_capability_id)
+                if not isinstance(candidate_capability, SequenceBindingValidationCapability):
+                    raise ValueError(
+                        "compatibility report profile trace validation capability is invalid"
+                    )
+                validation_capability = candidate_capability
+                if (
+                    validation_capability.subject_resource_id != trace.resource_id
+                    or validation_capability.sequence_name != trace.local_sequence_name
+                ):
+                    raise ValueError(
+                        "compatibility report profile trace validation capability is cross-wired"
+                    )
+
+            if trace.target_resolution_state in (
+                None,
+                ProfileTargetResolutionState.UNRESOLVED,
+            ):
+                if trace_binding is not None or validation_capability is not None:
+                    raise ValueError(
+                        "compatibility report unresolved profile trace cannot carry binding validation"
+                    )
+            elif trace.target_resolution_state is ProfileTargetResolutionState.PROVEN_ABSENT:
+                if (
+                    trace_binding is not None
+                    or validation_capability is None
+                    or validation_capability.state
+                    is not SequenceBindingValidationState.PROVEN_ABSENT
+                ):
+                    raise ValueError(
+                        "compatibility report absent profile trace requires proven-absent validation"
+                    )
+            else:
+                assert trace.target_resolution_state is ProfileTargetResolutionState.BOUND
+                if (trace_binding is None) != (validation_capability is None):
+                    raise ValueError(
+                        "compatibility report bound profile trace binding/validation is incomplete"
+                    )
+                if validation_capability is not None:
+                    if validation_capability.state not in (
+                        SequenceBindingValidationState.BOUND,
+                        SequenceBindingValidationState.CONTENT_CONFLICT,
+                    ):
+                        raise ValueError(
+                            "compatibility report bound profile trace validation state is invalid"
+                        )
+                    if (
+                        validation_capability.anchor_sequence_name
+                        != trace.target_anchor_sequence_name
+                    ):
+                        raise ValueError(
+                            "compatibility report profile trace validation target is cross-wired"
+                        )
+                    assert trace_binding is not None
+                    if (
+                        validation_capability.state is SequenceBindingValidationState.BOUND
+                        and trace_binding.anchor_sequence_name != trace.target_anchor_sequence_name
+                    ) or (
+                        validation_capability.state
+                        is SequenceBindingValidationState.CONTENT_CONFLICT
+                        and trace_binding.anchor_sequence_name == trace.target_anchor_sequence_name
+                    ):
+                        raise ValueError(
+                            "compatibility report profile trace binding/validation state is cross-wired"
+                        )
+
+            if not set(trace.target_anchor_capability_ids).issubset(anchor_capability_ids):
+                raise ValueError(
+                    "compatibility report profile trace cites an unknown anchor capability"
+                )
+            for capability_id in trace.target_anchor_capability_ids:
+                anchor_capability = capabilities_by_id[capability_id]
+                if (
+                    not isinstance(anchor_capability, SequenceIdentityCapability)
+                    or anchor_capability.sequence_name != trace.target_anchor_sequence_name
+                    or anchor_capability.identity not in trace.target_identity_values
+                ):
+                    raise ValueError(
+                        "compatibility report profile trace anchor capability is cross-wired"
+                    )
 
 
 def _finding_kind_for_rule(rule: ConstraintRule) -> FindingKind:

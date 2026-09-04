@@ -1,5 +1,118 @@
 {
   "$defs": {
+    "alignmentRelationship": {
+      "additionalProperties": false,
+      "properties": {
+        "alignment_resource_id": {
+          "$ref": "#/$defs/id"
+        },
+        "content": {
+          "enum": [
+            "m5_verified",
+            "m5_conflict",
+            "unresolved"
+          ]
+        },
+        "duplicate_anchor_target_names": {
+          "$ref": "#/$defs/sequenceNameArray"
+        },
+        "fasta_resource_id": {
+          "$ref": "#/$defs/id"
+        },
+        "identity_conflict_sequence_names": {
+          "$ref": "#/$defs/sequenceNameArray"
+        },
+        "length_conflict_sequence_names": {
+          "$ref": "#/$defs/sequenceNameArray"
+        },
+        "m5_distinct_extra_sequence_names": {
+          "$ref": "#/$defs/sequenceNameArray"
+        },
+        "membership": {
+          "enum": [
+            "exact",
+            "alignment_subset",
+            "alignment_superset",
+            "overlap",
+            "disjoint",
+            "unresolved"
+          ]
+        },
+        "naming": {
+          "enum": [
+            "exact",
+            "verified_difference",
+            "unresolved"
+          ]
+        },
+        "order": {
+          "enum": [
+            "consistent",
+            "different",
+            "unresolved"
+          ]
+        },
+        "resolutions": {
+          "items": {
+            "$ref": "#/$defs/alignmentResolution"
+          },
+          "type": "array"
+        },
+        "unresolved_sequence_names": {
+          "$ref": "#/$defs/sequenceNameArray"
+        }
+      },
+      "required": [
+        "alignment_resource_id",
+        "fasta_resource_id",
+        "membership",
+        "naming",
+        "order",
+        "content",
+        "resolutions",
+        "unresolved_sequence_names",
+        "m5_distinct_extra_sequence_names",
+        "duplicate_anchor_target_names",
+        "length_conflict_sequence_names",
+        "identity_conflict_sequence_names"
+      ],
+      "type": "object"
+    },
+    "alignmentResolution": {
+      "additionalProperties": false,
+      "properties": {
+        "anchor_sequence_name": {
+          "$ref": "#/$defs/sequenceName"
+        },
+        "local_sequence_name": {
+          "$ref": "#/$defs/sequenceName"
+        },
+        "method": {
+          "enum": [
+            "exact_name",
+            "authoritative_name_binding",
+            "verified_m5_binding"
+          ]
+        },
+        "sequence_binding_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "local_sequence_name",
+        "anchor_sequence_name",
+        "method",
+        "sequence_binding_id"
+      ],
+      "type": "object"
+    },
     "analysis": {
       "additionalProperties": false,
       "properties": {
@@ -764,6 +877,403 @@
       "minLength": 1,
       "type": "string"
     },
+    "observation": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "resource_id": {
+          "$ref": "#/$defs/id"
+        },
+        "source_location": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/sourceLocation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "value": {
+          "$ref": "#/$defs/observationValue"
+        }
+      },
+      "required": [
+        "id",
+        "resource_id",
+        "kind",
+        "value",
+        "source_location"
+      ],
+      "type": "object"
+    },
+    "observationValue": {
+      "type": [
+        "string",
+        "number",
+        "boolean"
+      ]
+    },
+    "profileContext": {
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "else": {
+            "properties": {
+              "completeness": {
+                "allOf": [
+                  {
+                    "contains": {
+                      "properties": {
+                        "dimension": {
+                          "const": "sequence_catalog"
+                        }
+                      },
+                      "required": [
+                        "dimension"
+                      ]
+                    },
+                    "maxContains": 1,
+                    "minContains": 1
+                  },
+                  {
+                    "contains": {
+                      "properties": {
+                        "dimension": {
+                          "const": "aliases"
+                        }
+                      },
+                      "required": [
+                        "dimension"
+                      ]
+                    },
+                    "maxContains": 1,
+                    "minContains": 1
+                  },
+                  {
+                    "contains": {
+                      "properties": {
+                        "dimension": {
+                          "const": "content_identity"
+                        }
+                      },
+                      "required": [
+                        "dimension"
+                      ]
+                    },
+                    "maxContains": 1,
+                    "minContains": 1
+                  }
+                ],
+                "maxItems": 3,
+                "minItems": 3
+              },
+              "sources": {
+                "minItems": 1
+              }
+            }
+          },
+          "if": {
+            "properties": {
+              "provider_context_id": {
+                "type": "null"
+              }
+            },
+            "required": [
+              "provider_context_id"
+            ]
+          },
+          "then": {
+            "properties": {
+              "completeness": {
+                "maxItems": 0
+              },
+              "sources": {
+                "maxItems": 0
+              }
+            }
+          }
+        }
+      ],
+      "properties": {
+        "completeness": {
+          "items": {
+            "$ref": "#/$defs/providerCompleteness"
+          },
+          "type": "array"
+        },
+        "profile_id": {
+          "const": "ucsc-preflight"
+        },
+        "provider": {
+          "const": "ucsc"
+        },
+        "provider_context_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sequence_traces": {
+          "items": {
+            "$ref": "#/$defs/profileSequenceTrace"
+          },
+          "type": "array"
+        },
+        "sources": {
+          "items": {
+            "$ref": "#/$defs/providerSource"
+          },
+          "type": "array"
+        },
+        "target": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "type": {
+          "const": "ucsc_preflight"
+        }
+      },
+      "required": [
+        "type",
+        "profile_id",
+        "provider",
+        "target",
+        "provider_context_id",
+        "completeness",
+        "sources",
+        "sequence_traces"
+      ],
+      "type": "object"
+    },
+    "profileSequenceTrace": {
+      "additionalProperties": false,
+      "properties": {
+        "local_sequence_name": {
+          "$ref": "#/$defs/sequenceName"
+        },
+        "name_provider_source_ids": {
+          "$ref": "#/$defs/idArray"
+        },
+        "name_resolution_method": {
+          "oneOf": [
+            {
+              "enum": [
+                "canonical_name",
+                "authoritative_alias"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "name_resolution_reason": {
+          "enum": [
+            "canonical_name",
+            "authoritative_alias",
+            "alias_evidence_incomplete",
+            "ambiguous_alias",
+            "undeclared_name",
+            "provider_evidence_unavailable"
+          ]
+        },
+        "name_resolution_state": {
+          "enum": [
+            "resolved",
+            "unresolved"
+          ]
+        },
+        "provider_target_name": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/sequenceName"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requirement_id": {
+          "$ref": "#/$defs/id"
+        },
+        "resource_id": {
+          "$ref": "#/$defs/id"
+        },
+        "sequence_binding_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "target_anchor_capability_ids": {
+          "$ref": "#/$defs/idArray"
+        },
+        "target_anchor_sequence_name": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/sequenceName"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "target_binding_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "target_identity_values": {
+          "items": {
+            "$ref": "#/$defs/sequenceIdentity"
+          },
+          "type": "array"
+        },
+        "target_provider_source_ids": {
+          "$ref": "#/$defs/idArray"
+        },
+        "target_resolution_reason": {
+          "oneOf": [
+            {
+              "enum": [
+                "content_bound",
+                "exhaustive_content_absence",
+                "content_identity_unavailable",
+                "content_identity_unresolved",
+                "provider_length_conflict"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "target_resolution_state": {
+          "oneOf": [
+            {
+              "enum": [
+                "bound",
+                "proven_absent",
+                "unresolved"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "validation_capability_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "requirement_id",
+        "resource_id",
+        "local_sequence_name",
+        "name_resolution_state",
+        "name_resolution_reason",
+        "name_resolution_method",
+        "provider_target_name",
+        "target_resolution_state",
+        "target_resolution_reason",
+        "target_binding_id",
+        "target_anchor_sequence_name",
+        "target_identity_values",
+        "target_anchor_capability_ids",
+        "name_provider_source_ids",
+        "target_provider_source_ids",
+        "sequence_binding_id",
+        "validation_capability_id"
+      ],
+      "type": "object"
+    },
+    "providerCompleteness": {
+      "additionalProperties": false,
+      "properties": {
+        "dimension": {
+          "enum": [
+            "sequence_catalog",
+            "aliases",
+            "content_identity"
+          ]
+        },
+        "state": {
+          "enum": [
+            "complete",
+            "partial",
+            "unknown"
+          ]
+        }
+      },
+      "required": [
+        "dimension",
+        "state"
+      ],
+      "type": "object"
+    },
+    "providerSource": {
+      "additionalProperties": false,
+      "properties": {
+        "acquired_at": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "context_id": {
+          "$ref": "#/$defs/id"
+        },
+        "dimensions": {
+          "items": {
+            "enum": [
+              "sequence_catalog",
+              "aliases",
+              "content_identity"
+            ]
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "locator": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      },
+      "required": [
+        "id",
+        "context_id",
+        "locator",
+        "acquired_at",
+        "dimensions"
+      ],
+      "type": "object"
+    },
     "reportFormat": {
       "additionalProperties": false,
       "properties": {
@@ -771,7 +1281,7 @@
           "const": "refcompat.compatibility_report"
         },
         "schema_version": {
-          "const": "1.0.0"
+          "const": "1.1.0"
         }
       },
       "required": [
@@ -1076,6 +1586,12 @@
     "scientificResult": {
       "additionalProperties": false,
       "properties": {
+        "alignment_relationships": {
+          "items": {
+            "$ref": "#/$defs/alignmentRelationship"
+          },
+          "type": "array"
+        },
         "capabilities": {
           "items": {
             "$ref": "#/$defs/capability"
@@ -1115,6 +1631,18 @@
           },
           "type": "array"
         },
+        "observations": {
+          "items": {
+            "$ref": "#/$defs/observation"
+          },
+          "type": "array"
+        },
+        "profile_contexts": {
+          "items": {
+            "$ref": "#/$defs/profileContext"
+          },
+          "type": "array"
+        },
         "requirements": {
           "items": {
             "$ref": "#/$defs/requirement"
@@ -1136,6 +1664,9 @@
         "requirements",
         "capabilities",
         "sequence_bindings",
+        "observations",
+        "alignment_relationships",
+        "profile_contexts",
         "constraints",
         "evaluations",
         "evidence",
@@ -1258,6 +1789,13 @@
       "minLength": 1,
       "type": "string"
     },
+    "sequenceNameArray": {
+      "items": {
+        "$ref": "#/$defs/sequenceName"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
     "sequenceNames": {
       "items": {
         "$ref": "#/$defs/sequenceName"
@@ -1265,6 +1803,102 @@
       "minItems": 1,
       "type": "array",
       "uniqueItems": true
+    },
+    "sourceLocation": {
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "properties": {
+            "line_number": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "line_number"
+          ]
+        },
+        {
+          "properties": {
+            "record_index": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "record_index"
+          ]
+        },
+        {
+          "properties": {
+            "field": {
+              "$ref": "#/$defs/nonEmptyString"
+            }
+          },
+          "required": [
+            "field"
+          ]
+        },
+        {
+          "properties": {
+            "locator": {
+              "$ref": "#/$defs/nonEmptyString"
+            }
+          },
+          "required": [
+            "locator"
+          ]
+        }
+      ],
+      "properties": {
+        "field": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "line_number": {
+          "oneOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "locator": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "record_index": {
+          "oneOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "line_number",
+        "record_index",
+        "field",
+        "locator"
+      ],
+      "type": "object"
     },
     "verdict": {
       "additionalProperties": false,
@@ -1300,7 +1934,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:refcompat:schema:compatibility-report:1.0.0",
+  "$id": "urn:refcompat:schema:compatibility-report:1.1.0",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "allOf": [

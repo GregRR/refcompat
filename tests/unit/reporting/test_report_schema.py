@@ -28,17 +28,25 @@ from refcompat.model.evidence import (
 from refcompat.model.interpretation import ConditionKind, FindingKind
 from refcompat.model.reference_context import SequenceBindingMethod
 from refcompat.model.report import AnalysisIssueKind, AnalysisStatus
+from refcompat.model.report_context import (
+    ProfileNameResolutionMethod,
+    ProfileNameResolutionReason,
+    ProfileNameResolutionState,
+    ProfileTargetResolutionReason,
+    ProfileTargetResolutionState,
+    ProviderCompletenessState,
+    ProviderEvidenceDimension,
+)
 from refcompat.model.resources import ArtifactDigestAlgorithm, ResourceKind
 from refcompat.model.verdict import CompatibilityVerdict
 from refcompat.reporting import REPORT_FORMAT, REPORT_SCHEMA_VERSION
 
-_FIXTURE = (
-    Path(__file__).parents[2] / "fixtures" / "milestone7" / "stable-compatible-report-1.0.0.json"
-)
-_INCOMPATIBLE_FIXTURE = (
-    Path(__file__).parents[2] / "fixtures" / "milestone7" / "stable-incompatible-report-1.0.0.json"
-)
-_SCHEMA_NAME = f"compatibility-report-{REPORT_SCHEMA_VERSION}.schema.json"
+_FIXTURE_DIR = Path(__file__).parents[2] / "fixtures" / "milestone7"
+_FIXTURE = _FIXTURE_DIR / "stable-compatible-report-1.1.0.json"
+_INCOMPATIBLE_FIXTURE = _FIXTURE_DIR / "stable-incompatible-report-1.1.0.json"
+_CONTEXT_FIXTURE = _FIXTURE_DIR / "stable-ucsc-alignment-report-1.1.0.json"
+_PREVIOUS_SCHEMA_VERSION = "1.0.0"
+_PREVIOUS_FIXTURE = _FIXTURE_DIR / "stable-compatible-report-1.0.0.json"
 
 
 class _SchemaValidator(Protocol):
@@ -60,8 +68,8 @@ def _jsonschema() -> _JsonSchemaModule:
     return cast(_JsonSchemaModule, import_module("jsonschema"))
 
 
-def _schema() -> dict[str, Any]:
-    resource = files("refcompat.schemas").joinpath(_SCHEMA_NAME)
+def _schema(version: str = REPORT_SCHEMA_VERSION) -> dict[str, Any]:
+    resource = files("refcompat.schemas").joinpath(f"compatibility-report-{version}.schema.json")
     return cast(dict[str, Any], json.loads(resource.read_text(encoding="utf-8")))
 
 
@@ -69,8 +77,8 @@ def _payload() -> dict[str, Any]:
     return cast(dict[str, Any], json.loads(_FIXTURE.read_text(encoding="utf-8")))
 
 
-def _validator() -> _SchemaValidator:
-    schema = _schema()
+def _validator(version: str = REPORT_SCHEMA_VERSION) -> _SchemaValidator:
+    schema = _schema(version)
     module = _jsonschema()
     module.Draft202012Validator.check_schema(schema)
     return module.Draft202012Validator(schema)
@@ -80,20 +88,61 @@ def test_stable_schema_is_packaged_and_self_identifying() -> None:
     schema = _schema()
 
     assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
-    assert schema["$id"] == "urn:refcompat:schema:compatibility-report:1.0.0"
+    assert schema["$id"] == f"urn:refcompat:schema:compatibility-report:{REPORT_SCHEMA_VERSION}"
     report_format = schema["$defs"]["reportFormat"]["properties"]
     assert report_format["name"] == {"const": REPORT_FORMAT}
     assert report_format["schema_version"] == {"const": REPORT_SCHEMA_VERSION}
+
+
+def test_previous_stable_schema_remains_packaged_and_exact() -> None:
+    previous_schema = _schema(_PREVIOUS_SCHEMA_VERSION)
+    assert previous_schema["$id"] == ("urn:refcompat:schema:compatibility-report:1.0.0")
+    previous_payload = json.loads(_PREVIOUS_FIXTURE.read_text(encoding="utf-8"))
+    _validator(_PREVIOUS_SCHEMA_VERSION).validate(previous_payload)
 
 
 def test_stable_known_answer_validates_against_exact_schema() -> None:
     _validator().validate(_payload())
 
 
+def test_previous_schema_accepts_valid_refget_identity_capability() -> None:
+    payload = cast(
+        dict[str, Any],
+        json.loads(_PREVIOUS_FIXTURE.read_text(encoding="utf-8")),
+    )
+    scientific_result = cast(dict[str, Any], payload["scientific_result"])
+    capabilities = cast(list[dict[str, Any]], scientific_result["capabilities"])
+    capabilities.append(
+        {
+            "id": "refget-capability",
+            "resource_id": "reference",
+            "source_observation_ids": [],
+            "type": "sequence_identity",
+            "sequence_name": "chr1",
+            "identity": {
+                "scheme": "refget",
+                "value": "SQ." + "A" * 32,
+            },
+            "provenance": "content_derived",
+        }
+    )
+
+    _validator(_PREVIOUS_SCHEMA_VERSION).validate(payload)
+
+
 def test_stable_incompatible_known_answer_validates_against_exact_schema() -> None:
     payload = cast(
         dict[str, Any],
         json.loads(_INCOMPATIBLE_FIXTURE.read_text(encoding="utf-8")),
+    )
+
+    _validator().validate(payload)
+
+
+def test_stable_context_known_answer_validates_against_exact_schema() -> None:
+    payload = cast(
+        dict[str, Any],
+        json.loads(_CONTEXT_FIXTURE.read_text(encoding="utf-8")),
     )
 
     _validator().validate(payload)
@@ -178,7 +227,7 @@ def test_exact_schema_rejects_local_artifact_paths() -> None:
 def test_exact_schema_rejects_schema_version_mismatch() -> None:
     payload = _payload()
     report_format = copy.deepcopy(cast(dict[str, Any], payload["report_format"]))
-    report_format["schema_version"] = "1.1.0"
+    report_format["schema_version"] = "1.0.0"
     payload["report_format"] = report_format
 
     with pytest.raises(_jsonschema().ValidationError):
@@ -290,3 +339,88 @@ def test_schema_closes_current_enum_and_typed_union_inventory() -> None:
         "oneOf"
     ][1]["enum"]
     assert set(satisfaction) == {item.value for item in SatisfactionMode}
+
+
+def test_schema_closes_relationship_and_profile_context_enums() -> None:
+    schema = _schema()
+    defs = cast(dict[str, Any], schema["$defs"])
+
+    relationship = cast(dict[str, Any], defs["alignmentRelationship"]["properties"])
+    assert set(relationship["membership"]["enum"]) == {
+        "exact",
+        "alignment_subset",
+        "alignment_superset",
+        "overlap",
+        "disjoint",
+        "unresolved",
+    }
+    assert set(relationship["naming"]["enum"]) == {
+        "exact",
+        "verified_difference",
+        "unresolved",
+    }
+    assert set(relationship["content"]["enum"]) == {
+        "m5_verified",
+        "m5_conflict",
+        "unresolved",
+    }
+
+    profile = cast(dict[str, Any], defs["profileContext"]["properties"])
+    assert profile["type"] == {"const": "ucsc_preflight"}
+    assert profile["profile_id"] == {"const": "ucsc-preflight"}
+    assert profile["provider"] == {"const": "ucsc"}
+
+    completeness = cast(dict[str, Any], defs["providerCompleteness"]["properties"])
+    assert set(completeness["dimension"]["enum"]) == {
+        item.value for item in ProviderEvidenceDimension
+    }
+    assert set(completeness["state"]["enum"]) == {item.value for item in ProviderCompletenessState}
+
+    trace = cast(dict[str, Any], defs["profileSequenceTrace"]["properties"])
+    assert set(trace["name_resolution_state"]["enum"]) == {
+        item.value for item in ProfileNameResolutionState
+    }
+    assert set(trace["name_resolution_reason"]["enum"]) == {
+        item.value for item in ProfileNameResolutionReason
+    }
+    assert set(trace["name_resolution_method"]["oneOf"][0]["enum"]) == {
+        item.value for item in ProfileNameResolutionMethod
+    }
+    assert set(trace["target_resolution_state"]["oneOf"][0]["enum"]) == {
+        item.value for item in ProfileTargetResolutionState
+    }
+    assert set(trace["target_resolution_reason"]["oneOf"][0]["enum"]) == {
+        item.value for item in ProfileTargetResolutionReason
+    }
+
+
+def test_schema_rejects_empty_source_location() -> None:
+    payload = cast(
+        dict[str, Any],
+        json.loads(_CONTEXT_FIXTURE.read_text(encoding="utf-8")),
+    )
+    scientific_result = cast(dict[str, Any], payload["scientific_result"])
+    observations = cast(list[dict[str, Any]], scientific_result["observations"])
+    observations[0]["source_location"] = {
+        "line_number": None,
+        "record_index": None,
+        "field": None,
+        "locator": None,
+    }
+
+    with pytest.raises(_jsonschema().ValidationError):
+        _validator().validate(payload)
+
+
+def test_schema_rejects_duplicate_provider_completeness_dimension() -> None:
+    payload = cast(
+        dict[str, Any],
+        json.loads(_CONTEXT_FIXTURE.read_text(encoding="utf-8")),
+    )
+    scientific_result = cast(dict[str, Any], payload["scientific_result"])
+    contexts = cast(list[dict[str, Any]], scientific_result["profile_contexts"])
+    completeness = cast(list[dict[str, Any]], contexts[0]["completeness"])
+    completeness[2] = {"dimension": "aliases", "state": "unknown"}
+
+    with pytest.raises(_jsonschema().ValidationError):
+        _validator().validate(payload)

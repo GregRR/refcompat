@@ -81,6 +81,8 @@ See [`../docs/check-specifications.md`](../docs/check-specifications.md) for the
   finding/condition trace, deterministic stable and draft JSON projections, local artifact-
   path independence, canonical ordering of identifier-set trace collections including
   condition exclusions, invalid-input reports without scientific verdicts, decisive
-  incompatible trace retention, the revision-2 draft fixture, and stable `1.0.0`
-  compatible/incompatible known-answer schema coverage including exact-version
-  rejection of draft, mismatched, and unknown-field payloads.
+  incompatible trace retention, and exact stable-schema validation. Exact `1.0.0` remains
+  packaged (including a regression for its refget-regex erratum), while current `1.1.0`
+  fixtures cover compatible, incompatible, and UCSC/BAM contextual reports with report-owned
+  observations, alignment relationship summaries, provider source provenance, and profile
+  sequence trace. Draft revision 3 remains separately provisional.
