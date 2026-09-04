@@ -85,4 +85,7 @@ See [`../docs/check-specifications.md`](../docs/check-specifications.md) for the
   packaged (including a regression for its refget-regex erratum), while current `1.1.0`
   fixtures cover compatible, incompatible, and UCSC/BAM contextual reports with report-owned
   observations, alignment relationship summaries, provider source provenance, and profile
-  sequence trace. Draft revision 3 remains separately provisional.
+  sequence trace. Slice 6 additionally pins deterministic human rendering, omission of machine-local
+  artifact paths from human output, context/provenance presentation, and the stable whole-bundle
+  workflow exit classes while retaining the Milestone 1 diagnostic exit regressions. Draft revision
+  3 remains separately provisional.

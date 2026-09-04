@@ -1,0 +1,38 @@
+RefCompat compatibility report
+
+Resources
+- reference: reference.fixture (fasta, anchor)
+- consumer: consumer.fixture (sequence_dictionary)
+
+Reference context
+- selected FASTA anchor: reference
+- scoped resources: reference, consumer
+- anchor sequence scope: all anchor sequences
+- active profiles: none
+- policy: none
+- verified sequence bindings: none
+
+Analysis
+- tool version: 0.1.0.dev0
+- status: complete
+- compatibility verdict: compatible
+- mandatory constraints: satisfied=1, unsatisfied=0, unresolved=0, not_applicable=0
+- analysis issues: none
+
+Decisive findings
+- none
+
+Decisive conflict cores
+- none
+
+Alignment dictionary relationships
+- none
+
+Report observations
+- none
+
+Profile/provider provenance
+- none
+
+Conditions
+- none

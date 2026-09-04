@@ -17,3 +17,7 @@ observations, BAM/CRAM dictionary relationship context, and UCSC provider/source
 profile provenance for a content-authorized authoritative-name binding. All
 1.1.0 headers map to the packaged
 `refcompat.schemas/compatibility-report-1.1.0.schema.json` resource.
+
+`human-compatible-report.txt` pins the current deterministic plain-text view of a
+simple compatible report. Human text is for people rather than machine parsing; the
+versioned JSON Schema remains the stable machine contract.

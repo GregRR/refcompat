@@ -132,7 +132,7 @@ The normative profile contract is recorded in [`docs/ucsc-preflight-profile.md`]
 
 **Goal:** expose RefCompat's already-established reasoning through one immutable, traceable, versioned compatibility report and deterministic workflow-facing output without changing scientific verdict semantics.
 
-**Implementation status:** Slices 1–5 are implemented through the report-owned relationship/provenance layer. Slice 4 hardened global requirement/capability ID uniqueness and cross-wired trace references, omitted local artifact paths, canonicalized condition exclusions, and froze the first stable core report schema at `1.0.0`. Slice 5 advances the current stable schema additively to `1.1.0`, retaining exact `1.0.0`, and projects report-owned resource observations, BAM/CRAM dictionary membership/naming/order/M5 relationship context, and UCSC provider/source/profile provenance without serializing provider implementation objects or re-running scientific reasoning. Draft revision 3 remains explicitly provisional. Slice 6 human rendering and workflow/CLI exit policy is next. Milestone 6 is complete and independently reviewed.
+**Implementation status:** Slices 1–6 are implemented through the human/workflow reporting surface. Slice 4 hardened global requirement/capability ID uniqueness and cross-wired trace references, omitted local artifact paths, canonicalized condition exclusions, and froze the first stable core report schema at `1.0.0`. Slice 5 advances the current stable schema additively to `1.1.0`, retaining exact `1.0.0`, and projects report-owned resource observations, BAM/CRAM dictionary membership/naming/order/M5 relationship context, and UCSC provider/source/profile provenance without serializing provider implementation objects or re-running scientific reasoning. Slice 6 adds deterministic human rendering and pins the stable whole-bundle workflow exit mapping while deliberately leaving the provisional Milestone 1 diagnostics unchanged. Draft revision 3 remains explicitly provisional. Representative end-to-end report paths follow in Slice 7. Milestone 6 is complete and independently reviewed.
 
 Committed scope:
 
@@ -156,7 +156,7 @@ Planned slices:
 3. implement explicit deterministic draft serialization and representative known-answer report fixtures; **implemented;**
 4. stop for an internal scientific/API review, harden any report-boundary defects, then freeze the first checked-in stable JSON Schema/versioning rules; **implemented; stable core schema `1.0.0`;**
 5. project alignment dictionary relationship context and profile/provider provenance needed for traceable M6 conclusions into report-owned records; **implemented; stable schema `1.1.0`;**
-6. add human report rendering plus an explicit CI/workflow exit-code policy without silently changing the provisional Milestone 1 diagnostic commands;
+6. add human report rendering plus an explicit CI/workflow exit-code policy without silently changing the provisional Milestone 1 diagnostic commands; **implemented**
 7. exercise representative VCF, BAM/CRAM, annotation, scoped, UCSC-profile, incompatible, and indeterminate end-to-end report paths;
 8. close with adversarial schema/traceability/backward-compatibility coverage, final internal review, and an external milestone-boundary review.
 

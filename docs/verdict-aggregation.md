@@ -78,7 +78,7 @@ This slice does **not** implement:
 
 - conflict-core extraction (implemented by the following Milestone 2 slice);
 - stable `CompatibilityReport` serialization;
-- workflow/CLI exit policy over the now-implemented `AnalysisStatus` axis;
-- CI exit-code policy;
+- workflow/CLI exit policy over the `AnalysisStatus` axis (implemented later in Milestone 7);
+- CI exit-code policy (implemented later in Milestone 7);
 - numeric scoring, weighting, voting, or majority semantics;
 - format-specific VCF/BAM/CRAM/GTF verdict policy.

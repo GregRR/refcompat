@@ -70,6 +70,7 @@ from refcompat.reasoning import (
 from refcompat.reporting import (
     compatibility_report_payload,
     project_ucsc_preflight_report_context,
+    render_compatibility_report_human,
     render_compatibility_report_json,
 )
 
@@ -391,3 +392,16 @@ def test_report_rejects_crosswired_profile_anchor_capability() -> None:
             report,
             profile_contexts=(replace(context, sequence_traces=(malformed_trace,)),),
         )
+
+
+def test_human_report_surfaces_alignment_and_provider_context() -> None:
+    rendered = render_compatibility_report_human(_contextual_report())
+
+    assert "Alignment dictionary relationships" in rendered
+    assert "reads -> reference" in rendered
+    assert "authoritative_name_binding" in rendered
+    assert "Profile/provider provenance" in rendered
+    assert "ucsc-preflight" in rendered
+    assert "sequence_catalog=complete" in rendered
+    assert "provider target: chr1" in rendered
+    assert "target resolution: bound/content_bound" in rendered
