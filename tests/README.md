@@ -77,7 +77,9 @@ See [`../docs/check-specifications.md`](../docs/check-specifications.md) for the
   negative control that keeps structural UCSC validation outside RefCompat.
 
 - Milestone 7 report tests pin the separation of analysis status from compatibility,
-  cross-object report-root consistency, explicit deterministic draft JSON projection,
-  canonical ordering of identifier-set trace collections, invalid-input reports without
-  scientific verdicts, decisive incompatible trace retention, and a checked-in
-  known-answer draft report before the first stable JSON Schema is frozen.
+  report-global requirement/capability IDs, rejection of cross-wired evaluation/evidence/
+  finding/condition trace, explicit deterministic draft JSON projection, local artifact-
+  path independence, canonical ordering of identifier-set trace collections including
+  condition exclusions, invalid-input reports without scientific verdicts, decisive
+  incompatible trace retention, and a checked-in revision-2 draft report before the
+  first stable JSON Schema is frozen.

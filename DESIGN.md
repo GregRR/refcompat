@@ -492,13 +492,13 @@ Prefer:
 
 ### 10.2 Machine-readable report
 
-Milestone 7 owns the stable report boundary. The public machine-readable shape must be an explicit RefCompat-owned reporting contract rather than a recursive serialization of internal dataclasses or upstream/provider objects. Report assembly consumes already-derived reasoning outputs, validates their cross-object consistency, and preserves traceability; it does not inspect files again, rebuild constraints, or introduce a second scientific verdict engine. Schema versioning is independent of the package version. The report root and explicit deterministic draft JSON projection are implemented, including a known-answer fixture and a provisional draft format/revision marker; the first stable schema is frozen only after those surfaces pass the planned internal scientific/API review.
+Milestone 7 owns the stable report boundary. The public machine-readable shape must be an explicit RefCompat-owned reporting contract rather than a recursive serialization of internal dataclasses or upstream/provider objects. Report assembly consumes already-derived reasoning outputs, validates their cross-object consistency, and preserves traceability; it does not inspect files again, rebuild constraints, or introduce a second scientific verdict engine. Schema versioning is independent of the package version. The report root and explicit deterministic draft JSON projection are implemented, including a known-answer fixture and a provisional draft format/revision marker. The first Slice 4 scientific/API review pass hardened global requirement/capability ID uniqueness plus cross-wired trace rejection, removed local `ArtifactIdentity.path` from the portable projection, and canonicalized condition exclusion IDs; the revised draft is revision 2. The first stable schema remains pending the authoritative hardening gate and the remaining schema checkpoint.
 
 The stable schema should include:
 
 - tool/schema version;
 - evaluation request/scope/profile;
-- resource identities and optional artifact digests;
+- resource identities and optional artifact byte sizes/digests, without treating local filesystem paths as stable identity;
 - observations and source locations;
 - provenance/relation claims and assessments;
 - refget/SeqCol evidence;

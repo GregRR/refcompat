@@ -1,6 +1,6 @@
 # Milestone 7 compatibility report and workflow contract
 
-**Status:** contract pinned in Slice 1; immutable analysis-status/report-root model implemented in Slice 2; explicit deterministic draft JSON projection and a known-answer fixture implemented in Slice 3. The draft format is provisional; the first stable schema/version remains pending the Slice 4 internal scientific/API review.
+**Status:** contract pinned in Slice 1; immutable analysis-status/report-root model implemented in Slice 2; explicit deterministic draft JSON projection and a known-answer fixture implemented in Slice 3. The first Slice 4 internal scientific/API review pass identified and hardened report-boundary trace cross-wiring, global stable-ID collisions, local artifact-path leakage, and one remaining unordered condition trace. The draft format remains provisional at revision 2; the first stable schema/version is not yet frozen.
 
 Milestone 7 stabilizes how RefCompat exposes already-established compatibility
 reasoning to people, automation, and downstream software. It does not add a new
@@ -70,7 +70,13 @@ same evaluation. It must not:
 - convert missing evidence into incompatibility; or
 - repair inconsistent internal objects by guessing what was intended.
 
-The report assembler may reject cross-wired or internally inconsistent inputs.
+The report assembler rejects cross-wired or internally inconsistent inputs
+before they can become report authority. Stable requirement and capability IDs
+must be globally unique within one report, and requirement/capability/binding,
+evaluation, evidence, finding, condition, verdict, and conflict-core references
+must agree with the already-derived objects they claim to trace. This is
+consistency validation, not a second reasoning pass.
+
 Analysis-status policy may conservatively prevent partial/invalid execution from
 being presented as positive compatibility, but it must not weaken an already
 independently established hard contradiction merely because unrelated work is
@@ -101,8 +107,9 @@ The M7 report must be able to represent at least:
 2. analysis status plus explicit analysis issues when status is not complete;
 3. evaluation request, selected FASTA anchor, explicit scope, active profiles,
    and policy selector when present;
-4. supplied resource identities and kinds, with optional artifact digests when
-   independently available;
+4. supplied resource identities and kinds, with optional artifact byte sizes
+   and digests when independently available; local `ArtifactIdentity.path`
+   values are execution context and are not stable report identity;
 5. the compatibility verdict when scientifically reportable;
 6. the mandatory constraint-state basis retained by `VerdictAggregation`;
 7. findings, conditions, and decisive conflict cores;
@@ -138,7 +145,12 @@ inputs.
 - Scientifically meaningful order is preserved rather than sorted away. Examples
   include caller resource order when exposed as request context, FASTA sequence
   order where relevant, and BAM/CRAM shared-sequence order diagnostics.
-- Duplicate stable IDs are invalid.
+- Duplicate stable IDs are invalid; in particular, requirement IDs and
+  capability IDs are report-global within their respective namespaces rather
+  than merely unique inside one resource contract.
+- Local filesystem artifact paths are not serialized as stable resource
+  identity. Caller-provided resource IDs and display names remain caller-visible
+  context, while independently available byte size/digest facts may be emitted.
 - JSON output uses UTF-8 and must not emit non-standard NaN/Infinity values.
 - Human rendering may reorder information for readability only when it does not
   change the machine-report semantics.
@@ -146,10 +158,12 @@ inputs.
 Known-answer fixtures must pin deterministic bytes or normalized JSON values for
 representative reports before the schema is frozen.
 
-The Slice 3 draft projection is intentionally self-identifying as
+The draft projection is intentionally self-identifying as
 `refcompat.compatibility_report` with `stability = "draft"` and an integer draft
 revision. That marker is not the stable report schema version and does not create
-backward-compatibility guarantees. The draft projection is explicit rather than
+backward-compatibility guarantees. The Slice 4 review hardening advances the
+draft revision from 1 to 2 because omitting local artifact paths changes the
+provisional wire shape. The draft projection is explicit rather than
 a recursive dataclass dump: it emits request/resource context, analysis
 status/issues, verdict basis, typed requirements/constraints/evaluations,
 trace-relevant capabilities, evidence/findings/conditions, verified sequence
@@ -166,9 +180,10 @@ relationship/provenance slice.
 ## 6. Schema versioning
 
 The report schema version is independent of the Python package version. The
-exact first stable version identifier and compatibility rules are frozen only
-after the Slice 2-3 report model and draft serializer pass the planned internal
-scientific/API review.
+first Slice 4 review/hardening pass is complete, but the exact first stable
+version identifier and compatibility rules remain deliberately unfrozen until
+the hardened report boundary passes the authoritative gate and the remaining
+schema-design checkpoint is complete.
 
 At minimum, the frozen rules must define:
 
@@ -265,7 +280,8 @@ Those remain separate roadmap capabilities.
    schema is frozen. **Implemented.**
 4. **Internal checkpoint + schema freeze** — conduct scientific/API review, fix
    any model/trace defects, then check in the first stable JSON Schema and
-   versioning rules.
+   versioning rules. **Review hardening implemented; authoritative gate and
+   schema freeze still pending.**
 5. **Relationship/provenance context** — include BAM/CRAM dictionary relationship
    context and the report-owned provenance needed to trace the existing UCSC
    profile without leaking profile internals.

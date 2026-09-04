@@ -21,6 +21,7 @@ from refcompat.model import (
     ConstraintId,
     EvaluationRequest,
     EvaluationScope,
+    FindingKind,
     ProfileId,
     RefgetSequenceId,
     RequirementId,
@@ -298,6 +299,120 @@ def test_report_rejects_crosswired_bundle_request() -> None:
         )
 
 
+def test_report_rejects_crosswired_evaluation_requirement_trace() -> None:
+    bundle, verdict, cores = _scientific_result(_requirement("length"))
+    malformed_bundle = replace(
+        bundle,
+        evaluations=(replace(bundle.evaluations[0], requirement_id=RequirementId("other")),),
+    )
+
+    with pytest.raises(ValueError, match="evaluation requirement does not match"):
+        CompatibilityReport(
+            tool_version="0.1.0.dev0",
+            request=bundle.request,
+            analysis_status=AnalysisStatus.COMPLETE,
+            bundle=malformed_bundle,
+            verdict=verdict,
+            conflict_cores=cores,
+        )
+
+
+def test_report_rejects_crosswired_evidence_requirement_trace() -> None:
+    bundle, verdict, cores = _scientific_result(_requirement("length"))
+    malformed_evidence = replace(
+        bundle.evidence,
+        evidence=(replace(bundle.evidence.evidence[0], requirement_id=RequirementId("other")),),
+    )
+    malformed_bundle = replace(bundle, evidence=malformed_evidence)
+
+    with pytest.raises(ValueError, match="evidence requirement is cross-wired"):
+        CompatibilityReport(
+            tool_version="0.1.0.dev0",
+            request=bundle.request,
+            analysis_status=AnalysisStatus.COMPLETE,
+            bundle=malformed_bundle,
+            verdict=verdict,
+            conflict_cores=cores,
+        )
+
+
+def test_report_requires_global_requirement_and_capability_ids() -> None:
+    bundle, verdict, cores = _scientific_result(_requirement("length"))
+    duplicate_requirement = replace(
+        bundle.constraints[0].requirement,
+        resource_id=_REFERENCE,
+    )
+    duplicate_requirement_bundle = replace(
+        bundle,
+        contracts=(
+            ResourceContract(_REFERENCE, requirements=(duplicate_requirement,)),
+            bundle.contracts[1],
+        ),
+    )
+    with pytest.raises(ValueError, match="requirement IDs must be unique"):
+        CompatibilityReport(
+            tool_version="0.1.0.dev0",
+            request=bundle.request,
+            analysis_status=AnalysisStatus.COMPLETE,
+            bundle=duplicate_requirement_bundle,
+            verdict=verdict,
+            conflict_cores=cores,
+        )
+
+    duplicate_capability = bundle.reference_context.anchor_capabilities[0]
+    duplicate_capability_bundle = replace(
+        bundle,
+        contracts=(
+            ResourceContract(_REFERENCE, capabilities=(duplicate_capability,)),
+            bundle.contracts[1],
+        ),
+    )
+    with pytest.raises(ValueError, match="capability IDs must be unique"):
+        CompatibilityReport(
+            tool_version="0.1.0.dev0",
+            request=bundle.request,
+            analysis_status=AnalysisStatus.COMPLETE,
+            bundle=duplicate_capability_bundle,
+            verdict=verdict,
+            conflict_cores=cores,
+        )
+
+
+def test_report_rejects_crosswired_finding_trace() -> None:
+    bundle, verdict, cores = _scientific_result(_requirement("wrong", length=11))
+    finding = bundle.interpretation.findings[0]
+
+    wrong_kind = replace(finding, kind=FindingKind.SEQUENCE_IDENTITY_CONFLICT)
+    malformed_bundle = replace(
+        bundle,
+        interpretation=replace(bundle.interpretation, findings=(wrong_kind,)),
+    )
+    with pytest.raises(ValueError, match="conflict finding is cross-wired"):
+        CompatibilityReport(
+            tool_version="0.1.0.dev0",
+            request=bundle.request,
+            analysis_status=AnalysisStatus.COMPLETE,
+            bundle=malformed_bundle,
+            verdict=verdict,
+            conflict_cores=cores,
+        )
+
+    wrong_resources = replace(finding, resource_ids=(_CONSUMER,))
+    malformed_bundle = replace(
+        bundle,
+        interpretation=replace(bundle.interpretation, findings=(wrong_resources,)),
+    )
+    with pytest.raises(ValueError, match="finding resources are cross-wired"):
+        CompatibilityReport(
+            tool_version="0.1.0.dev0",
+            request=bundle.request,
+            analysis_status=AnalysisStatus.COMPLETE,
+            bundle=malformed_bundle,
+            verdict=verdict,
+            conflict_cores=cores,
+        )
+
+
 def test_report_rejects_verdict_from_different_bundle() -> None:
     bundle, _, cores = _scientific_result(_requirement("length"))
     other_bundle, other_verdict, _ = _scientific_result(
@@ -428,4 +543,40 @@ def test_report_rejects_crosswired_conflict_core_resource_trace() -> None:
             bundle=bundle,
             verdict=verdict,
             conflict_cores=malformed_extraction,
+        )
+
+
+def test_report_rejects_scope_condition_with_unknown_excluded_resource() -> None:
+    excluded = ResourceId("excluded")
+    request = replace(
+        _request(),
+        resources=(*_request().resources, _resource(excluded, ResourceKind.VCF)),
+    )
+    bundle = reason_bundle(
+        request,
+        _snapshot(),
+        (
+            ResourceContract(_REFERENCE),
+            ResourceContract(_CONSUMER, requirements=(_requirement("length"),)),
+        ),
+    )
+    verdict = aggregate_bundle_verdict(bundle)
+    cores = extract_conflict_cores(bundle, verdict)
+    condition = replace(
+        bundle.interpretation.conditions[0],
+        excluded_resource_ids=(ResourceId("ghost"),),
+    )
+    malformed_bundle = replace(
+        bundle,
+        interpretation=replace(bundle.interpretation, conditions=(condition,)),
+    )
+
+    with pytest.raises(ValueError, match="condition cites an unknown resource"):
+        CompatibilityReport(
+            tool_version="0.1.0.dev0",
+            request=request,
+            analysis_status=AnalysisStatus.COMPLETE,
+            bundle=malformed_bundle,
+            verdict=verdict,
+            conflict_cores=cores,
         )

@@ -42,7 +42,7 @@ from refcompat.model.report import AnalysisIssue, CompatibilityReport
 from refcompat.model.resources import ArtifactIdentity, Resource
 
 DRAFT_REPORT_FORMAT = "refcompat.compatibility_report"
-DRAFT_REPORT_REVISION = 1
+DRAFT_REPORT_REVISION = 2
 
 
 def compatibility_report_draft_payload(report: CompatibilityReport) -> dict[str, object]:
@@ -123,7 +123,6 @@ def _artifact_payload(artifact: ArtifactIdentity) -> dict[str, object]:
             "value": artifact.digest.value,
         }
     return {
-        "path": str(artifact.path),
         "byte_size": artifact.byte_size,
         "digest": digest,
     }
@@ -231,7 +230,7 @@ def _scientific_result_payload(
                 "scope": _scope_payload(item.scope),
                 "anchor_resource_id": str(item.anchor_resource_id),
                 "constraint_ids": sorted(str(value) for value in item.constraint_ids),
-                "excluded_resource_ids": [str(value) for value in item.excluded_resource_ids],
+                "excluded_resource_ids": sorted(str(value) for value in item.excluded_resource_ids),
             }
             for item in sorted(bundle.interpretation.conditions, key=lambda item: str(item.id))
         ],

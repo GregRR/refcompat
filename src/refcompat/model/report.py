@@ -14,10 +14,16 @@ from typing import NewType
 from refcompat._compat import StrEnum, assert_never
 from refcompat.model.bundle import BundleReasoningResult
 from refcompat.model.conflict_core import ConflictCoreExtraction
-from refcompat.model.constraints import ConstraintId, ConstraintState
-from refcompat.model.contracts import RequirementLevel
+from refcompat.model.constraints import ConstraintId, ConstraintRule, ConstraintState
+from refcompat.model.contracts import (
+    Capability,
+    CapabilityId,
+    RequirementLevel,
+    SequenceIdentityCapability,
+)
 from refcompat.model.evaluation import EvaluationRequest
-from refcompat.model.interpretation import FindingId
+from refcompat.model.evidence import Evidence, EvidencePolarity
+from refcompat.model.interpretation import ConditionKind, FindingId, FindingKind
 from refcompat.model.resources import ResourceId
 from refcompat.model.verdict import CompatibilityVerdict, VerdictAggregation
 
@@ -167,6 +173,8 @@ def _validate_scientific_result(
     if bundle.request != request:
         raise ValueError("compatibility report bundle must match the evaluation request")
 
+    _validate_bundle_trace(request, bundle)
+
     evaluations_by_id = {evaluation.constraint_id: evaluation for evaluation in bundle.evaluations}
     mandatory_constraints = tuple(
         constraint
@@ -231,6 +239,274 @@ def _validate_scientific_result(
         conflict_cores,
         verdict.basis_finding_ids,
     )
+
+
+def _validate_bundle_trace(request: EvaluationRequest, bundle: BundleReasoningResult) -> None:
+    """Reject dangling or cross-wired trace before it becomes report authority."""
+
+    constraints_by_id = {constraint.id: constraint for constraint in bundle.constraints}
+    evaluations_by_id = {evaluation.constraint_id: evaluation for evaluation in bundle.evaluations}
+
+    requirements = tuple(
+        requirement for contract in bundle.contracts for requirement in contract.requirements
+    )
+    requirement_ids = tuple(requirement.id for requirement in requirements)
+    _validate_unique(requirement_ids, noun="compatibility report requirement IDs")
+    requirements_by_id = {requirement.id: requirement for requirement in requirements}
+    constraint_requirement_ids = tuple(
+        constraint.requirement.id for constraint in bundle.constraints
+    )
+    if len(set(constraint_requirement_ids)) != len(constraint_requirement_ids):
+        raise ValueError("compatibility report constraints must use unique requirement IDs")
+    if set(constraint_requirement_ids) != set(requirement_ids):
+        raise ValueError("compatibility report constraints must cover all scoped requirements")
+    if any(
+        requirements_by_id[constraint.requirement.id] != constraint.requirement
+        for constraint in bundle.constraints
+    ):
+        raise ValueError("compatibility report constraint requirement is cross-wired")
+
+    capability_index = _report_capability_index(bundle)
+    bindings_by_id = {binding.id: binding for binding in bundle.sequence_bindings}
+    anchor_names = {sequence.local_name for sequence in bundle.reference_context.sequences}
+
+    for binding in bundle.sequence_bindings:
+        if binding.anchor_sequence_name not in anchor_names:
+            raise ValueError(
+                "compatibility report sequence binding cites an unknown anchor sequence"
+            )
+        try:
+            cited_capabilities = tuple(
+                capability_index[capability_id] for capability_id in binding.capability_ids
+            )
+        except KeyError as exc:
+            raise ValueError(
+                "compatibility report sequence binding cites an unknown capability"
+            ) from exc
+        identity_capabilities: list[SequenceIdentityCapability] = []
+        for capability in cited_capabilities:
+            if not isinstance(capability, SequenceIdentityCapability):
+                raise ValueError(
+                    "compatibility report sequence binding must cite identity capabilities"
+                )
+            identity_capabilities.append(capability)
+        if {capability.identity for capability in identity_capabilities} != set(
+            binding.identity_values
+        ):
+            raise ValueError(
+                "compatibility report sequence-binding identities do not match capability trace"
+            )
+
+    for constraint in bundle.constraints:
+        for capability in constraint.candidate_capabilities:
+            canonical = capability_index.get(capability.id)
+            if canonical is None or canonical != capability:
+                raise ValueError("compatibility report constraint capability is cross-wired")
+        for binding in constraint.sequence_bindings:
+            canonical_binding = bindings_by_id.get(binding.id)
+            if canonical_binding is None or canonical_binding != binding:
+                raise ValueError("compatibility report constraint sequence binding is cross-wired")
+
+        evaluation = evaluations_by_id[constraint.id]
+        if evaluation.requirement_id != constraint.requirement.id:
+            raise ValueError(
+                "compatibility report evaluation requirement does not match its constraint"
+            )
+        candidate_ids = {capability.id for capability in constraint.candidate_capabilities}
+        if not set(evaluation.relevant_capability_ids).issubset(candidate_ids):
+            raise ValueError(
+                "compatibility report evaluation capability is absent from its constraint"
+            )
+
+    expected_unresolved = {
+        evaluation.constraint_id
+        for evaluation in bundle.evaluations
+        if evaluation.state is ConstraintState.UNRESOLVED
+    }
+    if set(bundle.evidence.unresolved_constraint_ids) != expected_unresolved:
+        raise ValueError(
+            "compatibility report unresolved evidence basis does not match evaluations"
+        )
+    expected_not_applicable = {
+        evaluation.constraint_id
+        for evaluation in bundle.evaluations
+        if evaluation.state is ConstraintState.NOT_APPLICABLE
+    }
+    if set(bundle.evidence.not_applicable_constraint_ids) != expected_not_applicable:
+        raise ValueError(
+            "compatibility report not-applicable evidence basis does not match evaluations"
+        )
+
+    evidence_by_constraint: dict[ConstraintId, list[Evidence]] = {
+        constraint_id: [] for constraint_id in constraints_by_id
+    }
+    for item in bundle.evidence.evidence:
+        evidence_constraint = constraints_by_id.get(item.constraint_id)
+        if evidence_constraint is None:
+            raise ValueError("compatibility report evidence cites an unknown constraint")
+        if item.requirement_id != evidence_constraint.requirement.id:
+            raise ValueError("compatibility report evidence requirement is cross-wired")
+        candidates_by_id = {
+            capability.id: capability for capability in evidence_constraint.candidate_capabilities
+        }
+        evidence_capability = candidates_by_id.get(item.capability_id)
+        if evidence_capability is None:
+            raise ValueError("compatibility report evidence capability is cross-wired")
+        if set(item.source_observation_ids) != set(evidence_capability.source_observation_ids):
+            raise ValueError(
+                "compatibility report evidence observations do not match its capability"
+            )
+        binding_ids = {binding.id for binding in evidence_constraint.sequence_bindings}
+        if not set(item.sequence_binding_ids).issubset(binding_ids):
+            raise ValueError("compatibility report evidence sequence binding is cross-wired")
+        evidence_by_constraint[item.constraint_id].append(item)
+
+    for constraint in bundle.constraints:
+        evaluation = evaluations_by_id[constraint.id]
+        items = evidence_by_constraint[constraint.id]
+        evidence_capability_ids = [item.capability_id for item in items]
+        if len(evidence_capability_ids) != len(evaluation.relevant_capability_ids) or set(
+            evidence_capability_ids
+        ) != set(evaluation.relevant_capability_ids):
+            raise ValueError(
+                "compatibility report evidence capabilities do not match the evaluation"
+            )
+        if evaluation.state is ConstraintState.SATISFIED and any(
+            item.polarity is not EvidencePolarity.SUPPORTS for item in items
+        ):
+            raise ValueError("compatibility report satisfied evaluation has contradicting evidence")
+        if evaluation.state is ConstraintState.UNSATISFIED and any(
+            item.polarity is not EvidencePolarity.CONTRADICTS for item in items
+        ):
+            raise ValueError("compatibility report unsatisfied evaluation has supporting evidence")
+
+    supplied_resource_ids = {resource.id for resource in request.resources}
+    expected_finding_constraint_ids = {
+        evaluation.constraint_id
+        for evaluation in bundle.evaluations
+        if evaluation.state in (ConstraintState.UNSATISFIED, ConstraintState.UNRESOLVED)
+    }
+    finding_constraint_ids = tuple(
+        constraint_id
+        for finding in bundle.interpretation.findings
+        for constraint_id in finding.constraint_ids
+    )
+    if set(finding_constraint_ids) != expected_finding_constraint_ids or len(
+        set(finding_constraint_ids)
+    ) != len(finding_constraint_ids):
+        raise ValueError(
+            "compatibility report findings must cover each failed or unresolved constraint once"
+        )
+
+    for finding in bundle.interpretation.findings:
+        finding_constraints = tuple(
+            constraints_by_id.get(constraint_id) for constraint_id in finding.constraint_ids
+        )
+        if any(constraint is None for constraint in finding_constraints):
+            raise ValueError("compatibility report finding cites an unknown constraint")
+        canonical_constraints = tuple(
+            constraint for constraint in finding_constraints if constraint is not None
+        )
+        expected_requirement_ids = {
+            constraint.requirement.id for constraint in canonical_constraints
+        }
+        if set(finding.requirement_ids) != expected_requirement_ids:
+            raise ValueError("compatibility report finding requirements are cross-wired")
+
+        expected_evidence_ids = {
+            item.id
+            for constraint in canonical_constraints
+            for item in evidence_by_constraint[constraint.id]
+        }
+        if set(finding.evidence_ids) != expected_evidence_ids:
+            raise ValueError("compatibility report finding evidence is cross-wired")
+
+        expected_resource_ids = {
+            constraint.requirement.resource_id for constraint in canonical_constraints
+        }
+        for constraint in canonical_constraints:
+            relevant_capability_ids = set(evaluations_by_id[constraint.id].relevant_capability_ids)
+            expected_resource_ids.update(
+                capability.resource_id
+                for capability in constraint.candidate_capabilities
+                if capability.id in relevant_capability_ids
+            )
+        if set(finding.resource_ids) != expected_resource_ids:
+            raise ValueError("compatibility report finding resources are cross-wired")
+        if not expected_resource_ids.issubset(supplied_resource_ids):
+            raise ValueError("compatibility report finding cites an unknown resource")
+
+        finding_states = {
+            evaluations_by_id[constraint.id].state for constraint in canonical_constraints
+        }
+        if finding.kind is FindingKind.UNRESOLVED_REQUIREMENT:
+            if finding_states != {ConstraintState.UNRESOLVED}:
+                raise ValueError(
+                    "compatibility report unresolved finding does not match evaluation state"
+                )
+        elif finding_states != {ConstraintState.UNSATISFIED} or any(
+            _finding_kind_for_rule(constraint.rule) is not finding.kind
+            for constraint in canonical_constraints
+        ):
+            raise ValueError("compatibility report conflict finding is cross-wired")
+
+    all_constraint_ids = set(constraints_by_id)
+    expected_condition_kinds: set[ConditionKind] = set()
+    excluded_resource_ids = supplied_resource_ids - set(request.scope.resource_ids)
+    if excluded_resource_ids:
+        expected_condition_kinds.add(ConditionKind.EXPLICIT_RESOURCE_SCOPE)
+    if request.scope.anchor_sequence_names is not None:
+        expected_condition_kinds.add(ConditionKind.EXPLICIT_ANCHOR_SEQUENCE_SCOPE)
+
+    actual_condition_kinds = tuple(condition.kind for condition in bundle.interpretation.conditions)
+    if (
+        len(set(actual_condition_kinds)) != len(actual_condition_kinds)
+        or set(actual_condition_kinds) != expected_condition_kinds
+    ):
+        raise ValueError("compatibility report scope conditions do not match the request")
+    for condition in bundle.interpretation.conditions:
+        if set(condition.constraint_ids) != all_constraint_ids:
+            raise ValueError("compatibility report condition constraints do not match the bundle")
+        if not set(condition.excluded_resource_ids).issubset(supplied_resource_ids):
+            raise ValueError("compatibility report condition cites an unknown resource")
+        if (
+            condition.kind is ConditionKind.EXPLICIT_RESOURCE_SCOPE
+            and set(condition.excluded_resource_ids) != excluded_resource_ids
+        ):
+            raise ValueError(
+                "compatibility report resource-scope exclusions do not match the request"
+            )
+
+
+def _finding_kind_for_rule(rule: ConstraintRule) -> FindingKind:
+    if rule is ConstraintRule.SEQUENCE_PRESENCE:
+        return FindingKind.MISSING_REQUIRED_SEQUENCE
+    if rule is ConstraintRule.SEQUENCE_LENGTH:
+        return FindingKind.SEQUENCE_LENGTH_CONFLICT
+    if rule is ConstraintRule.SEQUENCE_IDENTITY:
+        return FindingKind.SEQUENCE_IDENTITY_CONFLICT
+    if rule is ConstraintRule.SEQUENCE_BINDING:
+        return FindingKind.SEQUENCE_BINDING_CONFLICT
+    if rule is ConstraintRule.SEQUENCE_ORDER:
+        return FindingKind.SEQUENCE_ORDER_CONFLICT
+    if rule is ConstraintRule.COORDINATE_BOUNDS:
+        return FindingKind.COORDINATE_BOUNDS_CONFLICT
+    if rule is ConstraintRule.REFERENCE_BASES:
+        return FindingKind.REFERENCE_BASE_CONFLICT
+    assert_never(rule)
+
+
+def _report_capability_index(bundle: BundleReasoningResult) -> dict[CapabilityId, Capability]:
+    capabilities: list[Capability] = []
+    for contract in bundle.contracts:
+        capabilities.extend(contract.capabilities)
+    capabilities.extend(bundle.reference_context.anchor_capabilities)
+    capabilities.extend(bundle.derived_capabilities)
+    capabilities.extend(bundle.supplemental_capabilities)
+
+    capability_ids = tuple(capability.id for capability in capabilities)
+    _validate_unique(capability_ids, noun="compatibility report capability IDs")
+    return {capability.id: capability for capability in capabilities}
 
 
 def _decisive_constraint_ids(verdict: VerdictAggregation) -> tuple[ConstraintId, ...]:

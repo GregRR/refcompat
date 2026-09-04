@@ -127,9 +127,13 @@ def test_draft_payload_is_explicit_and_self_identifying() -> None:
     verdict = cast(dict[str, object], scientific["verdict"])
     requirements = cast(list[dict[str, object]], scientific["requirements"])
     constraints = cast(list[dict[str, object]], scientific["constraints"])
+    request_payload = cast(dict[str, object], payload["request"])
+    resources = cast(list[dict[str, object]], request_payload["resources"])
+    artifact = cast(dict[str, object], resources[0]["artifact"])
     assert verdict["value"] == "compatible"
     assert requirements[0]["type"] == "sequence_length"
     assert constraints[0]["requirement_id"] == "consumer:length:chr1"
+    assert "path" not in artifact
 
 
 def test_invalid_input_serializes_without_scientific_result() -> None:
@@ -187,6 +191,33 @@ def test_rendered_json_is_utf8_deterministic_and_strict() -> None:
     assert json.loads(first.decode("utf-8")) == compatibility_report_draft_payload(report)
 
 
+def test_rendered_json_does_not_depend_on_local_artifact_paths() -> None:
+    report = _complete_report()
+    assert report.bundle is not None
+
+    relocated_resources = tuple(
+        replace(
+            resource,
+            artifact=replace(
+                resource.artifact,
+                path=Path("/different/local/root") / str(resource.id),
+            ),
+        )
+        for resource in report.request.resources
+    )
+    relocated_request = replace(report.request, resources=relocated_resources)
+    relocated_bundle = replace(report.bundle, request=relocated_request)
+    relocated_report = replace(
+        report,
+        request=relocated_request,
+        bundle=relocated_bundle,
+    )
+
+    assert render_compatibility_report_draft_json(relocated_report) == (
+        render_compatibility_report_draft_json(report)
+    )
+
+
 def test_known_answer_fixture_pins_draft_bytes() -> None:
     assert render_compatibility_report_draft_json(_complete_report()) == _FIXTURE.read_bytes()
 
@@ -220,3 +251,64 @@ def test_request_resource_and_profile_order_are_preserved() -> None:
     resources = cast(list[dict[str, object]], request_payload["resources"])
     assert request_payload["active_profiles"] == ["z-profile", "a-profile"]
     assert [item["id"] for item in resources] == ["reference", "consumer"]
+
+
+def test_condition_exclusion_order_is_canonicalized() -> None:
+    excluded_b = ResourceId("excluded-b")
+    excluded_a = ResourceId("excluded-a")
+    request = replace(
+        _request(),
+        resources=(
+            *_request().resources,
+            _resource(excluded_b, ResourceKind.VCF),
+            _resource(excluded_a, ResourceKind.VCF),
+        ),
+    )
+    snapshot = SequenceCollectionSnapshot(
+        resource_id=_REFERENCE,
+        completeness=CollectionCompleteness.COMPLETE,
+        sequences=(SnapshotSequence(local_name="chr1", length=10, ordinal=0),),
+    )
+    requirement = SequenceLengthRequirement(
+        id=RequirementId("consumer:length:chr1"),
+        resource_id=_CONSUMER,
+        origin=RequirementOrigin.CORE_FORMAT,
+        level=RequirementLevel.MANDATORY,
+        sequence_name="chr1",
+        length=10,
+    )
+    bundle = reason_bundle(
+        request,
+        snapshot,
+        (
+            ResourceContract(_REFERENCE),
+            ResourceContract(_CONSUMER, requirements=(requirement,)),
+        ),
+    )
+    verdict = aggregate_bundle_verdict(bundle)
+    report = CompatibilityReport(
+        tool_version="0.1.0.dev0",
+        request=request,
+        analysis_status=AnalysisStatus.COMPLETE,
+        bundle=bundle,
+        verdict=verdict,
+        conflict_cores=extract_conflict_cores(bundle, verdict),
+    )
+
+    condition = bundle.interpretation.conditions[0]
+    reordered_condition = replace(
+        condition,
+        excluded_resource_ids=tuple(reversed(condition.excluded_resource_ids)),
+    )
+    reordered_bundle = replace(
+        bundle,
+        interpretation=replace(
+            bundle.interpretation,
+            conditions=(reordered_condition,),
+        ),
+    )
+    reordered_report = replace(report, bundle=reordered_bundle)
+
+    assert render_compatibility_report_draft_json(reordered_report) == (
+        render_compatibility_report_draft_json(report)
+    )

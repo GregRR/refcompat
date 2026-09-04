@@ -5,7 +5,7 @@
   },
   "report_format": {
     "name": "refcompat.compatibility_report",
-    "revision": 1,
+    "revision": 2,
     "stability": "draft"
   },
   "request": {
@@ -16,8 +16,7 @@
       {
         "artifact": {
           "byte_size": null,
-          "digest": null,
-          "path": "reference"
+          "digest": null
         },
         "display_name": null,
         "id": "reference",
@@ -26,8 +25,7 @@
       {
         "artifact": {
           "byte_size": null,
-          "digest": null,
-          "path": "consumer"
+          "digest": null
         },
         "display_name": null,
         "id": "consumer",
