@@ -45,8 +45,10 @@ _FIXTURE_DIR = Path(__file__).parents[2] / "fixtures" / "milestone7"
 _FIXTURE = _FIXTURE_DIR / "stable-compatible-report-1.1.0.json"
 _INCOMPATIBLE_FIXTURE = _FIXTURE_DIR / "stable-incompatible-report-1.1.0.json"
 _CONTEXT_FIXTURE = _FIXTURE_DIR / "stable-ucsc-alignment-report-1.1.0.json"
+_CONTENT_CONFLICT_FIXTURE = _FIXTURE_DIR / "stable-ucsc-content-conflict-report-1.1.0.json"
 _PREVIOUS_SCHEMA_VERSION = "1.0.0"
 _PREVIOUS_FIXTURE = _FIXTURE_DIR / "stable-compatible-report-1.0.0.json"
+_PREVIOUS_INCOMPATIBLE_FIXTURE = _FIXTURE_DIR / "stable-incompatible-report-1.0.0.json"
 
 
 class _SchemaValidator(Protocol):
@@ -89,6 +91,7 @@ def test_stable_schema_is_packaged_and_self_identifying() -> None:
 
     assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
     assert schema["$id"] == f"urn:refcompat:schema:compatibility-report:{REPORT_SCHEMA_VERSION}"
+    assert schema["description"].endswith(f"schema version {REPORT_SCHEMA_VERSION}.")
     report_format = schema["$defs"]["reportFormat"]["properties"]
     assert report_format["name"] == {"const": REPORT_FORMAT}
     assert report_format["schema_version"] == {"const": REPORT_SCHEMA_VERSION}
@@ -99,6 +102,44 @@ def test_previous_stable_schema_remains_packaged_and_exact() -> None:
     assert previous_schema["$id"] == ("urn:refcompat:schema:compatibility-report:1.0.0")
     previous_payload = json.loads(_PREVIOUS_FIXTURE.read_text(encoding="utf-8"))
     _validator(_PREVIOUS_SCHEMA_VERSION).validate(previous_payload)
+
+
+@pytest.mark.parametrize(
+    ("previous_fixture", "current_fixture"),
+    (
+        (_PREVIOUS_FIXTURE, _FIXTURE),
+        (_PREVIOUS_INCOMPATIBLE_FIXTURE, _INCOMPATIBLE_FIXTURE),
+    ),
+)
+def test_schema_1_1_preserves_the_1_0_core_payload(
+    previous_fixture: Path,
+    current_fixture: Path,
+) -> None:
+    previous_payload = cast(
+        dict[str, Any],
+        json.loads(previous_fixture.read_text(encoding="utf-8")),
+    )
+    current_payload = cast(
+        dict[str, Any],
+        json.loads(current_fixture.read_text(encoding="utf-8")),
+    )
+    current_format = cast(dict[str, Any], current_payload["report_format"])
+    current_format["schema_version"] = _PREVIOUS_SCHEMA_VERSION
+    scientific_result = cast(dict[str, Any], current_payload["scientific_result"])
+    for field in ("observations", "alignment_relationships", "profile_contexts"):
+        scientific_result.pop(field)
+
+    assert current_payload == previous_payload
+
+
+def test_exact_stable_schemas_cross_reject_other_minor_versions() -> None:
+    previous_payload = json.loads(_PREVIOUS_FIXTURE.read_text(encoding="utf-8"))
+    current_payload = json.loads(_FIXTURE.read_text(encoding="utf-8"))
+
+    with pytest.raises(_jsonschema().ValidationError):
+        _validator().validate(previous_payload)
+    with pytest.raises(_jsonschema().ValidationError):
+        _validator(_PREVIOUS_SCHEMA_VERSION).validate(current_payload)
 
 
 def test_stable_known_answer_validates_against_exact_schema() -> None:
@@ -146,6 +187,26 @@ def test_stable_context_known_answer_validates_against_exact_schema() -> None:
     )
 
     _validator().validate(payload)
+
+
+def test_stable_content_conflict_known_answer_validates_against_exact_schema() -> None:
+    payload = json.loads(_CONTENT_CONFLICT_FIXTURE.read_text(encoding="utf-8"))
+
+    _validator().validate(payload)
+
+
+def test_exact_schema_rejects_unknown_nested_profile_trace_fields() -> None:
+    payload = cast(
+        dict[str, Any],
+        json.loads(_CONTENT_CONFLICT_FIXTURE.read_text(encoding="utf-8")),
+    )
+    scientific_result = cast(dict[str, Any], payload["scientific_result"])
+    contexts = cast(list[dict[str, Any]], scientific_result["profile_contexts"])
+    traces = cast(list[dict[str, Any]], contexts[0]["sequence_traces"])
+    traces[0]["future_trace_field"] = True
+
+    with pytest.raises(_jsonschema().ValidationError):
+        _validator().validate(payload)
 
 
 def test_schema_accepts_invalid_input_without_scientific_result() -> None:

@@ -1,6 +1,6 @@
 # Milestone 7 compatibility report and workflow contract
 
-**Status:** contract pinned in Slice 1; immutable analysis-status/report-root model implemented in Slice 2; explicit deterministic draft JSON projection implemented in Slice 3; Slice 4 internal scientific/API review hardening plus the first stable schema freeze are complete; Slice 5 report-owned relationship/provenance context is implemented; Slice 6 deterministic human rendering plus the stable whole-bundle workflow exit policy is implemented; and Slice 7 representative end-to-end report paths are integrated. The first stable core report remains exact schema `1.0.0`; the current additive stable report is `1.1.0`, and draft revision 3 remains a separate provisional surface with no stable compatibility guarantee.
+**Status:** contract pinned in Slice 1; immutable analysis-status/report-root model implemented in Slice 2; explicit deterministic draft JSON projection implemented in Slice 3; Slice 4 internal scientific/API review hardening plus the first stable schema freeze are complete; Slice 5 report-owned relationship/provenance context is implemented; Slice 6 deterministic human rendering plus the stable whole-bundle workflow exit policy is implemented; Slice 7 representative end-to-end report paths are integrated; and the Slice 8 adversarial/backward-compatibility internal review is complete. That review hardened direct profile-context capability trace retention and schema-version regression coverage without changing scientific verdict or workflow semantics. The first stable core report remains exact schema `1.0.0`; the current additive stable report is `1.1.0`, draft revision 3 remains a separate provisional surface with no stable compatibility guarantee, and the required external M7 milestone-boundary review remains pending.
 
 Milestone 7 stabilizes how RefCompat exposes already-established compatibility
 reasoning to people, automation, and downstream software. It does not add a new
@@ -192,11 +192,11 @@ report-owned context records. Internal `ResourceContract`, `ReferenceContext`,
 and profile/provider implementation objects are not serialized directly.
 
 Capabilities are included when they are referenced by constraints, evaluations,
-evidence, sequence-binding traces, or transitive identity-absence provenance;
-the draft does not serialize the complete anchor capability graph merely because
-it exists internally. Source-observation IDs are retained where already present,
-and Slice 5 emits any report-owned observation/provenance records explicitly
-supplied to the validated report root.
+evidence, sequence-binding traces, report-owned profile/provenance context, or
+transitive identity-absence provenance; the serializer does not emit the complete
+anchor capability graph merely because it exists internally. Source-observation
+IDs are retained where already present, and Slice 5 emits any report-owned
+observation/provenance records explicitly supplied to the validated report root.
 
 `compatibility_report_payload()` and `render_compatibility_report_json()` now
 identify the current additive stable body as schema `1.1.0`. Exact schema
@@ -231,12 +231,14 @@ draft fixture is now revision 3.
 
 One schema-only pre-release erratum is applied to the retained 1.0.0 validator:
 its refget identity regex was originally over-escaped and rejected the already-
-defined serializer's valid `SQ.<32-character>` representation. RefCompat is
-still pre-release and no package release has shipped schema 1.0.0, so the
-checked-in validator is corrected in place before the first release without
-changing emitted 1.0.0 JSON or field meaning. Once a schema version has shipped
-in a package release, its checked-in bytes are immutable; the same kind of
-correction then requires a PATCH schema version.
+defined serializer's valid `SQ.<32-character>` representation. Slice 8 also
+corrects the 1.1.0 schema's descriptive label from `1.0.0` to `1.1.0`; its
+`$id`, validation rules, and emitted report bytes were already 1.1.0 and are
+unchanged. RefCompat is still pre-release and no package release has shipped
+these schemas, so those checked-in validators/metadata are corrected in place
+before the first release without changing emitted JSON or field meaning. Once a
+schema version has shipped in a package release, its checked-in bytes are
+immutable; the same kind of correction then requires a PATCH schema version.
 
 Version compatibility rules are:
 
@@ -394,7 +396,40 @@ JSON, validates that JSON against the packaged exact `1.1.0` schema, renders the
 and checks the stable workflow exit mapping. The integration pass does not change schema
 `1.1.0`, draft revision 3, verdict semantics, or the provisional Milestone 1 CLI behavior.
 
-## 11. Non-goals for Milestone 7
+## 11. Adversarial and backward-compatibility review
+
+Slice 8 performs the final internal adversarial review of the stable reporting
+boundary before external milestone review. The review pins several guarantees:
+
+- exact schema `1.0.0` and exact schema `1.1.0` cross-reject reports that claim
+  the other minor version rather than silently relabeling them;
+- for both compatible and incompatible known answers, the `1.1.0` report becomes
+  structurally identical to the retained `1.0.0` payload after changing only
+  the schema-version header and removing the three additive 1.1.0 sections
+  (`observations`, `alignment_relationships`, and `profile_contexts`);
+- exact `1.1.0` validation rejects unknown nested profile-trace fields, preserving
+  the declared closed-object contract;
+- every capability ID cited directly by report-owned profile context is retained
+  in the serialized capability partition, including UCSC target-anchor identity
+  and validation capabilities that are not otherwise reachable from a verified
+  peer binding; and
+- a representative UCSC content-conflict report is pinned as a stable known
+  answer and validates against the exact packaged `1.1.0` schema while retaining
+  fully resolvable provider/profile trace.
+
+The content-conflict case exposed a reporting-only trace-pruning defect: the
+scientific result was already `INCOMPATIBLE`, but an anchor identity capability
+cited by `target_anchor_capability_ids` could be omitted from the serialized
+capability array when the peer was independently bound to a different anchor.
+Slice 8 fixes that serializer reachability rule; it does not change reasoning,
+evidence classification, verdict aggregation, workflow exits, schema shape, or
+draft/stable version numbers.
+
+The internal M7 scientific/API review is therefore complete. The milestone is
+not closed until the required independent external milestone-boundary review is
+complete and any accepted findings are resolved.
+
+## 12. Non-goals for Milestone 7
 
 M7 does not, merely because reporting is being stabilized:
 
@@ -410,7 +445,7 @@ M7 does not, merely because reporting is being stabilized:
 
 Those remain separate roadmap capabilities.
 
-## 12. Planned implementation slices
+## 13. Planned implementation slices
 
 1. **Contract** — pin this report/status/schema/workflow boundary.
 2. **Report root** — add immutable analysis-status/report-root models and
@@ -433,8 +468,10 @@ Those remain separate roadmap capabilities.
    the same root model/serialization. **Implemented.**
 8. **Exit/review** — adversarial schema/traceability/backward-compatibility
    fixtures, final internal review, and external milestone-boundary review.
+   **Adversarial coverage and final internal review complete; external
+   milestone-boundary review pending.**
 
-## 13. Exit criteria
+## 14. Exit criteria
 
 Milestone 7 is complete only when:
 

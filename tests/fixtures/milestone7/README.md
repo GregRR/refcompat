@@ -14,9 +14,12 @@ identity representation and does not change these report bytes.
 `stable-incompatible-report-1.1.0.json` pin the additive current stable shape.
 `stable-ucsc-alignment-report-1.1.0.json` additionally pins report-owned resource
 observations, BAM/CRAM dictionary relationship context, and UCSC provider/source/
-profile provenance for a content-authorized authoritative-name binding. All
-1.1.0 headers map to the packaged
-`refcompat.schemas/compatibility-report-1.1.0.schema.json` resource.
+profile provenance for a content-authorized authoritative-name binding.
+`stable-ucsc-content-conflict-report-1.1.0.json` pins the adversarial case where
+provider target content conflicts with an independently identity-bound peer and
+ensures the target-anchor plus validation capabilities cited by profile provenance
+remain present in the serialized capability partition. All 1.1.0 headers map to
+the packaged `refcompat.schemas/compatibility-report-1.1.0.schema.json` resource.
 
 `human-compatible-report.txt` pins the current deterministic plain-text view of a
 simple compatible report. Human text is for people rather than machine parsing; the

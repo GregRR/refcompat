@@ -90,5 +90,9 @@ See [`../docs/check-specifications.md`](../docs/check-specifications.md) for the
   workflow exit classes while retaining the Milestone 1 diagnostic exit regressions. Slice 7 adds
   representative integration coverage that carries scoped VCF, BAM/CRAM dictionary relationship,
   GTF incompatible/indeterminate, and UCSC-profile VCF results through report assembly, exact
-  stable-schema validation, JSON/human rendering, and workflow exit mapping. Draft revision 3
-  remains separately provisional.
+  stable-schema validation, JSON/human rendering, and workflow exit mapping. Slice 8 adds a UCSC
+  content-conflict known answer whose profile validation/target-anchor capability references must
+  remain resolvable in the serialized capability partition, exact 1.0.0/1.1.0 cross-version
+  rejection, additive-core equivalence checks for compatible and incompatible fixtures, nested
+  profile-trace schema closure, and schema self-identification coverage. Draft revision 3 remains
+  separately provisional.

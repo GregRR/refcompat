@@ -2075,7 +2075,7 @@
       }
     }
   ],
-  "description": "Stable RefCompat compatibility report schema version 1.0.0.",
+  "description": "Stable RefCompat compatibility report schema version 1.1.0.",
   "properties": {
     "analysis": {
       "$ref": "#/$defs/analysis"

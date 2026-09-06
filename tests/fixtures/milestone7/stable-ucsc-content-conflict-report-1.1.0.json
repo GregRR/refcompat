@@ -1,0 +1,494 @@
+{
+  "analysis": {
+    "issues": [],
+    "status": "complete"
+  },
+  "report_format": {
+    "name": "refcompat.compatibility_report",
+    "schema_version": "1.1.0"
+  },
+  "request": {
+    "active_profiles": [
+      "ucsc-preflight"
+    ],
+    "anchor_resource_id": "reference",
+    "policy_id": null,
+    "resources": [
+      {
+        "artifact": {
+          "byte_size": null,
+          "digest": null
+        },
+        "display_name": null,
+        "id": "reference",
+        "kind": "fasta"
+      },
+      {
+        "artifact": {
+          "byte_size": null,
+          "digest": null
+        },
+        "display_name": null,
+        "id": "reads",
+        "kind": "bam"
+      }
+    ],
+    "scope": {
+      "anchor_sequence_names": null,
+      "resource_ids": [
+        "reference",
+        "reads"
+      ]
+    }
+  },
+  "scientific_result": {
+    "alignment_relationships": [
+      {
+        "alignment_resource_id": "reads",
+        "content": "m5_verified",
+        "duplicate_anchor_target_names": [],
+        "fasta_resource_id": "reference",
+        "identity_conflict_sequence_names": [],
+        "length_conflict_sequence_names": [],
+        "m5_distinct_extra_sequence_names": [],
+        "membership": "alignment_subset",
+        "naming": "verified_difference",
+        "order": "consistent",
+        "resolutions": [
+          {
+            "anchor_sequence_name": "chr2",
+            "local_sequence_name": "1",
+            "method": "verified_m5_binding",
+            "sequence_binding_id": "sequence-binding:e75cea062cd704699675dc54d1bd86044b5f30327dfccc4864eccff000478581"
+          }
+        ],
+        "unresolved_sequence_names": []
+      }
+    ],
+    "capabilities": [
+      {
+        "id": "alignment-binding-identity:f0460faea25ceb8accef0094461ca9ffce7582bf1f4272f5c73abda301fd86b9",
+        "identity": {
+          "scheme": "md5",
+          "value": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        },
+        "provenance": "declared_metadata",
+        "resource_id": "reads",
+        "sequence_name": "1",
+        "source_observation_ids": [],
+        "type": "sequence_identity"
+      },
+      {
+        "id": "anchor-capability:0d79dc8b556ef59269edd9273de3342cee85df1f7968840cc6dd4db7465d6042",
+        "identity": {
+          "scheme": "refget",
+          "value": "SQ.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        },
+        "provenance": "content_derived",
+        "resource_id": "reference",
+        "sequence_name": "chr1",
+        "source_observation_ids": [],
+        "type": "sequence_identity"
+      },
+      {
+        "id": "anchor-capability:27d5d73cdb9b500fe2949f5f5b018737788e381cf01bba9ca3cf420544f07241",
+        "identity": {
+          "scheme": "md5",
+          "value": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        },
+        "provenance": "content_derived",
+        "resource_id": "reference",
+        "sequence_name": "chr2",
+        "source_observation_ids": [],
+        "type": "sequence_identity"
+      },
+      {
+        "id": "anchor-capability:46a9900230c310e05a6c5dd0fa797b594027a90c2b19dd614a34fb7f01c48ad6",
+        "length": 4,
+        "resource_id": "reference",
+        "sequence_name": "chr2",
+        "source_observation_ids": [],
+        "type": "sequence_length"
+      },
+      {
+        "id": "anchor-capability:84ac8d0c11423c42e80b746593cba93a31dcc8a663cc3e9d14081e0ca23a1c22",
+        "present": true,
+        "resource_id": "reference",
+        "sequence_name": "chr2",
+        "source_observation_ids": [],
+        "type": "sequence_presence"
+      },
+      {
+        "anchor_sequence_name": "chr1",
+        "id": "ucsc-binding-validation:bec1091185b481a523fc82d079edb0914f4512ad96829ac8e1076c03b5424852",
+        "resource_id": "reference",
+        "sequence_name": "1",
+        "source_observation_ids": [],
+        "state": "content_conflict",
+        "subject_resource_id": "reads",
+        "type": "sequence_binding_validation"
+      }
+    ],
+    "conditions": [],
+    "conflict_cores": [
+      {
+        "constraint_ids": [
+          "constraint:787740165c860b526553c48e06d854bb0d9534a337c298aebb44dde47cd9480e"
+        ],
+        "evidence_ids": [
+          "evidence:12e5ff17efae8d85e3023068784e4ec8677ea71e7413ec98f6b0d4d51ede2a30"
+        ],
+        "finding_ids": [
+          "finding:e27212fe1cead996e460a34f6316a6e93d25a6454d5fbc1b56a368368990564c"
+        ],
+        "id": "conflict-core:3064685c3f6ba99732232a9d766daa970914906f22fd90f9657d6d4d3ccd363b",
+        "kind": "contradiction",
+        "requirement_ids": [
+          "ucsc-profile-requirement:674348eea0c32915b5abbe31e4af3ab0608540e2d07ca64ee0fb0b7c2898df5f"
+        ],
+        "resource_ids": [
+          "reads",
+          "reference"
+        ]
+      }
+    ],
+    "constraints": [
+      {
+        "candidate_capability_ids": [
+          "ucsc-binding-validation:bec1091185b481a523fc82d079edb0914f4512ad96829ac8e1076c03b5424852"
+        ],
+        "id": "constraint:787740165c860b526553c48e06d854bb0d9534a337c298aebb44dde47cd9480e",
+        "requirement_id": "ucsc-profile-requirement:674348eea0c32915b5abbe31e4af3ab0608540e2d07ca64ee0fb0b7c2898df5f",
+        "rule": "sequence_binding",
+        "sequence_binding_ids": [
+          "sequence-binding:e75cea062cd704699675dc54d1bd86044b5f30327dfccc4864eccff000478581"
+        ]
+      },
+      {
+        "candidate_capability_ids": [
+          "anchor-capability:46a9900230c310e05a6c5dd0fa797b594027a90c2b19dd614a34fb7f01c48ad6"
+        ],
+        "id": "constraint:8d64cc2081c6c6ada91602e08eb4d135291614d6bc8e2fe22a87d081a18c5cad",
+        "requirement_id": "alignment-requirement:f62cfea2d9782c3b0a759dc0c32a0385f50535463a80e1d11bbd74b782d425db",
+        "rule": "sequence_length",
+        "sequence_binding_ids": [
+          "sequence-binding:e75cea062cd704699675dc54d1bd86044b5f30327dfccc4864eccff000478581"
+        ]
+      },
+      {
+        "candidate_capability_ids": [
+          "anchor-capability:84ac8d0c11423c42e80b746593cba93a31dcc8a663cc3e9d14081e0ca23a1c22"
+        ],
+        "id": "constraint:939ec5b0c4ba8e225bd42a1325f5dd1d89c91eb0a78ec388e605312d964e18fe",
+        "requirement_id": "alignment-requirement:dc4cc633f6643b91f33940de79a26a4c998c0ae8ad8a35f38347652ac0369fbd",
+        "rule": "sequence_presence",
+        "sequence_binding_ids": [
+          "sequence-binding:e75cea062cd704699675dc54d1bd86044b5f30327dfccc4864eccff000478581"
+        ]
+      },
+      {
+        "candidate_capability_ids": [
+          "anchor-capability:27d5d73cdb9b500fe2949f5f5b018737788e381cf01bba9ca3cf420544f07241"
+        ],
+        "id": "constraint:f9ffe95e51f82bcaf3af6786bdc0d973ee9958136a726e0095a12806da5218d2",
+        "requirement_id": "alignment-requirement:3719e9a5c29e9ee600a773e0f8a43b6f7244cfb230805dd6149b2eaad3b30efe",
+        "rule": "sequence_identity",
+        "sequence_binding_ids": [
+          "sequence-binding:e75cea062cd704699675dc54d1bd86044b5f30327dfccc4864eccff000478581"
+        ]
+      }
+    ],
+    "evaluations": [
+      {
+        "constraint_id": "constraint:787740165c860b526553c48e06d854bb0d9534a337c298aebb44dde47cd9480e",
+        "relevant_capability_ids": [
+          "ucsc-binding-validation:bec1091185b481a523fc82d079edb0914f4512ad96829ac8e1076c03b5424852"
+        ],
+        "requirement_id": "ucsc-profile-requirement:674348eea0c32915b5abbe31e4af3ab0608540e2d07ca64ee0fb0b7c2898df5f",
+        "satisfaction_mode": null,
+        "state": "unsatisfied"
+      },
+      {
+        "constraint_id": "constraint:8d64cc2081c6c6ada91602e08eb4d135291614d6bc8e2fe22a87d081a18c5cad",
+        "relevant_capability_ids": [
+          "anchor-capability:46a9900230c310e05a6c5dd0fa797b594027a90c2b19dd614a34fb7f01c48ad6"
+        ],
+        "requirement_id": "alignment-requirement:f62cfea2d9782c3b0a759dc0c32a0385f50535463a80e1d11bbd74b782d425db",
+        "satisfaction_mode": "verified_alias",
+        "state": "satisfied"
+      },
+      {
+        "constraint_id": "constraint:939ec5b0c4ba8e225bd42a1325f5dd1d89c91eb0a78ec388e605312d964e18fe",
+        "relevant_capability_ids": [
+          "anchor-capability:84ac8d0c11423c42e80b746593cba93a31dcc8a663cc3e9d14081e0ca23a1c22"
+        ],
+        "requirement_id": "alignment-requirement:dc4cc633f6643b91f33940de79a26a4c998c0ae8ad8a35f38347652ac0369fbd",
+        "satisfaction_mode": "verified_alias",
+        "state": "satisfied"
+      },
+      {
+        "constraint_id": "constraint:f9ffe95e51f82bcaf3af6786bdc0d973ee9958136a726e0095a12806da5218d2",
+        "relevant_capability_ids": [
+          "anchor-capability:27d5d73cdb9b500fe2949f5f5b018737788e381cf01bba9ca3cf420544f07241"
+        ],
+        "requirement_id": "alignment-requirement:3719e9a5c29e9ee600a773e0f8a43b6f7244cfb230805dd6149b2eaad3b30efe",
+        "satisfaction_mode": "verified_sequence_identity",
+        "state": "satisfied"
+      }
+    ],
+    "evidence": {
+      "items": [
+        {
+          "capability_id": "ucsc-binding-validation:bec1091185b481a523fc82d079edb0914f4512ad96829ac8e1076c03b5424852",
+          "constraint_id": "constraint:787740165c860b526553c48e06d854bb0d9534a337c298aebb44dde47cd9480e",
+          "id": "evidence:12e5ff17efae8d85e3023068784e4ec8677ea71e7413ec98f6b0d4d51ede2a30",
+          "kind": "sequence_binding",
+          "method": "verified_sequence_binding",
+          "polarity": "contradicts",
+          "requirement_id": "ucsc-profile-requirement:674348eea0c32915b5abbe31e4af3ab0608540e2d07ca64ee0fb0b7c2898df5f",
+          "sequence_binding_ids": [
+            "sequence-binding:e75cea062cd704699675dc54d1bd86044b5f30327dfccc4864eccff000478581"
+          ],
+          "source_observation_ids": [],
+          "strength": "tier_a_conclusive_content"
+        },
+        {
+          "capability_id": "anchor-capability:84ac8d0c11423c42e80b746593cba93a31dcc8a663cc3e9d14081e0ca23a1c22",
+          "constraint_id": "constraint:939ec5b0c4ba8e225bd42a1325f5dd1d89c91eb0a78ec388e605312d964e18fe",
+          "id": "evidence:9cee3d07276010d0a1e23579fbd832434c6c54b0c5793c9b843bed4844701017",
+          "kind": "sequence_presence",
+          "method": "verified_sequence_binding",
+          "polarity": "supports",
+          "requirement_id": "alignment-requirement:dc4cc633f6643b91f33940de79a26a4c998c0ae8ad8a35f38347652ac0369fbd",
+          "sequence_binding_ids": [
+            "sequence-binding:e75cea062cd704699675dc54d1bd86044b5f30327dfccc4864eccff000478581"
+          ],
+          "source_observation_ids": [],
+          "strength": "tier_b_direct_structural"
+        },
+        {
+          "capability_id": "anchor-capability:46a9900230c310e05a6c5dd0fa797b594027a90c2b19dd614a34fb7f01c48ad6",
+          "constraint_id": "constraint:8d64cc2081c6c6ada91602e08eb4d135291614d6bc8e2fe22a87d081a18c5cad",
+          "id": "evidence:a7160158dc98fd450c5fd8526889e05de992714face0db69d797577dd0d88ca6",
+          "kind": "sequence_length",
+          "method": "verified_sequence_binding",
+          "polarity": "supports",
+          "requirement_id": "alignment-requirement:f62cfea2d9782c3b0a759dc0c32a0385f50535463a80e1d11bbd74b782d425db",
+          "sequence_binding_ids": [
+            "sequence-binding:e75cea062cd704699675dc54d1bd86044b5f30327dfccc4864eccff000478581"
+          ],
+          "source_observation_ids": [],
+          "strength": "tier_b_direct_structural"
+        },
+        {
+          "capability_id": "anchor-capability:27d5d73cdb9b500fe2949f5f5b018737788e381cf01bba9ca3cf420544f07241",
+          "constraint_id": "constraint:f9ffe95e51f82bcaf3af6786bdc0d973ee9958136a726e0095a12806da5218d2",
+          "id": "evidence:ca211344071614c009bf7e5663069d64f727567436bf0277c786c8887b07c5ab",
+          "kind": "sequence_identity",
+          "method": "verified_sequence_binding",
+          "polarity": "supports",
+          "requirement_id": "alignment-requirement:3719e9a5c29e9ee600a773e0f8a43b6f7244cfb230805dd6149b2eaad3b30efe",
+          "sequence_binding_ids": [
+            "sequence-binding:e75cea062cd704699675dc54d1bd86044b5f30327dfccc4864eccff000478581"
+          ],
+          "source_observation_ids": [],
+          "strength": "tier_a_conclusive_content"
+        }
+      ],
+      "not_applicable_constraint_ids": [],
+      "unresolved_constraint_ids": []
+    },
+    "findings": [
+      {
+        "constraint_ids": [
+          "constraint:787740165c860b526553c48e06d854bb0d9534a337c298aebb44dde47cd9480e"
+        ],
+        "evidence_ids": [
+          "evidence:12e5ff17efae8d85e3023068784e4ec8677ea71e7413ec98f6b0d4d51ede2a30"
+        ],
+        "id": "finding:e27212fe1cead996e460a34f6316a6e93d25a6454d5fbc1b56a368368990564c",
+        "kind": "sequence_binding_conflict",
+        "requirement_ids": [
+          "ucsc-profile-requirement:674348eea0c32915b5abbe31e4af3ab0608540e2d07ca64ee0fb0b7c2898df5f"
+        ],
+        "resource_ids": [
+          "reads",
+          "reference"
+        ]
+      }
+    ],
+    "observations": [],
+    "profile_contexts": [
+      {
+        "completeness": [
+          {
+            "dimension": "aliases",
+            "state": "complete"
+          },
+          {
+            "dimension": "content_identity",
+            "state": "complete"
+          },
+          {
+            "dimension": "sequence_catalog",
+            "state": "complete"
+          }
+        ],
+        "profile_id": "ucsc-preflight",
+        "provider": "ucsc",
+        "provider_context_id": "testDb@fixture-v1",
+        "sequence_traces": [
+          {
+            "local_sequence_name": "1",
+            "name_provider_source_ids": [
+              "aliases",
+              "catalog"
+            ],
+            "name_resolution_method": "authoritative_alias",
+            "name_resolution_reason": "authoritative_alias",
+            "name_resolution_state": "resolved",
+            "provider_target_name": "chr1",
+            "requirement_id": "ucsc-profile-requirement:674348eea0c32915b5abbe31e4af3ab0608540e2d07ca64ee0fb0b7c2898df5f",
+            "resource_id": "reads",
+            "sequence_binding_id": "sequence-binding:e75cea062cd704699675dc54d1bd86044b5f30327dfccc4864eccff000478581",
+            "target_anchor_capability_ids": [
+              "anchor-capability:0d79dc8b556ef59269edd9273de3342cee85df1f7968840cc6dd4db7465d6042"
+            ],
+            "target_anchor_sequence_name": "chr1",
+            "target_binding_id": "ucsc-target-binding:c7c9089b17f354d4b0b8ede38e108a63807426bc14f8ee0937d1de559e8e0bfd",
+            "target_identity_values": [
+              {
+                "scheme": "refget",
+                "value": "SQ.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+              }
+            ],
+            "target_provider_source_ids": [
+              "catalog",
+              "identity"
+            ],
+            "target_resolution_reason": "content_bound",
+            "target_resolution_state": "bound",
+            "validation_capability_id": "ucsc-binding-validation:bec1091185b481a523fc82d079edb0914f4512ad96829ac8e1076c03b5424852"
+          }
+        ],
+        "sources": [
+          {
+            "acquired_at": "2026-08-31T12:00:00+00:00",
+            "context_id": "testDb@fixture-v1",
+            "dimensions": [
+              "aliases"
+            ],
+            "id": "aliases",
+            "locator": "fixture://aliases"
+          },
+          {
+            "acquired_at": "2026-08-31T12:00:00+00:00",
+            "context_id": "testDb@fixture-v1",
+            "dimensions": [
+              "sequence_catalog"
+            ],
+            "id": "catalog",
+            "locator": "fixture://catalog"
+          },
+          {
+            "acquired_at": "2026-08-31T12:00:00+00:00",
+            "context_id": "testDb@fixture-v1",
+            "dimensions": [
+              "content_identity"
+            ],
+            "id": "identity",
+            "locator": "fixture://identity"
+          }
+        ],
+        "target": "testDb",
+        "type": "ucsc_preflight"
+      }
+    ],
+    "requirements": [
+      {
+        "id": "alignment-requirement:3719e9a5c29e9ee600a773e0f8a43b6f7244cfb230805dd6149b2eaad3b30efe",
+        "identity": {
+          "scheme": "md5",
+          "value": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        },
+        "level": "mandatory",
+        "origin": "core_format",
+        "resource_id": "reads",
+        "sequence_name": "1",
+        "type": "sequence_identity"
+      },
+      {
+        "id": "alignment-requirement:dc4cc633f6643b91f33940de79a26a4c998c0ae8ad8a35f38347652ac0369fbd",
+        "level": "mandatory",
+        "origin": "core_format",
+        "resource_id": "reads",
+        "sequence_name": "1",
+        "type": "sequence_presence"
+      },
+      {
+        "id": "alignment-requirement:f62cfea2d9782c3b0a759dc0c32a0385f50535463a80e1d11bbd74b782d425db",
+        "length": 4,
+        "level": "mandatory",
+        "origin": "core_format",
+        "resource_id": "reads",
+        "sequence_name": "1",
+        "type": "sequence_length"
+      },
+      {
+        "anchor_resource_id": "reference",
+        "id": "ucsc-profile-requirement:674348eea0c32915b5abbe31e4af3ab0608540e2d07ca64ee0fb0b7c2898df5f",
+        "level": "mandatory",
+        "origin": "profile",
+        "resource_id": "reads",
+        "sequence_name": "1",
+        "type": "sequence_binding"
+      }
+    ],
+    "sequence_bindings": [
+      {
+        "anchor_resource_id": "reference",
+        "anchor_sequence_name": "chr2",
+        "capability_ids": [
+          "alignment-binding-identity:f0460faea25ceb8accef0094461ca9ffce7582bf1f4272f5c73abda301fd86b9",
+          "anchor-capability:27d5d73cdb9b500fe2949f5f5b018737788e381cf01bba9ca3cf420544f07241"
+        ],
+        "id": "sequence-binding:e75cea062cd704699675dc54d1bd86044b5f30327dfccc4864eccff000478581",
+        "identity_values": [
+          {
+            "scheme": "md5",
+            "value": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "local_sequence_name": "1",
+        "method": "verified_sequence_identity",
+        "resource_id": "reads"
+      }
+    ],
+    "verdict": {
+      "basis_finding_ids": [
+        "finding:e27212fe1cead996e460a34f6316a6e93d25a6454d5fbc1b56a368368990564c"
+      ],
+      "condition_ids": [],
+      "constraint_states": {
+        "not_applicable": [],
+        "satisfied": [
+          "constraint:8d64cc2081c6c6ada91602e08eb4d135291614d6bc8e2fe22a87d081a18c5cad",
+          "constraint:939ec5b0c4ba8e225bd42a1325f5dd1d89c91eb0a78ec388e605312d964e18fe",
+          "constraint:f9ffe95e51f82bcaf3af6786bdc0d973ee9958136a726e0095a12806da5218d2"
+        ],
+        "unresolved": [],
+        "unsatisfied": [
+          "constraint:787740165c860b526553c48e06d854bb0d9534a337c298aebb44dde47cd9480e"
+        ]
+      },
+      "mandatory_constraint_ids": [
+        "constraint:787740165c860b526553c48e06d854bb0d9534a337c298aebb44dde47cd9480e",
+        "constraint:8d64cc2081c6c6ada91602e08eb4d135291614d6bc8e2fe22a87d081a18c5cad",
+        "constraint:939ec5b0c4ba8e225bd42a1325f5dd1d89c91eb0a78ec388e605312d964e18fe",
+        "constraint:f9ffe95e51f82bcaf3af6786bdc0d973ee9958136a726e0095a12806da5218d2"
+      ],
+      "value": "incompatible"
+    }
+  },
+  "tool_version": "0.1.0.dev0"
+}

@@ -193,7 +193,7 @@ def _scientific_result_payload(
         key=lambda item: str(item.id),
     )
     capability_index = _capability_index(bundle)
-    included_capability_ids = _trace_capability_ids(bundle)
+    included_capability_ids = _trace_capability_ids(bundle, report)
     capabilities = [
         _capability_payload(capability_index[capability_id])
         for capability_id in sorted(included_capability_ids, key=str)
@@ -316,7 +316,10 @@ def _scientific_result_payload(
     }
 
 
-def _trace_capability_ids(bundle: BundleReasoningResult) -> set[CapabilityId]:
+def _trace_capability_ids(
+    bundle: BundleReasoningResult,
+    report: CompatibilityReport,
+) -> set[CapabilityId]:
     required: set[CapabilityId] = set()
     for constraint in bundle.constraints:
         required.update(capability.id for capability in constraint.candidate_capabilities)
@@ -326,6 +329,11 @@ def _trace_capability_ids(bundle: BundleReasoningResult) -> set[CapabilityId]:
         required.add(evidence.capability_id)
     for binding in bundle.sequence_bindings:
         required.update(binding.capability_ids)
+    for context in report.profile_contexts:
+        for trace in context.sequence_traces:
+            required.update(trace.target_anchor_capability_ids)
+            if trace.validation_capability_id is not None:
+                required.add(trace.validation_capability_id)
 
     index = _capability_index(bundle)
     pending = list(required)

@@ -16,6 +16,7 @@ from refcompat.model import (
     ArtifactIdentity,
     CollectionCompleteness,
     CompatibilityReport,
+    CompatibilityVerdict,
     EvaluationRequest,
     EvaluationScope,
     Md5Digest,
@@ -84,11 +85,19 @@ _IDENTITY_SOURCE = UcscProviderSourceId("identity")
 _ACQUIRED_AT = datetime(2026, 8, 31, 12, 0, tzinfo=timezone.utc)
 _REFGET = RefgetSequenceId("SQ." + "A" * 32)
 _MD5 = Md5Digest("f1f8f4bf413b16ad135722aa4591043e")
+_REFGET_B = RefgetSequenceId("SQ." + "B" * 32)
+_MD5_B = Md5Digest("b" * 32)
 _CONTEXT_FIXTURE = (
     Path(__file__).parents[2]
     / "fixtures"
     / "milestone7"
     / "stable-ucsc-alignment-report-1.1.0.json"
+)
+_CONTENT_CONFLICT_FIXTURE = (
+    Path(__file__).parents[2]
+    / "fixtures"
+    / "milestone7"
+    / "stable-ucsc-content-conflict-report-1.1.0.json"
 )
 
 
@@ -197,6 +206,55 @@ def _contextual_report() -> CompatibilityReport:
                 SourceLocation(locator="SAM @SQ dictionary"),
             ),
         ),
+        alignment_relationships=(relationship,),
+        profile_contexts=(project_ucsc_preflight_report_context(preflight),),
+    )
+
+
+def _content_conflict_report() -> CompatibilityReport:
+    request = _request()
+    anchor = SequenceCollectionSnapshot(
+        _FASTA,
+        CollectionCompleteness.COMPLETE,
+        sequences=(
+            SnapshotSequence("chr1", 4, 0, _REFGET, _MD5),
+            SnapshotSequence("chr2", 4, 1, _REFGET_B, _MD5_B),
+        ),
+    )
+    reference_context = build_reference_context(request, anchor)
+    alignment = AlignmentHeaderSnapshot(
+        _ALIGNMENT,
+        ResourceKind.BAM,
+        AlignmentHeaderData(sequences=(SequenceDictionaryRecord("1", 4, _MD5_B),)),
+    )
+    core_contract = build_alignment_contract(alignment, reference_context)
+    preflight = project_ucsc_preflight(
+        request,
+        UcscPreflightTarget(_DB),
+        _provider_snapshot(),
+        reference_context,
+        (ResourceContract(_FASTA), core_contract),
+    )
+    bundle = reason_bundle(
+        request,
+        anchor,
+        preflight.contracts,
+        supplemental_capabilities=preflight.binding_capabilities,
+        supplemental_sequence_bindings=preflight.supplemental_sequence_bindings,
+    )
+    verdict = aggregate_bundle_verdict(bundle)
+    relationship = classify_alignment_dictionary_relationship(
+        alignment,
+        reference_context,
+        bundle_result=bundle,
+    )
+    return CompatibilityReport(
+        tool_version="0.1.0.dev0",
+        request=request,
+        analysis_status=AnalysisStatus.COMPLETE,
+        bundle=bundle,
+        verdict=verdict,
+        conflict_cores=extract_conflict_cores(bundle, verdict),
         alignment_relationships=(relationship,),
         profile_contexts=(project_ucsc_preflight_report_context(preflight),),
     )
@@ -392,6 +450,32 @@ def test_report_rejects_crosswired_profile_anchor_capability() -> None:
             report,
             profile_contexts=(replace(context, sequence_traces=(malformed_trace,)),),
         )
+
+
+def test_content_conflict_report_keeps_profile_capability_trace_resolvable() -> None:
+    report = _content_conflict_report()
+    assert report.verdict is not None
+    assert report.verdict.verdict is CompatibilityVerdict.INCOMPATIBLE
+
+    payload = compatibility_report_payload(report)
+    scientific = payload["scientific_result"]
+    assert isinstance(scientific, dict)
+    capabilities = scientific["capabilities"]
+    contexts = scientific["profile_contexts"]
+    assert isinstance(capabilities, list)
+    assert isinstance(contexts, list)
+    capability_ids = {item["id"] for item in capabilities}
+    trace = contexts[0]["sequence_traces"][0]
+
+    assert trace["validation_capability_id"] in capability_ids
+    assert set(trace["target_anchor_capability_ids"]).issubset(capability_ids)
+
+
+def test_content_conflict_known_answer_pins_stable_bytes() -> None:
+    assert (
+        render_compatibility_report_json(_content_conflict_report())
+        == _CONTENT_CONFLICT_FIXTURE.read_bytes()
+    )
 
 
 def test_human_report_surfaces_alignment_and_provider_context() -> None:
