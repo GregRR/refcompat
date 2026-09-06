@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import json
 from datetime import datetime, timezone
 from importlib import import_module
@@ -13,16 +14,26 @@ import pytest
 
 from refcompat import __version__
 from refcompat.inspectors.alignment import inspect_alignment_header
-from refcompat.inspectors.annotation import inspect_annotation_context, iter_annotation_features
+from refcompat.inspectors.annotation import (
+    AnnotationParseError,
+    inspect_annotation_context,
+    iter_annotation_features,
+)
 from refcompat.inspectors.vcf import inspect_vcf_context, iter_vcf_ref_records
 from refcompat.model import (
     AlignmentDictionaryRelationshipSummary,
+    AlignmentHeaderData,
+    AlignmentHeaderSnapshot,
+    AnalysisIssue,
+    AnalysisIssueId,
+    AnalysisIssueKind,
     AnalysisStatus,
     ArtifactIdentity,
     BundleReasoningResult,
     CollectionCompleteness,
     CompatibilityReport,
     CompatibilityVerdict,
+    CramOfflineReferenceAction,
     EvaluationRequest,
     EvaluationScope,
     Md5Digest,
@@ -34,6 +45,7 @@ from refcompat.model import (
     ResourceKind,
     SequenceBinding,
     SequenceCollectionSnapshot,
+    SequenceDictionaryRecord,
     SnapshotSequence,
 )
 from refcompat.profiles import (
@@ -60,6 +72,7 @@ from refcompat.reasoning import (
     evaluate_annotation_coordinates,
     evaluate_vcf_ref_records,
     extract_conflict_cores,
+    plan_cram_offline_reference,
     project_annotation_contract,
     project_vcf_contract,
     reason_bundle,
@@ -75,6 +88,7 @@ from refcompat.reporting import (
 
 _FIXTURES = Path(__file__).parents[1] / "fixtures"
 _M5_FIXTURES = _FIXTURES / "milestone5"
+_M7_FIXTURES = _FIXTURES / "milestone7"
 _FASTA = ResourceId("reference")
 _PEER = ResourceId("peer")
 _OUTSIDE = ResourceId("outside")
@@ -130,6 +144,123 @@ def _pysam() -> _PysamAlignmentModule:
     return cast(_PysamAlignmentModule, import_module("pysam"))
 
 
+def _schema(version: str) -> dict[str, Any]:
+    resource = files("refcompat.schemas").joinpath(f"compatibility-report-{version}.schema.json")
+    return cast(dict[str, Any], json.loads(resource.read_text(encoding="utf-8")))
+
+
+def _defined_report_ids(payload: dict[str, Any]) -> dict[str, set[str]]:
+    request = cast(dict[str, Any], payload["request"])
+    resources = cast(list[dict[str, Any]], request["resources"])
+    analysis = cast(dict[str, Any], payload["analysis"])
+    scientific = payload["scientific_result"]
+    defined: dict[str, set[str]] = {
+        "resource": {str(item["id"]) for item in resources},
+        "analysis_issue": {
+            str(item["id"]) for item in cast(list[dict[str, Any]], analysis["issues"])
+        },
+        "profile": {str(value) for value in cast(list[str], request["active_profiles"])},
+    }
+    if scientific is None:
+        return defined
+
+    result = cast(dict[str, Any], scientific)
+    direct_namespaces = {
+        "requirement": "requirements",
+        "capability": "capabilities",
+        "sequence_binding": "sequence_bindings",
+        "observation": "observations",
+        "constraint": "constraints",
+        "finding": "findings",
+        "condition": "conditions",
+        "conflict_core": "conflict_cores",
+    }
+    for namespace, field in direct_namespaces.items():
+        defined[namespace] = {
+            str(item["id"]) for item in cast(list[dict[str, Any]], result.get(field, []))
+        }
+    evidence = cast(dict[str, Any], result["evidence"])
+    defined["evidence"] = {
+        str(item["id"]) for item in cast(list[dict[str, Any]], evidence["items"])
+    }
+    contexts = cast(list[dict[str, Any]], result.get("profile_contexts", []))
+    defined["provider_context"] = {
+        str(context["provider_context_id"])
+        for context in contexts
+        if context["provider_context_id"] is not None
+    }
+    defined["provider_source"] = {
+        str(source["id"])
+        for context in contexts
+        for source in cast(list[dict[str, Any]], context["sources"])
+    }
+    return defined
+
+
+def _reference_namespace(key: str) -> str | None:
+    if key in {"target_binding_id", "policy_id"}:
+        return None
+    if key == "context_id" or key.endswith("provider_context_id"):
+        return "provider_context"
+    for namespace in (
+        "provider_source",
+        "sequence_binding",
+        "analysis_issue",
+        "conflict_core",
+        "requirement",
+        "capability",
+        "observation",
+        "constraint",
+        "evidence",
+        "finding",
+        "condition",
+        "resource",
+        "profile",
+    ):
+        if key == f"{namespace}_id" or key == f"{namespace}_ids":
+            return namespace
+        if key.endswith(f"_{namespace}_id") or key.endswith(f"_{namespace}_ids"):
+            return namespace
+    return None
+
+
+def _assert_referentially_closed(payload: dict[str, Any]) -> None:
+    defined = _defined_report_ids(payload)
+
+    def walk(value: object, *, key: str | None = None) -> None:
+        if key is not None:
+            namespace = _reference_namespace(key)
+            if namespace is not None:
+                candidates = value if isinstance(value, list) else [value]
+                unresolved = {
+                    str(candidate)
+                    for candidate in candidates
+                    if candidate is not None and str(candidate) not in defined.get(namespace, set())
+                }
+                assert not unresolved, f"dangling {namespace} reference(s): {sorted(unresolved)}"
+        if isinstance(value, dict):
+            for child_key, child in value.items():
+                if child_key != "id":
+                    walk(child, key=child_key)
+        elif isinstance(value, list):
+            for child in value:
+                walk(child)
+
+    walk(payload)
+
+
+def _assert_1_0_core_compatible(payload: dict[str, Any]) -> None:
+    downgraded = copy.deepcopy(payload)
+    report_format = cast(dict[str, Any], downgraded["report_format"])
+    report_format["schema_version"] = "1.0.0"
+    scientific = downgraded["scientific_result"]
+    if scientific is not None:
+        result = cast(dict[str, Any], scientific)
+        for field in ("observations", "alignment_relationships", "profile_contexts"):
+            result.pop(field)
+    _jsonschema().Draft202012Validator(_schema("1.0.0")).validate(downgraded)
+
+
 def _resource(resource_id: ResourceId, kind: ResourceKind, path: Path) -> Resource:
     return Resource(resource_id, kind, ArtifactIdentity(path), display_name=path.name)
 
@@ -165,26 +296,33 @@ def _report(
 def _assert_report_surfaces(
     report: CompatibilityReport,
     *,
-    verdict: CompatibilityVerdict,
+    verdict: CompatibilityVerdict | None,
     exit_code: WorkflowExitCode,
+    status: AnalysisStatus = AnalysisStatus.COMPLETE,
 ) -> dict[str, Any]:
     serialized = render_compatibility_report_json(report)
     payload = cast(dict[str, Any], json.loads(serialized))
-    schema_resource = files("refcompat.schemas").joinpath(
-        f"compatibility-report-{REPORT_SCHEMA_VERSION}.schema.json"
-    )
-    schema = json.loads(schema_resource.read_text(encoding="utf-8"))
-    _jsonschema().Draft202012Validator(schema).validate(payload)
+    _jsonschema().Draft202012Validator(_schema(REPORT_SCHEMA_VERSION)).validate(payload)
+    _assert_referentially_closed(payload)
+    _assert_1_0_core_compatible(payload)
 
     report_format = cast(dict[str, Any], payload["report_format"])
-    scientific = cast(dict[str, Any], payload["scientific_result"])
+    analysis = cast(dict[str, Any], payload["analysis"])
     assert report_format["schema_version"] == REPORT_SCHEMA_VERSION
-    verdict_payload = cast(dict[str, Any], scientific["verdict"])
-    assert verdict_payload["value"] == verdict.value
+    assert analysis["status"] == status.value
     assert render_compatibility_report_json(report) == serialized
     human = render_compatibility_report_human(report)
-    assert f"- compatibility verdict: {verdict.value}" in human
     assert workflow_exit_code(report) is exit_code
+
+    scientific = payload["scientific_result"]
+    if verdict is None:
+        assert scientific is None
+        assert "- compatibility verdict: unavailable" in human
+    else:
+        scientific_result = cast(dict[str, Any], scientific)
+        verdict_payload = cast(dict[str, Any], scientific_result["verdict"])
+        assert verdict_payload["value"] == verdict.value
+        assert f"- compatibility verdict: {verdict.value}" in human
     return payload
 
 
@@ -486,3 +624,147 @@ def test_ucsc_profile_vcf_report_path_surfaces_provider_trace(tmp_path: Path) ->
     assert trace["name_resolution_method"] == "authoritative_alias"
     assert trace["provider_target_name"] == "chr1"
     assert trace["target_resolution_state"] == "bound"
+
+
+@pytest.mark.parametrize(
+    "fixture_path",
+    sorted(_M7_FIXTURES.glob("*.json")),
+    ids=lambda path: path.name,
+)
+def test_milestone7_report_fixtures_are_referentially_closed(fixture_path: Path) -> None:
+    payload = cast(
+        dict[str, Any],
+        json.loads(fixture_path.read_text(encoding="utf-8")),
+    )
+
+    _assert_referentially_closed(payload)
+
+
+def test_referential_closure_detects_dangling_profile_capability() -> None:
+    payload = cast(
+        dict[str, Any],
+        json.loads(
+            (_M7_FIXTURES / "stable-ucsc-content-conflict-report-1.1.0.json").read_text(
+                encoding="utf-8"
+            )
+        ),
+    )
+    scientific = cast(dict[str, Any], payload["scientific_result"])
+    contexts = cast(list[dict[str, Any]], scientific["profile_contexts"])
+    traces = cast(list[dict[str, Any]], contexts[0]["sequence_traces"])
+    traces[0]["target_anchor_capability_ids"] = ["missing-capability"]
+
+    with pytest.raises(AssertionError, match="dangling capability reference"):
+        _assert_referentially_closed(payload)
+
+
+def test_deferred_cram_reference_path_is_partial_with_retained_incompatibility() -> None:
+    anchor_resource = Resource(
+        _FASTA,
+        ResourceKind.FASTA,
+        ArtifactIdentity(Path("missing-reference.fa")),
+    )
+    cram_resource = Resource(
+        _PEER,
+        ResourceKind.CRAM,
+        ArtifactIdentity(Path("reads.cram")),
+    )
+    request = EvaluationRequest(
+        resources=(anchor_resource, cram_resource),
+        anchor_resource_id=_FASTA,
+        scope=EvaluationScope((_FASTA, _PEER)),
+    )
+    anchor = _anchor_snapshot()
+    context = build_reference_context(request, anchor)
+    snapshot = AlignmentHeaderSnapshot(
+        _PEER,
+        ResourceKind.CRAM,
+        AlignmentHeaderData(sequences=(SequenceDictionaryRecord("chr1", 5, _MD5),)),
+    )
+    contract = build_alignment_contract(snapshot, context)
+    bundle = reason_bundle(request, anchor, (ResourceContract(_FASTA), contract))
+    verdict = aggregate_bundle_verdict(bundle)
+    assert verdict.verdict is CompatibilityVerdict.INCOMPATIBLE
+
+    plan = plan_cram_offline_reference(
+        snapshot,
+        context,
+        request,
+        bundle_result=bundle,
+    )
+    assert plan.action is CramOfflineReferenceAction.DEFER_REFERENCE_DEPENDENT_DECODING
+
+    relationship = classify_alignment_dictionary_relationship(
+        snapshot,
+        context,
+        bundle_result=bundle,
+    )
+    report = CompatibilityReport(
+        tool_version=__version__,
+        request=request,
+        analysis_status=AnalysisStatus.PARTIAL,
+        analysis_issues=(
+            AnalysisIssue(
+                AnalysisIssueId("cram-reference-dependent-decoding-deferred"),
+                AnalysisIssueKind.INCOMPLETE_OPERATION,
+                "reference-dependent CRAM decoding was deferred",
+                (_PEER,),
+            ),
+        ),
+        bundle=bundle,
+        verdict=verdict,
+        conflict_cores=extract_conflict_cores(bundle, verdict),
+        alignment_relationships=(relationship,),
+    )
+
+    payload = _assert_report_surfaces(
+        report,
+        verdict=CompatibilityVerdict.INCOMPATIBLE,
+        exit_code=WorkflowExitCode.PARTIAL,
+        status=AnalysisStatus.PARTIAL,
+    )
+    analysis = cast(dict[str, Any], payload["analysis"])
+    assert cast(list[dict[str, Any]], analysis["issues"])[0]["kind"] == "incomplete_operation"
+
+
+def test_malformed_annotation_path_is_invalid_input_without_scientific_result(
+    tmp_path: Path,
+) -> None:
+    malformed_path = tmp_path / "malformed.gtf"
+    malformed_path.write_text(">chr1\nACGT\n", encoding="utf-8")
+    anchor_resource = Resource(
+        _FASTA,
+        ResourceKind.FASTA,
+        ArtifactIdentity(Path("reference.fa")),
+    )
+    annotation = _resource(_PEER, ResourceKind.GTF, malformed_path)
+    request = EvaluationRequest(
+        resources=(anchor_resource, annotation),
+        anchor_resource_id=_FASTA,
+        scope=EvaluationScope((_FASTA, _PEER)),
+    )
+
+    with pytest.raises(AnnotationParseError) as exc_info:
+        inspect_annotation_context(annotation)
+
+    report = CompatibilityReport(
+        tool_version=__version__,
+        request=request,
+        analysis_status=AnalysisStatus.INVALID_INPUT,
+        analysis_issues=(
+            AnalysisIssue(
+                AnalysisIssueId("annotation-parse-error"),
+                AnalysisIssueKind.INVALID_INPUT,
+                str(exc_info.value),
+                (_PEER,),
+            ),
+        ),
+    )
+
+    payload = _assert_report_surfaces(
+        report,
+        verdict=None,
+        exit_code=WorkflowExitCode.INVALID_INPUT,
+        status=AnalysisStatus.INVALID_INPUT,
+    )
+    assert payload["scientific_result"] is None

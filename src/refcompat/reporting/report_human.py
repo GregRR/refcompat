@@ -149,7 +149,7 @@ def _render_alignment_relationships(
         lines.append("")
         return
 
-    for relationship in relationships:
+    for relationship in sorted(relationships, key=lambda item: str(item.alignment_resource_id)):
         lines.append(
             f"- {relationship.alignment_resource_id} -> {relationship.fasta_resource_id}: "
             f"membership={relationship.membership.value}; naming={relationship.naming.value}; "
@@ -230,7 +230,15 @@ def _render_profile_contexts(
         lines.append("")
         return
 
-    for context in sorted(contexts, key=lambda item: str(item.profile_id)):
+    for context in sorted(
+        contexts,
+        key=lambda item: (
+            item.kind.value,
+            str(item.profile_id),
+            item.target,
+            str(item.provider_context_id or ""),
+        ),
+    ):
         provider_context = (
             str(context.provider_context_id)
             if context.provider_context_id is not None

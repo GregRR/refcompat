@@ -599,7 +599,7 @@ def _profile_context_payload(context: ProfileProvenanceContext) -> dict[str, obj
         ),
         "completeness": [
             {"dimension": item.dimension.value, "state": item.state.value}
-            for item in sorted(context.completeness, key=lambda item: item.dimension)
+            for item in sorted(context.completeness, key=lambda item: item.dimension.value)
         ],
         "sources": [
             _provider_source_payload(source)

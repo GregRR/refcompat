@@ -29,6 +29,7 @@ from refcompat.model import (
     ProfileTargetResolutionReason,
     ProfileTargetResolutionState,
     ProviderCompletenessState,
+    ProviderContextId,
     ProviderEvidenceDimension,
     RefgetSequenceId,
     Resource,
@@ -489,3 +490,81 @@ def test_human_report_surfaces_alignment_and_provider_context() -> None:
     assert "sequence_catalog=complete" in rendered
     assert "provider target: chr1" in rendered
     assert "target resolution: bound/content_bound" in rendered
+
+
+def test_human_profile_context_order_is_canonical() -> None:
+    report = _contextual_report()
+    first = report.profile_contexts[0]
+    second_context_id = ProviderContextId("testDb@fixture-v2")
+    second = replace(
+        first,
+        target="otherDb",
+        provider_context_id=second_context_id,
+        sources=tuple(replace(source, context_id=second_context_id) for source in first.sources),
+    )
+
+    forward = replace(report, profile_contexts=(first, second))
+    reverse = replace(report, profile_contexts=(second, first))
+
+    assert render_compatibility_report_human(forward) == render_compatibility_report_human(reverse)
+    assert render_compatibility_report_json(forward) == render_compatibility_report_json(reverse)
+
+
+def test_human_alignment_relationship_order_is_canonical() -> None:
+    first_id = ResourceId("reads-a")
+    second_id = ResourceId("reads-b")
+    request = EvaluationRequest(
+        resources=(
+            Resource(_FASTA, ResourceKind.FASTA, ArtifactIdentity(path=Path("reference.fa"))),
+            Resource(first_id, ResourceKind.BAM, ArtifactIdentity(path=Path("reads-a.bam"))),
+            Resource(second_id, ResourceKind.BAM, ArtifactIdentity(path=Path("reads-b.bam"))),
+        ),
+        anchor_resource_id=_FASTA,
+        scope=EvaluationScope((_FASTA, first_id, second_id)),
+    )
+    anchor = _anchor_snapshot()
+    reference_context = build_reference_context(request, anchor)
+    first_snapshot = AlignmentHeaderSnapshot(
+        first_id,
+        ResourceKind.BAM,
+        AlignmentHeaderData(sequences=(SequenceDictionaryRecord("chr1", 4, _MD5),)),
+    )
+    second_snapshot = AlignmentHeaderSnapshot(
+        second_id,
+        ResourceKind.BAM,
+        AlignmentHeaderData(sequences=(SequenceDictionaryRecord("chr1", 4, _MD5),)),
+    )
+    first_contract = build_alignment_contract(first_snapshot, reference_context)
+    second_contract = build_alignment_contract(second_snapshot, reference_context)
+    bundle = reason_bundle(
+        request,
+        anchor,
+        (ResourceContract(_FASTA), first_contract, second_contract),
+    )
+    verdict = aggregate_bundle_verdict(bundle)
+    first_relationship = classify_alignment_dictionary_relationship(
+        first_snapshot,
+        reference_context,
+        bundle_result=bundle,
+    )
+    second_relationship = classify_alignment_dictionary_relationship(
+        second_snapshot,
+        reference_context,
+        bundle_result=bundle,
+    )
+    base = CompatibilityReport(
+        tool_version="0.1.0.dev0",
+        request=request,
+        analysis_status=AnalysisStatus.COMPLETE,
+        bundle=bundle,
+        verdict=verdict,
+        conflict_cores=extract_conflict_cores(bundle, verdict),
+        alignment_relationships=(first_relationship, second_relationship),
+    )
+    reverse = replace(
+        base,
+        alignment_relationships=(second_relationship, first_relationship),
+    )
+
+    assert render_compatibility_report_human(base) == render_compatibility_report_human(reverse)
+    assert render_compatibility_report_json(base) == render_compatibility_report_json(reverse)

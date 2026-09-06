@@ -103,7 +103,12 @@ class ProviderDimensionCompleteness:
 
 @dataclass(frozen=True, slots=True)
 class ProviderSourceProvenance:
-    """Report-owned provenance for one provider source artifact or endpoint."""
+    """Report-owned provenance for one provider source artifact or endpoint.
+
+    ``locator`` is portable provenance (for example a URI, record identifier, or
+    opaque source token), not a resource filesystem path. Producers must not put
+    machine-local filesystem paths in this stable-report field.
+    """
 
     id: ProviderSourceId
     context_id: ProviderContextId
@@ -130,7 +135,13 @@ class ProviderSourceProvenance:
 
 @dataclass(frozen=True, slots=True)
 class ProfileSequenceTrace:
-    """Report-owned trace of one profile-origin sequence-binding requirement."""
+    """Report-owned trace of one profile-origin sequence-binding requirement.
+
+    ``target_binding_id`` is an opaque provider-supplied correlation token and is
+    not independently verified by RefCompat. ``provider_target_name`` is retained
+    as provider name-source provenance and is intentionally distinct from the
+    independently checked target-anchor content identity.
+    """
 
     requirement_id: RequirementId
     resource_id: ResourceId

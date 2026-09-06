@@ -1,6 +1,6 @@
 # Milestone 7 compatibility report and workflow contract
 
-**Status:** contract pinned in Slice 1; immutable analysis-status/report-root model implemented in Slice 2; explicit deterministic draft JSON projection implemented in Slice 3; Slice 4 internal scientific/API review hardening plus the first stable schema freeze are complete; Slice 5 report-owned relationship/provenance context is implemented; Slice 6 deterministic human rendering plus the stable whole-bundle workflow exit policy is implemented; Slice 7 representative end-to-end report paths are integrated; and the Slice 8 adversarial/backward-compatibility internal review is complete. That review hardened direct profile-context capability trace retention and schema-version regression coverage without changing scientific verdict or workflow semantics. The first stable core report remains exact schema `1.0.0`; the current additive stable report is `1.1.0`, draft revision 3 remains a separate provisional surface with no stable compatibility guarantee, and the required external M7 milestone-boundary review remains pending.
+**Status:** Milestone 7 complete and independently reviewed. Exact stable schema `1.0.0` remains retained, current additive stable schema `1.1.0` is the machine contract, and draft revision 3 remains separately provisional. The external milestone-boundary review reproduced the full gate, found no MAJOR issue, assessed the repository `SAFE TO CLOSE M7`, and the accepted MINOR hardening is integrated.
 
 Milestone 7 stabilizes how RefCompat exposes already-established compatibility
 reasoning to people, automation, and downstream software. It does not add a new
@@ -169,9 +169,16 @@ inputs.
 - Local filesystem artifact paths are not serialized as stable resource
   identity. Caller-provided resource IDs and display names remain caller-visible
   context, while independently available byte size/digest facts may be emitted.
+- `SourceLocation.locator` and provider-source `locator` values are stable-report
+  provenance, not resource filesystem paths. Producers must use portable record
+  identifiers, URIs, or opaque provenance tokens and must not place machine-local
+  filesystem paths in those fields.
 - JSON output uses UTF-8 and must not emit non-standard NaN/Infinity values.
 - Human rendering may reorder information for readability only when it does not
-  change the machine-report semantics.
+  change the machine-report semantics. Report-global profile contexts and alignment
+  relationship summaries are canonicalized by the same total keys used by stable
+  JSON, while scientifically meaningful order within one relationship (for example
+  BAM/CRAM sequence resolution order) is preserved.
 
 Known-answer fixtures must pin deterministic bytes or normalized JSON values for
 representative reports before the schema is frozen.
@@ -197,6 +204,14 @@ transitive identity-absence provenance; the serializer does not emit the complet
 anchor capability graph merely because it exists internally. Source-observation
 IDs are retained where already present, and Slice 5 emits any report-owned
 observation/provenance records explicitly supplied to the validated report root.
+
+`ProfileSequenceTrace.target_binding_id` is an opaque provider-supplied correlation
+token for provider-side traceability only; RefCompat does not independently verify
+it and downstream consumers must not treat it as a RefCompat-owned binding ID.
+`provider_target_name` is retained as name-source provenance and is likewise not
+cross-checked against the anchor sequence name: an authoritative alias may
+legitimately differ. Independently verified target content is represented by the
+target-anchor capability/identity fields instead.
 
 `compatibility_report_payload()` and `render_compatibility_report_json()` now
 identify the current additive stable body as schema `1.1.0`. Exact schema
@@ -234,11 +249,13 @@ its refget identity regex was originally over-escaped and rejected the already-
 defined serializer's valid `SQ.<32-character>` representation. Slice 8 also
 corrects the 1.1.0 schema's descriptive label from `1.0.0` to `1.1.0`; its
 `$id`, validation rules, and emitted report bytes were already 1.1.0 and are
-unchanged. RefCompat is still pre-release and no package release has shipped
-these schemas, so those checked-in validators/metadata are corrected in place
-before the first release without changing emitted JSON or field meaning. Once a
-schema version has shipped in a package release, its checked-in bytes are
-immutable; the same kind of correction then requires a PATCH schema version.
+unchanged. The post-review locator descriptions likewise add normative portability
+metadata without changing validation rules, emitted values, or field shape.
+RefCompat is still pre-release and no package release has shipped these schemas,
+so those checked-in validators/metadata are corrected in place before the first
+release without changing emitted JSON or field meaning. Once a schema version has
+shipped in a package release, its checked-in bytes are immutable; the same kind of
+correction then requires a PATCH schema version.
 
 Version compatibility rules are:
 
@@ -425,9 +442,20 @@ Slice 8 fixes that serializer reachability rule; it does not change reasoning,
 evidence classification, verdict aggregation, workflow exits, schema shape, or
 draft/stable version numbers.
 
-The internal M7 scientific/API review is therefore complete. The milestone is
-not closed until the required independent external milestone-boundary review is
-complete and any accepted findings are resolved.
+The internal M7 scientific/API review is therefore complete. The subsequent
+independent milestone-boundary review reproduced the full gate, found no MAJOR
+issue, and assessed the repository `SAFE TO CLOSE M7`. Its accepted MINOR
+follow-up is deliberately narrow: general referential-closure regression
+coverage, normative portable-locator obligations, deterministic human ordering,
+PARTIAL/INVALID_INPUT reporting-pipeline examples, and live exact-1.0.0 core
+downgrade validation. No accepted finding requires new scientific reasoning or a
+stable schema-shape change.
+
+The new PARTIAL/INVALID_INPUT integration examples exercise the stable reporting
+pipeline over real parser/reasoning outcomes, but RefCompat still has no production
+`CompatibilityReport` assembler. The first CLI/workflow producer remains responsible
+for proving that omitted work cannot negate any scientific result retained in a
+`PARTIAL` report; M7 does not attempt to infer that counterfactual structurally.
 
 ## 12. Non-goals for Milestone 7
 

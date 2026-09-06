@@ -94,5 +94,10 @@ See [`../docs/check-specifications.md`](../docs/check-specifications.md) for the
   content-conflict known answer whose profile validation/target-anchor capability references must
   remain resolvable in the serialized capability partition, exact 1.0.0/1.1.0 cross-version
   rejection, additive-core equivalence checks for compatible and incompatible fixtures, nested
-  profile-trace schema closure, and schema self-identification coverage. Draft revision 3 remains
-  separately provisional.
+  profile-trace schema closure, and schema self-identification coverage. Post-review hardening
+  additionally walks every M7 fixture and every integration-built stable payload for report-ID
+  referential closure, validates each integration report's additive core against exact schema
+  `1.0.0`, exercises a deferred CRAM reference-dependent path as `PARTIAL + INCOMPATIBLE` and a
+  malformed-annotation path as `INVALID_INPUT` without a scientific result, pins canonical human
+  ordering for multiple alignment/profile contexts, and documents portable provenance locators.
+  Draft revision 3 remains separately provisional.

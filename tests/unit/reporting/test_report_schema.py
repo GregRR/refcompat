@@ -97,6 +97,22 @@ def test_stable_schema_is_packaged_and_self_identifying() -> None:
     assert report_format["schema_version"] == {"const": REPORT_SCHEMA_VERSION}
 
 
+def test_stable_schema_documents_portable_provenance_locators() -> None:
+    defs = cast(dict[str, Any], _schema()["$defs"])
+    provider_source = cast(dict[str, Any], defs["providerSource"])
+    provider_locator = cast(
+        dict[str, Any], cast(dict[str, Any], provider_source["properties"])["locator"]
+    )
+    source_location = cast(dict[str, Any], defs["sourceLocation"])
+    source_locator = cast(
+        dict[str, Any], cast(dict[str, Any], source_location["properties"])["locator"]
+    )
+
+    for locator in (provider_locator, source_locator):
+        description = cast(str, locator["description"])
+        assert "must not be a machine-local filesystem path" in description
+
+
 def test_previous_stable_schema_remains_packaged_and_exact() -> None:
     previous_schema = _schema(_PREVIOUS_SCHEMA_VERSION)
     assert previous_schema["$id"] == ("urn:refcompat:schema:compatibility-report:1.0.0")

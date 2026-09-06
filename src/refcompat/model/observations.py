@@ -23,8 +23,10 @@ class SourceLocation:
     """Format-neutral location of an observation within a supplied resource.
 
     An inspector may identify a 1-based source line, a 0-based logical record
-    index, a field/tag name, a human-readable locator, or a useful combination
-    of those values.
+    index, a field/tag name, a human-readable provenance locator, or a useful
+    combination of those values. ``locator`` is report provenance rather than a
+    resource filesystem path; producers must use a portable record identifier,
+    URI, or opaque token and must not place machine-local filesystem paths here.
     """
 
     line_number: int | None = None

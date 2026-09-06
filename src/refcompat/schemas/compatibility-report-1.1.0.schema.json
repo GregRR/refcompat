@@ -1262,7 +1262,8 @@
           "$ref": "#/$defs/id"
         },
         "locator": {
-          "$ref": "#/$defs/nonEmptyString"
+          "$ref": "#/$defs/nonEmptyString",
+          "description": "Portable provider-source provenance locator (for example a URI, record identifier, or opaque token); must not be a machine-local filesystem path."
         }
       },
       "required": [
@@ -1871,6 +1872,7 @@
           ]
         },
         "locator": {
+          "description": "Portable source-location provenance locator (for example a record identifier, URI, or opaque token); must not be a machine-local filesystem path.",
           "oneOf": [
             {
               "$ref": "#/$defs/nonEmptyString"
