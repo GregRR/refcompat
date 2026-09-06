@@ -164,6 +164,40 @@ Planned slices:
 
 The normative Milestone 7 contract is recorded in [`docs/compatibility-report-contract.md`](docs/compatibility-report-contract.md).
 
+## Milestone 8 — Native BCF compatibility parity
+
+**Goal:** accept BCF2 as a first-class binary encoding of the existing VCF logical resource model, carry it through the same exhaustive reference-context and REF-to-FASTA reasoning, and expose the encoding honestly through the stable report without inventing BCF-specific scientific semantics.
+
+**Implementation status:** contract pinned; implementation not yet started.
+
+Committed scope:
+
+- Add a distinct `ResourceKind.BCF`. `ResourceKind.VCF` continues to mean textual VCF (plain or BGZF-compressed); RefCompat must not silently reinterpret a declared VCF resource as BCF or vice versa.
+- Reuse `pysam.VariantFile` as the parser boundary. The declared resource kind must agree with the provider-detected encoding (`is_bcf`), mirroring the existing BAM/CRAM declared-kind invariant.
+- Treat BCF as an encoding of the VCF logical model, not a second variant compatibility model. Reuse `VcfContextSnapshot`, `VcfRefRecord`, RCHECK-050 requirements/capabilities, verified sequence binding, exhaustive REF comparison, mismatch-pattern interpretation, generic bundle reasoning, and the four existing verdicts.
+- Preserve the normalized VCF header semantics exposed by HTSlib/pysam. For BCF, `VcfHeaderData.file_format` remains the logical VCF header version (for example `VCFv4.2`); binary encoding is represented by the resource kind rather than by rewriting that field.
+- Preserve logical VCF coordinates across the provider boundary. Although BCF stores POS internally as a zero-based integer, `pysam.VariantRecord.pos` exposes the one-based VCF coordinate; RefCompat must copy that logical value unchanged into `VcfRefRecord.position` so existing REF interval conversion remains correct.
+- Keep exhaustive traversal sequential and index-independent. BCF compatibility checks must not require CSI/tabix merely because the format can be indexed.
+- Do not inspect or reason over BCF-specific INFO/FORMAT/genotype encoding, dictionary indexes/`IDX`, compression blocks, or record layout unless future reference-compatibility evidence requires them. M8 consumes only the same reference-relevant logical fields already used from VCF.
+- Do not add `Bcf*` scientific requirement/evidence/verdict types merely to mirror the file encoding. If a BCF case needs a new scientific distinction, that distinction must first be justified as format-neutral or as a genuinely different compatibility requirement.
+- Extend UCSC-preflight and whole-bundle paths by reusing the same validated variant reasoning used for VCF. Provider naming evidence must remain subordinate to independent target-content proof exactly as in M6.
+- Advance the current stable compatibility-report schema from `1.1.0` to `2.0.0` when BCF becomes serializable. M7 explicitly defines widening the existing closed `ResourceKind` enum as a MAJOR schema change; M8 must honor that contract rather than weakening `vcf` to mean two encodings or silently widening a `1.x` schema. Exact `1.0.0` and `1.1.0` schemas remain retained and immutable.
+- Advance the provisional draft report revision when BCF becomes emit-able, because the allowed resource-kind value set changes even though the body shape does not need to change.
+- Use synthetic/reproducible BCF fixtures generated through the pinned pysam/HTSlib boundary or clearly redistributable checked-in fixtures. Ordinary quality gates remain offline and deterministic.
+- Perform an internal scientific/API review after the first BCF end-to-end compatible and incompatible report paths are clean, then an independent milestone-boundary review before Milestone 9.
+
+Planned slices:
+
+1. pin the BCF/VCF encoding boundary, reuse policy, coordinate semantics, schema-version consequence, and exit criteria; **implemented by this contract slice**
+2. add first-class BCF resource identity, strict provider-format validation, BCF context/REF observation, stable report schema `2.0.0`, draft revision update, and a minimal known-answer BCF report;
+3. prove RCHECK-050 parity through exhaustive BCF REF validation, declared-MD5 binding, conflict-pattern interpretation, generic contract/evidence projection, and whole-bundle verdicts without adding BCF-specific reasoning;
+4. exercise scoped, incompatible, indeterminate, and UCSC-profile BCF paths through stable JSON/schema, human rendering, and workflow exits, including VCF↔BCF encoding-mismatch and coordinate off-by-one adversarial cases;
+5. close with internal adversarial/backward-compatibility review, retained `1.0.0`/`1.1.0` schema immutability checks, and an external milestone-boundary review.
+
+**Exit criteria:** BCF2 resources are represented distinctly from textual VCF, parser-detected encoding must match the declared resource kind, provider-normalized BCF headers and records feed the existing VCF logical models, one-based logical POS and exhaustive REF comparison are preserved exactly, compatible/incompatible/indeterminate/scoped/profile outcomes reuse the existing RCHECK-050 and generic bundle semantics, stable machine output identifies BCF through exact schema `2.0.0` while retained `1.x` schemas remain unchanged, no BCF-specific verdict or duplicate scientific reasoner is introduced, and internal plus external milestone reviews are complete.
+
+The normative Milestone 8 contract is recorded in [`docs/bcf-compatibility.md`](docs/bcf-compatibility.md).
+
 ## v1.0 target
 
 A stable v1.0 should additionally include:
