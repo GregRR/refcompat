@@ -1,6 +1,6 @@
 # Milestone 7 compatibility report and workflow contract
 
-**Status:** contract pinned in Slice 1; immutable analysis-status/report-root model implemented in Slice 2; explicit deterministic draft JSON projection implemented in Slice 3; Slice 4 internal scientific/API review hardening plus the first stable schema freeze are complete; Slice 5 report-owned relationship/provenance context is implemented; and Slice 6 deterministic human rendering plus the stable whole-bundle workflow exit policy is implemented. The first stable core report remains exact schema `1.0.0`; the current additive stable report is `1.1.0`, and draft revision 3 remains a separate provisional surface with no stable compatibility guarantee.
+**Status:** contract pinned in Slice 1; immutable analysis-status/report-root model implemented in Slice 2; explicit deterministic draft JSON projection implemented in Slice 3; Slice 4 internal scientific/API review hardening plus the first stable schema freeze are complete; Slice 5 report-owned relationship/provenance context is implemented; Slice 6 deterministic human rendering plus the stable whole-bundle workflow exit policy is implemented; and Slice 7 representative end-to-end report paths are integrated. The first stable core report remains exact schema `1.0.0`; the current additive stable report is `1.1.0`, and draft revision 3 remains a separate provisional surface with no stable compatibility guarantee.
 
 Milestone 7 stabilizes how RefCompat exposes already-established compatibility
 reasoning to people, automation, and downstream software. It does not add a new
@@ -373,7 +373,28 @@ A shell wrapper can then choose deliberately among `1` (incompatible), `3`
 (indeterminate), and `4` (partial) instead of collapsing them into one generic
 failure. Code `5` is reserved for failures where no report was produced.
 
-## 10. Non-goals for Milestone 7
+## 10. Representative end-to-end coverage
+
+Slice 7 verifies that already-established format/profile reasoning survives the complete
+reporting boundary without reinterpretation. The representative integration paths cover:
+
+- a scoped VCF with exhaustive REF validation and an otherwise-positive result qualified as
+  `COMPATIBLE_WITH_CONDITIONS`;
+- both BAM and CRAM header dictionaries, including descriptive membership/naming/order/M5
+  relationship context beside a positive generic verdict;
+- a GTF coordinate conflict that remains `INCOMPATIBLE` with decisive finding/conflict-core
+  trace;
+- an unresolved GTF cross-name relationship that remains a **complete** `INDETERMINATE`
+  analysis rather than becoming partial execution; and
+- a UCSC-preflight VCF authoritative-alias path whose provider/profile provenance and verified
+  sequence binding survive into the report-owned context.
+
+Each path assembles `CompatibilityReport` from the existing reasoning result, renders stable
+JSON, validates that JSON against the packaged exact `1.1.0` schema, renders the human view,
+and checks the stable workflow exit mapping. The integration pass does not change schema
+`1.1.0`, draft revision 3, verdict semantics, or the provisional Milestone 1 CLI behavior.
+
+## 11. Non-goals for Milestone 7
 
 M7 does not, merely because reporting is being stabilized:
 
@@ -389,7 +410,7 @@ M7 does not, merely because reporting is being stabilized:
 
 Those remain separate roadmap capabilities.
 
-## 11. Planned implementation slices
+## 12. Planned implementation slices
 
 1. **Contract** — pin this report/status/schema/workflow boundary.
 2. **Report root** — add immutable analysis-status/report-root models and
@@ -409,11 +430,11 @@ Those remain separate roadmap capabilities.
    diagnostics unchanged until explicitly migrated. **Implemented.**
 7. **Representative end-to-end paths** — exercise VCF, BAM/CRAM, annotation,
    explicit scope, UCSC profile, incompatible, and indeterminate reports through
-   the same root model/serialization.
+   the same root model/serialization. **Implemented.**
 8. **Exit/review** — adversarial schema/traceability/backward-compatibility
    fixtures, final internal review, and external milestone-boundary review.
 
-## 12. Exit criteria
+## 13. Exit criteria
 
 Milestone 7 is complete only when:
 

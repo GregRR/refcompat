@@ -87,5 +87,8 @@ See [`../docs/check-specifications.md`](../docs/check-specifications.md) for the
   observations, alignment relationship summaries, provider source provenance, and profile
   sequence trace. Slice 6 additionally pins deterministic human rendering, omission of machine-local
   artifact paths from human output, context/provenance presentation, and the stable whole-bundle
-  workflow exit classes while retaining the Milestone 1 diagnostic exit regressions. Draft revision
-  3 remains separately provisional.
+  workflow exit classes while retaining the Milestone 1 diagnostic exit regressions. Slice 7 adds
+  representative integration coverage that carries scoped VCF, BAM/CRAM dictionary relationship,
+  GTF incompatible/indeterminate, and UCSC-profile VCF results through report assembly, exact
+  stable-schema validation, JSON/human rendering, and workflow exit mapping. Draft revision 3
+  remains separately provisional.
