@@ -2,7 +2,8 @@
 
 Milestone 3 projects already-observed VCF facts into RefCompat's format-neutral
 reasoning model while keeping VCF-specific pattern interpretation outside the
-core constraint layer.
+core constraint layer. Milestone 8 Slice 3 pins that BCF2-decoded logical VCF
+facts use this same projection unchanged.
 
 ## Inputs
 

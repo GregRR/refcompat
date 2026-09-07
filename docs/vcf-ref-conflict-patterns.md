@@ -1,9 +1,11 @@
 # VCF REF conflict-pattern interpretation
 
-Milestone 3 now adds a VCF-specific descriptive interpretation over the already
+Milestone 3 now adds a VCF-logical-model descriptive interpretation over the already
 exhaustive direct `VcfRefValidationResult`. This layer explains how proven REF
 mismatches are distributed without changing the generic hard-conflict rule or
-introducing a mismatch-rate threshold.
+introducing a mismatch-rate threshold. Milestone 8 Slice 3 pins the same
+interpretation for BCF2-decoded logical records without an encoding-specific
+pattern type.
 
 ## Boundary
 

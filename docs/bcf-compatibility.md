@@ -1,6 +1,6 @@
 # Milestone 8 native BCF compatibility contract
 
-**Status:** Slices 1–2 implemented; RCHECK-050 scientific parity and end-to-end BCF reasoning remain pending.
+**Status:** Slices 1–3 implemented; core RCHECK-050 BCF scientific parity is pinned, while scoped/profile/reporting parity and milestone review remain pending.
 
 Milestone 8 adds BCF2 as a first-class resource encoding while preserving the scientific semantics already established for VCF in RCHECK-050. The milestone is intentionally an encoding/parity milestone, not a new variant-compatibility reasoner.
 
@@ -129,6 +129,15 @@ identifies schema `2.0.0`, the provisional draft projection identifies revision
 4, and exact schemas `1.0.0` and `1.1.0` remain retained without widening their
 resource-kind enums. A minimal `INVALID_INPUT` BCF known answer pins the new wire
 value without claiming that Slice 2 has already established BCF scientific parity.
+
+Slice 3 pins the scientific reuse claim directly. Equivalent textual VCF and generated
+BCF2 inputs now cross the same `VcfContextSnapshot` → declared-MD5 `SequenceBinding` →
+exhaustive `VcfRefValidationResult` → conflict-pattern → `VcfContractProjection` →
+whole-bundle verdict chain. Compatible and hard-mismatch cases must produce identical
+scientific objects apart from the request artifact encoding/provenance, including the
+same verified cross-name binding, reference-base capability, constraints, evidence,
+interpretation, and categorical verdict. No BCF-specific requirement, evidence,
+finding, conflict-pattern, or verdict implementation is added.
 
 A future decision to offer explicit down-rendering to an older stable schema is separate work; M8 does not silently relabel current reports as `1.x`.
 

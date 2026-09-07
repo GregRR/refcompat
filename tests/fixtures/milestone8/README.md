@@ -6,7 +6,7 @@ existing VCF logical compatibility model.
 `stable-bcf-invalid-input-report-2.0.0.json` is the first schema-2.0.0 known
 answer. It deliberately carries `analysis.status = invalid_input` and no
 scientific result: Slice 2 pins the new `bcf` resource-kind wire value and exact
-schema boundary before Slice 3 proves RCHECK-050 scientific parity. The same
+schema boundary independently of the Slice 3 RCHECK-050 scientific-parity proof. The same
 payload is rejected by retained exact schema 1.1.0 because that schema's closed
 resource-kind enum predates BCF support.
 

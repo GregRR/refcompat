@@ -1,6 +1,6 @@
 # VCF/BCF reference-context observation
 
-**Status:** VCF/VCF.gz observation was implemented in Milestone 3; Milestone 8 Slice 2 extends the same logical observation boundary to BCF2 with strict declared-format validation. Exhaustive direct REF-to-FASTA validation and higher reasoning layers remain documented separately, with BCF scientific-parity proof pending later M8 slices.
+**Status:** VCF/VCF.gz observation was implemented in Milestone 3; Milestone 8 Slice 2 extends the same logical observation boundary to BCF2 with strict declared-format validation, and Slice 3 pins reuse of the existing RCHECK-050 scientific path. Scoped/profile/reporting BCF parity remains documented separately for later M8 work.
 
 ## Purpose
 

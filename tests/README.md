@@ -48,7 +48,7 @@ See [`../docs/check-specifications.md`](../docs/check-specifications.md) for the
 - non-human/custom references do not depend on a human assembly registry;
 - negative controls do not produce speculative reference findings.
 
-- Milestone 3 VCF/VCF.gz observation tests cover header claims, contig metadata, CHROM usage, bgzip input, sparse declarations, provider-boundary failures, and explicit BCF deferral.
+- Milestone 3 VCF/VCF.gz observation tests cover header claims, contig metadata, CHROM usage, bgzip input, sparse declarations, and provider-boundary failures; Milestone 8 adds BCF2 observation and parity coverage without changing the original VCF semantics.
 - Milestone 3 REF-validation tests cover source-resource cross-wiring guards, exhaustive record order, one-based POS conversion, multi-base REF spans, hard local mismatches beside many matches, unresolved exact-name cases, bounds/telomere outcomes, VCF IUPAC reduction, per-sequence aggregation, BGZF streaming without a variant index, and FASTA random access through a temporary recomputed FAI rather than an adjacent user index.
 - Milestone 3 VCF contract-projection tests cover actual-CHROM presence requirements, declared-length requirements and same-name length contradictions, scalable aggregate reference-base requirements, explicit FASTA-anchor scoping for pair-derived capabilities, Tier-A mismatch precedence without averaging, unresolved/bounds-only behavior, empty VCFs, order-independent sequence-coverage cross-checks, input cross-wiring, and deterministic IDs.
 - Milestone 3 supplemental bundle-orchestration tests cover anchor ownership, scoped subjects, unused/duplicate/competing capability rejection, unchanged categorical verdict behavior, and decisive conflict-core traceability.
@@ -104,3 +104,7 @@ See [`../docs/check-specifications.md`](../docs/check-specifications.md) for the
   mismatch coverage, exact schema `2.0.0` with `bcf` as the only widened resource-kind
   value, a minimal BCF known answer, and draft revision 4 while retaining exact 1.x
   schemas and fixtures.
+  Slice 3 adds real-pysam VCF↔BCF RCHECK-050 parity coverage through declared-MD5
+  cross-name binding, exhaustive coordinate-sensitive REF comparison, conflict-pattern
+  interpretation, generic contract/evidence projection, and compatible/incompatible
+  whole-bundle verdicts without introducing BCF-specific scientific types.

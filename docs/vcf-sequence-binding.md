@@ -1,6 +1,6 @@
 # VCF verified sequence binding and REF revalidation
 
-**Status:** implemented as Milestone 3 RCHECK-050F.
+**Status:** implemented as Milestone 3 RCHECK-050F; Milestone 8 Slice 3 pins the same verified-binding and revalidation path for BCF2-decoded logical inputs.
 
 This slice resolves VCF sequence-name differences only when the VCF supplies
 content-identity metadata that can be verified against the selected FASTA

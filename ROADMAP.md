@@ -168,7 +168,7 @@ The normative Milestone 7 contract is recorded in [`docs/compatibility-report-co
 
 **Goal:** accept BCF2 as a first-class binary encoding of the existing VCF logical resource model, carry it through the same exhaustive reference-context and REF-to-FASTA reasoning, and expose the encoding honestly through the stable report without inventing BCF-specific scientific semantics.
 
-**Implementation status:** Slices 1–2 implemented; BCF scientific-parity work remains pending.
+**Implementation status:** Slices 1–3 implemented; scoped/profile/reporting parity and milestone review remain pending.
 
 Committed scope:
 
@@ -190,7 +190,7 @@ Planned slices:
 
 1. pin the BCF/VCF encoding boundary, reuse policy, coordinate semantics, schema-version consequence, and exit criteria; **implemented by this contract slice**
 2. add first-class BCF resource identity, strict provider-format validation, BCF context/REF observation, stable report schema `2.0.0`, draft revision update, and a minimal known-answer BCF report; **implemented**
-3. prove RCHECK-050 parity through exhaustive BCF REF validation, declared-MD5 binding, conflict-pattern interpretation, generic contract/evidence projection, and whole-bundle verdicts without adding BCF-specific reasoning;
+3. prove RCHECK-050 parity through exhaustive BCF REF validation, declared-MD5 binding, conflict-pattern interpretation, generic contract/evidence projection, and whole-bundle verdicts without adding BCF-specific reasoning; **implemented**
 4. exercise scoped, incompatible, indeterminate, and UCSC-profile BCF paths through stable JSON/schema, human rendering, and workflow exits, including VCF↔BCF encoding-mismatch and coordinate off-by-one adversarial cases;
 5. close with internal adversarial/backward-compatibility review, retained `1.0.0`/`1.1.0` schema immutability checks, and an external milestone-boundary review.
 

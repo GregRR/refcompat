@@ -6,8 +6,9 @@ format-neutral contract/evidence bridge is implemented in
 
 This boundary exhaustively compares every logical VCF record's `REF` allele with an
 explicitly supplied FASTA anchor. Milestone 8 Slice 2 allows those logical records
-to originate from BCF2 as well as textual VCF; end-to-end BCF scientific parity is
-pinned in later M8 slices. It remains the direct record-level source
+to originate from BCF2 as well as textual VCF, and Slice 3 pins that equivalent
+VCF/BCF logical inputs traverse the same binding, validation, conflict-pattern,
+contract/evidence, and whole-bundle verdict path. It remains the direct record-level source
 result; contract/evidence projection is a separate layer, and VCF-specific
 pattern classification is implemented separately in
 [`vcf-ref-conflict-patterns.md`](vcf-ref-conflict-patterns.md), while verified-alias revalidation is implemented in

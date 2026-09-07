@@ -311,7 +311,7 @@ Milestone 8 extends RCHECK-050 to BCF2 without creating a second variant scienti
 
 ### RCHECK-050A — header/reference context
 
-**Implementation status:** VCF/VCF.gz and BCF2 header metadata plus exhaustive CHROM-usage observation are implemented through the shared `pysam.VariantFile` boundary. Declared VCF/BCF kind must match provider-detected encoding, and BCF records preserve provider-normalized one-based logical POS in `VcfRefRecord`. BCF scientific parity through the remaining RCHECK-050 reasoning layers is pending later M8 slices.
+**Implementation status:** VCF/VCF.gz and BCF2 header metadata plus exhaustive CHROM-usage observation are implemented through the shared `pysam.VariantFile` boundary. Declared VCF/BCF kind must match provider-detected encoding, and BCF records preserve provider-normalized one-based logical POS in `VcfRefRecord`. Milestone 8 Slice 3 pins BCF reuse of the existing declared-MD5 binding, exhaustive REF validation, conflict-pattern, generic contract/evidence, and whole-bundle verdict path; scoped/profile/reporting parity remains later M8 work.
 
 Inspect:
 
