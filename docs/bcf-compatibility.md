@@ -1,6 +1,6 @@
 # Milestone 8 native BCF compatibility contract
 
-**Status:** contract pinned; implementation pending.
+**Status:** Slices 1–2 implemented; RCHECK-050 scientific parity and end-to-end BCF reasoning remain pending.
 
 Milestone 8 adds BCF2 as a first-class resource encoding while preserving the scientific semantics already established for VCF in RCHECK-050. The milestone is intentionally an encoding/parity milestone, not a new variant-compatibility reasoner.
 
@@ -42,6 +42,14 @@ The parser boundary uses `pysam.VariantFile`, which auto-detects VCF/BCF. The ca
 Filename extensions are not format authority. RefCompat does not silently reclassify a resource because its suffix disagrees with its bytes.
 
 This mirrors the existing BAM/CRAM inspector invariant that the declared resource kind must agree with the parser-visible format.
+
+Slice 2 implements this encoding boundary directly in the shared variant inspector.
+`inspect_vcf_context()` and `iter_vcf_ref_records()` now accept either declared
+`VCF` or `BCF`, require `VariantFile.is_bcf` to agree with that declaration, and
+copy the same provider-normalized logical header/record values into the existing
+`Vcf*` domain types. Real-pysam integration coverage generates synthetic BCF2
+from a transparent VCF source and pins the one-based logical POS boundary without
+requiring a CSI index.
 
 ## 3. Provider normalization boundary
 
@@ -115,6 +123,12 @@ M8 must honor that promise. When `ResourceKind.BCF = "bcf"` becomes serializable
 - non-BCF reports emitted by the current serializer also identify the current schema version rather than pretending to be old-version reports.
 
 The provisional draft report revision also advances when BCF becomes emit-able because the allowed resource-kind value set changes even if no object field is added.
+
+Slice 2 makes that version transition concrete: the current stable serializer
+identifies schema `2.0.0`, the provisional draft projection identifies revision
+4, and exact schemas `1.0.0` and `1.1.0` remain retained without widening their
+resource-kind enums. A minimal `INVALID_INPUT` BCF known answer pins the new wire
+value without claiming that Slice 2 has already established BCF scientific parity.
 
 A future decision to offer explicit down-rendering to an older stable schema is separate work; M8 does not silently relabel current reports as `1.x`.
 

@@ -46,9 +46,14 @@ _FIXTURE = _FIXTURE_DIR / "stable-compatible-report-1.1.0.json"
 _INCOMPATIBLE_FIXTURE = _FIXTURE_DIR / "stable-incompatible-report-1.1.0.json"
 _CONTEXT_FIXTURE = _FIXTURE_DIR / "stable-ucsc-alignment-report-1.1.0.json"
 _CONTENT_CONFLICT_FIXTURE = _FIXTURE_DIR / "stable-ucsc-content-conflict-report-1.1.0.json"
-_PREVIOUS_SCHEMA_VERSION = "1.0.0"
-_PREVIOUS_FIXTURE = _FIXTURE_DIR / "stable-compatible-report-1.0.0.json"
-_PREVIOUS_INCOMPATIBLE_FIXTURE = _FIXTURE_DIR / "stable-incompatible-report-1.0.0.json"
+_PREVIOUS_SCHEMA_VERSION = "1.1.0"
+_BASE_SCHEMA_VERSION = "1.0.0"
+_PREVIOUS_FIXTURE = _FIXTURE_DIR / "stable-compatible-report-1.1.0.json"
+_PREVIOUS_INCOMPATIBLE_FIXTURE = _FIXTURE_DIR / "stable-incompatible-report-1.1.0.json"
+_BASE_FIXTURE = _FIXTURE_DIR / "stable-compatible-report-1.0.0.json"
+_BASE_INCOMPATIBLE_FIXTURE = _FIXTURE_DIR / "stable-incompatible-report-1.0.0.json"
+_M8_FIXTURE_DIR = Path(__file__).parents[2] / "fixtures" / "milestone8"
+_BCF_FIXTURE = _M8_FIXTURE_DIR / "stable-bcf-invalid-input-report-2.0.0.json"
 
 
 class _SchemaValidator(Protocol):
@@ -75,8 +80,15 @@ def _schema(version: str = REPORT_SCHEMA_VERSION) -> dict[str, Any]:
     return cast(dict[str, Any], json.loads(resource.read_text(encoding="utf-8")))
 
 
+def _payload_from(path: Path, *, version: str = REPORT_SCHEMA_VERSION) -> dict[str, Any]:
+    payload = cast(dict[str, Any], json.loads(path.read_text(encoding="utf-8")))
+    report_format = cast(dict[str, Any], payload["report_format"])
+    report_format["schema_version"] = version
+    return payload
+
+
 def _payload() -> dict[str, Any]:
-    return cast(dict[str, Any], json.loads(_FIXTURE.read_text(encoding="utf-8")))
+    return _payload_from(_FIXTURE)
 
 
 def _validator(version: str = REPORT_SCHEMA_VERSION) -> _SchemaValidator:
@@ -97,6 +109,25 @@ def test_stable_schema_is_packaged_and_self_identifying() -> None:
     assert report_format["schema_version"] == {"const": REPORT_SCHEMA_VERSION}
 
 
+def test_current_schema_adds_bcf_without_widening_retained_1_1() -> None:
+    current_kinds = set(_schema()["$defs"]["resource"]["properties"]["kind"]["enum"])
+    previous_kinds = set(
+        _schema(_PREVIOUS_SCHEMA_VERSION)["$defs"]["resource"]["properties"]["kind"]["enum"]
+    )
+
+    assert "bcf" in current_kinds
+    assert "bcf" not in previous_kinds
+    assert current_kinds == previous_kinds | {"bcf"}
+
+
+def test_bcf_known_answer_requires_exact_schema_2_0_0() -> None:
+    payload = cast(dict[str, Any], json.loads(_BCF_FIXTURE.read_text(encoding="utf-8")))
+
+    _validator().validate(payload)
+    with pytest.raises(_jsonschema().ValidationError):
+        _validator(_PREVIOUS_SCHEMA_VERSION).validate(payload)
+
+
 def test_stable_schema_documents_portable_provenance_locators() -> None:
     defs = cast(dict[str, Any], _schema()["$defs"])
     provider_source = cast(dict[str, Any], defs["providerSource"])
@@ -113,18 +144,25 @@ def test_stable_schema_documents_portable_provenance_locators() -> None:
         assert "must not be a machine-local filesystem path" in description
 
 
-def test_previous_stable_schema_remains_packaged_and_exact() -> None:
-    previous_schema = _schema(_PREVIOUS_SCHEMA_VERSION)
-    assert previous_schema["$id"] == ("urn:refcompat:schema:compatibility-report:1.0.0")
-    previous_payload = json.loads(_PREVIOUS_FIXTURE.read_text(encoding="utf-8"))
-    _validator(_PREVIOUS_SCHEMA_VERSION).validate(previous_payload)
+@pytest.mark.parametrize(
+    ("version", "fixture"),
+    [
+        (_BASE_SCHEMA_VERSION, _BASE_FIXTURE),
+        (_PREVIOUS_SCHEMA_VERSION, _PREVIOUS_FIXTURE),
+    ],
+)
+def test_retained_stable_schemas_remain_packaged_and_exact(version: str, fixture: Path) -> None:
+    schema = _schema(version)
+    assert schema["$id"] == f"urn:refcompat:schema:compatibility-report:{version}"
+    payload = json.loads(fixture.read_text(encoding="utf-8"))
+    _validator(version).validate(payload)
 
 
 @pytest.mark.parametrize(
     ("previous_fixture", "current_fixture"),
     (
-        (_PREVIOUS_FIXTURE, _FIXTURE),
-        (_PREVIOUS_INCOMPATIBLE_FIXTURE, _INCOMPATIBLE_FIXTURE),
+        (_BASE_FIXTURE, _PREVIOUS_FIXTURE),
+        (_BASE_INCOMPATIBLE_FIXTURE, _PREVIOUS_INCOMPATIBLE_FIXTURE),
     ),
 )
 def test_schema_1_1_preserves_the_1_0_core_payload(
@@ -140,7 +178,7 @@ def test_schema_1_1_preserves_the_1_0_core_payload(
         json.loads(current_fixture.read_text(encoding="utf-8")),
     )
     current_format = cast(dict[str, Any], current_payload["report_format"])
-    current_format["schema_version"] = _PREVIOUS_SCHEMA_VERSION
+    current_format["schema_version"] = _BASE_SCHEMA_VERSION
     scientific_result = cast(dict[str, Any], current_payload["scientific_result"])
     for field in ("observations", "alignment_relationships", "profile_contexts"):
         scientific_result.pop(field)
@@ -148,9 +186,9 @@ def test_schema_1_1_preserves_the_1_0_core_payload(
     assert current_payload == previous_payload
 
 
-def test_exact_stable_schemas_cross_reject_other_minor_versions() -> None:
+def test_exact_stable_schemas_cross_reject_other_versions() -> None:
     previous_payload = json.loads(_PREVIOUS_FIXTURE.read_text(encoding="utf-8"))
-    current_payload = json.loads(_FIXTURE.read_text(encoding="utf-8"))
+    current_payload = _payload()
 
     with pytest.raises(_jsonschema().ValidationError):
         _validator().validate(previous_payload)
@@ -162,10 +200,10 @@ def test_stable_known_answer_validates_against_exact_schema() -> None:
     _validator().validate(_payload())
 
 
-def test_previous_schema_accepts_valid_refget_identity_capability() -> None:
+def test_schema_1_0_accepts_valid_refget_identity_capability() -> None:
     payload = cast(
         dict[str, Any],
-        json.loads(_PREVIOUS_FIXTURE.read_text(encoding="utf-8")),
+        json.loads(_BASE_FIXTURE.read_text(encoding="utf-8")),
     )
     scientific_result = cast(dict[str, Any], payload["scientific_result"])
     capabilities = cast(list[dict[str, Any]], scientific_result["capabilities"])
@@ -184,38 +222,29 @@ def test_previous_schema_accepts_valid_refget_identity_capability() -> None:
         }
     )
 
-    _validator(_PREVIOUS_SCHEMA_VERSION).validate(payload)
+    _validator(_BASE_SCHEMA_VERSION).validate(payload)
 
 
 def test_stable_incompatible_known_answer_validates_against_exact_schema() -> None:
-    payload = cast(
-        dict[str, Any],
-        json.loads(_INCOMPATIBLE_FIXTURE.read_text(encoding="utf-8")),
-    )
+    payload = _payload_from(_INCOMPATIBLE_FIXTURE)
 
     _validator().validate(payload)
 
 
 def test_stable_context_known_answer_validates_against_exact_schema() -> None:
-    payload = cast(
-        dict[str, Any],
-        json.loads(_CONTEXT_FIXTURE.read_text(encoding="utf-8")),
-    )
+    payload = _payload_from(_CONTEXT_FIXTURE)
 
     _validator().validate(payload)
 
 
 def test_stable_content_conflict_known_answer_validates_against_exact_schema() -> None:
-    payload = json.loads(_CONTENT_CONFLICT_FIXTURE.read_text(encoding="utf-8"))
+    payload = _payload_from(_CONTENT_CONFLICT_FIXTURE)
 
     _validator().validate(payload)
 
 
 def test_exact_schema_rejects_unknown_nested_profile_trace_fields() -> None:
-    payload = cast(
-        dict[str, Any],
-        json.loads(_CONTENT_CONFLICT_FIXTURE.read_text(encoding="utf-8")),
-    )
+    payload = _payload_from(_CONTENT_CONFLICT_FIXTURE)
     scientific_result = cast(dict[str, Any], payload["scientific_result"])
     contexts = cast(list[dict[str, Any]], scientific_result["profile_contexts"])
     traces = cast(list[dict[str, Any]], contexts[0]["sequence_traces"])
@@ -304,7 +333,7 @@ def test_exact_schema_rejects_local_artifact_paths() -> None:
 def test_exact_schema_rejects_schema_version_mismatch() -> None:
     payload = _payload()
     report_format = copy.deepcopy(cast(dict[str, Any], payload["report_format"]))
-    report_format["schema_version"] = "1.0.0"
+    report_format["schema_version"] = _PREVIOUS_SCHEMA_VERSION
     payload["report_format"] = report_format
 
     with pytest.raises(_jsonschema().ValidationError):
@@ -472,10 +501,7 @@ def test_schema_closes_relationship_and_profile_context_enums() -> None:
 
 
 def test_schema_rejects_empty_source_location() -> None:
-    payload = cast(
-        dict[str, Any],
-        json.loads(_CONTEXT_FIXTURE.read_text(encoding="utf-8")),
-    )
+    payload = _payload_from(_CONTEXT_FIXTURE)
     scientific_result = cast(dict[str, Any], payload["scientific_result"])
     observations = cast(list[dict[str, Any]], scientific_result["observations"])
     observations[0]["source_location"] = {
@@ -490,10 +516,7 @@ def test_schema_rejects_empty_source_location() -> None:
 
 
 def test_schema_rejects_duplicate_provider_completeness_dimension() -> None:
-    payload = cast(
-        dict[str, Any],
-        json.loads(_CONTEXT_FIXTURE.read_text(encoding="utf-8")),
-    )
+    payload = _payload_from(_CONTEXT_FIXTURE)
     scientific_result = cast(dict[str, Any], payload["scientific_result"])
     contexts = cast(list[dict[str, Any]], scientific_result["profile_contexts"])
     completeness = cast(list[dict[str, Any]], contexts[0]["completeness"])

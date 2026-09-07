@@ -81,8 +81,8 @@ See [`../docs/check-specifications.md`](../docs/check-specifications.md) for the
   finding/condition trace, deterministic stable and draft JSON projections, local artifact-
   path independence, canonical ordering of identifier-set trace collections including
   condition exclusions, invalid-input reports without scientific verdicts, decisive
-  incompatible trace retention, and exact stable-schema validation. Exact `1.0.0` remains
-  packaged (including a regression for its refget-regex erratum), while current `1.1.0`
+  incompatible trace retention, and exact stable-schema validation. Exact `1.0.0` and `1.1.0` remain
+  packaged (including the retained refget-regex erratum coverage), while M7 `1.1.0`
   fixtures cover compatible, incompatible, and UCSC/BAM contextual reports with report-owned
   observations, alignment relationship summaries, provider source provenance, and profile
   sequence trace. Slice 6 additionally pins deterministic human rendering, omission of machine-local
@@ -100,4 +100,7 @@ See [`../docs/check-specifications.md`](../docs/check-specifications.md) for the
   `1.0.0`, exercises a deferred CRAM reference-dependent path as `PARTIAL + INCOMPATIBLE` and a
   malformed-annotation path as `INVALID_INPUT` without a scientific result, pins canonical human
   ordering for multiple alignment/profile contexts, and documents portable provenance locators.
-  Draft revision 3 remains separately provisional.
+  Milestone 8 Slice 2 adds real-pysam BCF context/REF observation, declared-format
+  mismatch coverage, exact schema `2.0.0` with `bcf` as the only widened resource-kind
+  value, a minimal BCF known answer, and draft revision 4 while retaining exact 1.x
+  schemas and fixtures.

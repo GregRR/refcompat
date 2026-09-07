@@ -1,4 +1,4 @@
-"""Extract VCF header reference metadata and observed CHROM usage with pysam.
+"""Extract VCF/BCF logical reference metadata and CHROM usage with pysam.
 
 The adapter deliberately copies primitive values out of ``pysam`` objects so
 external HTSlib-backed types do not leak into the RefCompat domain model.
@@ -28,7 +28,7 @@ from refcompat.model.vcf_ref import VcfRefRecord
 
 
 class VcfInspectionError(Exception):
-    """Base class for normalized VCF inspection failures."""
+    """Base class for normalized VCF/BCF inspection failures."""
 
 
 class UnsupportedVcfResourceError(VcfInspectionError):
@@ -36,11 +36,11 @@ class UnsupportedVcfResourceError(VcfInspectionError):
 
 
 class VcfUnreadableError(VcfInspectionError):
-    """The supplied VCF cannot be read locally."""
+    """The supplied VCF/BCF cannot be read locally."""
 
 
 class VcfParseError(VcfInspectionError):
-    """The supplied artifact cannot be parsed as VCF/BCF by the provider."""
+    """The supplied artifact cannot be parsed as the declared VCF/BCF format."""
 
 
 class VcfProviderIncompatibleError(VcfInspectionError):
@@ -99,10 +99,9 @@ def _load_pysam() -> _PysamModule:
 
 
 def inspect_vcf_context(resource: Resource) -> VcfContextSnapshot:
-    """Read reference-relevant header metadata and scan all records for CHROM usage."""
+    """Read logical VCF header metadata and scan all VCF/BCF records for CHROM usage."""
 
-    if resource.kind is not ResourceKind.VCF:
-        raise UnsupportedVcfResourceError("VCF inspection requires a VCF resource")
+    _require_variant_resource(resource, operation="context inspection")
 
     path = resource.artifact.path
     _require_readable(path)
@@ -115,21 +114,16 @@ def inspect_vcf_context(resource: Resource) -> VcfContextSnapshot:
             _require_readable(path)
         except VcfUnreadableError as unreadable:
             raise unreadable from exc
-        raise VcfParseError(f"cannot parse VCF: {path}") from exc
+        raise VcfParseError(f"cannot parse {resource.kind.value.upper()} resource: {path}") from exc
     except (NotImplementedError, TypeError, ValueError) as exc:
-        raise VcfParseError(f"cannot parse VCF: {path}") from exc
+        raise VcfParseError(f"cannot parse {resource.kind.value.upper()} resource: {path}") from exc
 
     try:
-        if not isinstance(variant_file.is_bcf, bool):
-            raise VcfProviderIncompatibleError(
-                f"pysam returned invalid variant format metadata: {path}"
-            )
-        if variant_file.is_bcf:
-            raise VcfParseError("BCF input is deferred; Milestone 3 accepts VCF/VCF.gz only")
+        _validate_provider_format(variant_file, resource_kind=resource.kind, path=path)
         header = _header_data(variant_file.header, path=path)
         record_count, chrom_usage = _scan_chrom_usage(variant_file, path=path)
     except (NotImplementedError, OSError, TypeError, ValueError) as exc:
-        raise VcfParseError(f"cannot parse VCF records: {path}") from exc
+        raise VcfParseError(f"cannot parse {resource.kind.value.upper()} records: {path}") from exc
     finally:
         variant_file.close()
 
@@ -142,14 +136,13 @@ def inspect_vcf_context(resource: Resource) -> VcfContextSnapshot:
 
 
 def iter_vcf_ref_records(resource: Resource) -> Iterator[VcfRefRecord]:
-    """Yield every VCF record's REF-relevant fields in file order.
+    """Yield every VCF/BCF record's logical REF-relevant fields in file order.
 
     The stream is exhaustive and sequential; no tabix/CSI index is required.
     Parser errors can therefore arise during iteration as well as at open time.
     """
 
-    if resource.kind is not ResourceKind.VCF:
-        raise UnsupportedVcfResourceError("VCF REF inspection requires a VCF resource")
+    _require_variant_resource(resource, operation="REF inspection")
 
     path = resource.artifact.path
     _require_readable(path)
@@ -162,25 +155,44 @@ def iter_vcf_ref_records(resource: Resource) -> Iterator[VcfRefRecord]:
             _require_readable(path)
         except VcfUnreadableError as unreadable:
             raise unreadable from exc
-        raise VcfParseError(f"cannot parse VCF: {path}") from exc
+        raise VcfParseError(f"cannot parse {resource.kind.value.upper()} resource: {path}") from exc
     except (NotImplementedError, TypeError, ValueError) as exc:
-        raise VcfParseError(f"cannot parse VCF: {path}") from exc
+        raise VcfParseError(f"cannot parse {resource.kind.value.upper()} resource: {path}") from exc
 
     try:
-        if not isinstance(variant_file.is_bcf, bool):
-            raise VcfProviderIncompatibleError(
-                f"pysam returned invalid variant format metadata: {path}"
-            )
-        if variant_file.is_bcf:
-            raise VcfParseError("BCF input is deferred; Milestone 3 accepts VCF/VCF.gz only")
+        _validate_provider_format(variant_file, resource_kind=resource.kind, path=path)
         for ordinal, record in enumerate(variant_file):
             yield _vcf_ref_record(record, resource_id=resource.id, ordinal=ordinal, path=path)
     except VcfInspectionError:
         raise
     except (NotImplementedError, OSError, TypeError, ValueError) as exc:
-        raise VcfParseError(f"cannot parse VCF records: {path}") from exc
+        raise VcfParseError(f"cannot parse {resource.kind.value.upper()} records: {path}") from exc
     finally:
         variant_file.close()
+
+
+def _require_variant_resource(resource: Resource, *, operation: str) -> None:
+    if resource.kind not in {ResourceKind.VCF, ResourceKind.BCF}:
+        raise UnsupportedVcfResourceError(f"VCF/BCF {operation} requires a VCF or BCF resource")
+
+
+def _validate_provider_format(
+    variant_file: _VariantFile,
+    *,
+    resource_kind: ResourceKind,
+    path: Path,
+) -> None:
+    if not isinstance(variant_file.is_bcf, bool):
+        raise VcfProviderIncompatibleError(
+            f"pysam returned invalid variant format metadata: {path}"
+        )
+
+    provider_kind = ResourceKind.BCF if variant_file.is_bcf else ResourceKind.VCF
+    if provider_kind is not resource_kind:
+        raise VcfParseError(
+            f"resource declared as {resource_kind.value.upper()} but provider identified "
+            f"{provider_kind.value.upper()}: {path}"
+        )
 
 
 def _require_readable(path: Path) -> None:
@@ -188,7 +200,7 @@ def _require_readable(path: Path) -> None:
         with path.open("rb"):
             pass
     except OSError as exc:
-        raise VcfUnreadableError(f"cannot read VCF: {path}") from exc
+        raise VcfUnreadableError(f"cannot read VCF/BCF resource: {path}") from exc
 
 
 def _header_data(header: _VariantHeader, *, path: Path) -> VcfHeaderData:

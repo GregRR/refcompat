@@ -307,11 +307,11 @@ See [`alignment-non-mutation-boundary.md`](alignment-non-mutation-boundary.md).
 
 ## RCHECK-050 — VCF/BCF ↔ FASTA
 
-Milestone 8 extends RCHECK-050 to BCF2 without creating a second variant scientific model. BCF carries the VCF logical header/record model in a binary encoding, so BCF uses the same `VcfContextSnapshot`, `VcfRefRecord`, sequence-binding, exhaustive REF, evidence, and verdict semantics. The resource kind remains distinct (`VCF` versus planned `BCF`) and must agree with HTSlib/pysam format detection; encoding differences are not biological compatibility evidence. See [`bcf-compatibility.md`](bcf-compatibility.md).
+Milestone 8 extends RCHECK-050 to BCF2 without creating a second variant scientific model. BCF carries the VCF logical header/record model in a binary encoding, so BCF uses the same `VcfContextSnapshot`, `VcfRefRecord`, sequence-binding, exhaustive REF, evidence, and verdict semantics. The resource kind remains distinct (`VCF` versus `BCF`) and must agree with HTSlib/pysam format detection; encoding differences are not biological compatibility evidence. See [`bcf-compatibility.md`](bcf-compatibility.md).
 
 ### RCHECK-050A — header/reference context
 
-**Implementation status:** VCF/VCF.gz header metadata and exhaustive CHROM-usage observation are implemented. Milestone 8 pins BCF2 as a second encoding of this same logical RCHECK-050 surface; BCF parser support is not implemented yet. Compatibility interpretation remains in later RCHECK-050 slices.
+**Implementation status:** VCF/VCF.gz and BCF2 header metadata plus exhaustive CHROM-usage observation are implemented through the shared `pysam.VariantFile` boundary. Declared VCF/BCF kind must match provider-detected encoding, and BCF records preserve provider-normalized one-based logical POS in `VcfRefRecord`. BCF scientific parity through the remaining RCHECK-050 reasoning layers is pending later M8 slices.
 
 Inspect:
 

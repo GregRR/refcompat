@@ -1,7 +1,8 @@
 # Milestone 7 report fixtures
 
-`draft-compatible-report.json` pins the provisional revision-3 M7 projection
-retained for draft callers. It has no stable compatibility guarantee.
+`draft-compatible-report.json` originated in M7 and now pins provisional draft
+revision 4 after M8 adds the `bcf` resource-kind wire value. Draft output has no
+stable compatibility guarantee.
 
 `stable-compatible-report-1.0.0.json` and
 `stable-incompatible-report-1.0.0.json` remain the frozen core known-answer
@@ -11,7 +12,7 @@ erratum that makes the validator accept the already-defined `SQ.<32-character>`
 identity representation and does not change these report bytes.
 
 `stable-compatible-report-1.1.0.json` and
-`stable-incompatible-report-1.1.0.json` pin the additive current stable shape.
+`stable-incompatible-report-1.1.0.json` pin the retained additive M7 stable shape.
 `stable-ucsc-alignment-report-1.1.0.json` additionally pins report-owned resource
 observations, BAM/CRAM dictionary relationship context, and UCSC provider/source/
 profile provenance for a content-authorized authoritative-name binding.

@@ -1,4 +1,4 @@
-"""Unit tests for the pysam-backed VCF observation boundary."""
+"""Unit tests for the pysam-backed VCF/BCF observation boundary."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ def _header_record(**values: str) -> SimpleNamespace:
     return SimpleNamespace(get=lambda key, default=None: values.get(key, default))
 
 
-def _fake_module(*, records: tuple[object, ...] = ()) -> SimpleNamespace:
+def _fake_module(*, records: tuple[object, ...] = (), is_bcf: bool = False) -> SimpleNamespace:
     contigs = {
         "chr1": SimpleNamespace(
             name="chr1",
@@ -49,8 +49,10 @@ def _fake_module(*, records: tuple[object, ...] = ()) -> SimpleNamespace:
         contigs=contigs,
     )
 
+    provider_is_bcf = is_bcf
+
     class FakeVariantFile:
-        is_bcf = False
+        is_bcf = provider_is_bcf
 
         def __init__(self, _: str) -> None:
             self.header = header
@@ -107,30 +109,56 @@ def test_inspect_vcf_context_rejects_missing_file(tmp_path: Path) -> None:
         inspect_vcf_context(_resource(tmp_path / "missing.vcf"))
 
 
-def test_inspect_vcf_context_rejects_bcf_for_milestone3(
+@pytest.mark.parametrize(
+    ("declared_kind", "provider_is_bcf", "provider_name"),
+    [
+        (ResourceKind.VCF, True, "BCF"),
+        (ResourceKind.BCF, False, "VCF"),
+    ],
+)
+def test_inspect_vcf_context_rejects_declared_provider_format_mismatch(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    declared_kind: ResourceKind,
+    provider_is_bcf: bool,
+    provider_name: str,
+) -> None:
+    path = tmp_path / "variants.bin"
+    path.write_bytes(b"synthetic")
+    fake_module = _fake_module(is_bcf=provider_is_bcf)
+    monkeypatch.setattr("refcompat.inspectors.vcf.import_module", lambda _: fake_module)
+
+    with pytest.raises(
+        VcfParseError,
+        match=rf"declared as {declared_kind.value.upper()}.*identified {provider_name}",
+    ):
+        inspect_vcf_context(_resource(path, declared_kind))
+
+
+def test_inspect_bcf_context_copies_logical_header_and_chrom_usage(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     path = tmp_path / "variants.bcf"
     path.write_bytes(b"synthetic")
-
-    class FakeVariantFile:
-        is_bcf = True
-        header = SimpleNamespace(version="VCFv4.5", records=(), contigs={})
-
-        def __init__(self, _: str) -> None:
-            pass
-
-        def __iter__(self) -> object:
-            return iter(())
-
-        def close(self) -> None:
-            pass
-
-    fake_module = SimpleNamespace(__version__="0.24.0", VariantFile=FakeVariantFile)
+    fake_module = _fake_module(
+        records=(
+            SimpleNamespace(contig="chr1"),
+            SimpleNamespace(contig="chr1"),
+            SimpleNamespace(contig="chrUn"),
+        ),
+        is_bcf=True,
+    )
     monkeypatch.setattr("refcompat.inspectors.vcf.import_module", lambda _: fake_module)
 
-    with pytest.raises(VcfParseError, match="BCF input is deferred"):
-        inspect_vcf_context(_resource(path))
+    snapshot = inspect_vcf_context(_resource(path, ResourceKind.BCF))
+
+    assert snapshot.header.file_format == "VCFv4.5"
+    assert snapshot.header.contigs[0].name == "chr1"
+    assert snapshot.record_count == 3
+    assert [(item.sequence_name, item.record_count) for item in snapshot.chrom_usage] == [
+        ("chr1", 2),
+        ("chrUn", 1),
+    ]
 
 
 def test_inspect_vcf_context_rejects_invalid_provider_shape(
@@ -143,6 +171,26 @@ def test_inspect_vcf_context_rejects_invalid_provider_shape(
 
     with pytest.raises(VcfProviderIncompatibleError, match="CHROM"):
         inspect_vcf_context(_resource(path))
+
+
+def test_iter_bcf_ref_records_preserves_logical_one_based_pos(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from refcompat.inspectors.vcf import iter_vcf_ref_records
+
+    path = tmp_path / "variants.bcf"
+    path.write_bytes(b"synthetic")
+    fake_module = _fake_module(
+        records=(SimpleNamespace(contig="chr1", pos=2, ref="C"),),
+        is_bcf=True,
+    )
+    monkeypatch.setattr("refcompat.inspectors.vcf.import_module", lambda _: fake_module)
+
+    records = tuple(iter_vcf_ref_records(_resource(path, ResourceKind.BCF)))
+
+    assert [(item.ordinal, item.sequence_name, item.position, item.ref) for item in records] == [
+        (0, "chr1", 2, "C")
+    ]
 
 
 def test_iter_vcf_ref_records_copies_fields_and_file_order(

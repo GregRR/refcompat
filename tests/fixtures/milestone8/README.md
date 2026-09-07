@@ -1,0 +1,14 @@
+# Milestone 8 fixtures
+
+Milestone 8 introduces BCF2 as a distinct resource encoding while preserving the
+existing VCF logical compatibility model.
+
+`stable-bcf-invalid-input-report-2.0.0.json` is the first schema-2.0.0 known
+answer. It deliberately carries `analysis.status = invalid_input` and no
+scientific result: Slice 2 pins the new `bcf` resource-kind wire value and exact
+schema boundary before Slice 3 proves RCHECK-050 scientific parity. The same
+payload is rejected by retained exact schema 1.1.0 because that schema's closed
+resource-kind enum predates BCF support.
+
+Real BCF observation fixtures are generated during integration tests through the
+pinned pysam/HTSlib provider boundary so no binary fixture provenance is hidden.

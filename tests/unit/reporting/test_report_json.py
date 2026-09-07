@@ -1,4 +1,4 @@
-"""Tests for stable and provisional Milestone 7 report JSON projections."""
+"""Tests for stable and provisional compatibility-report JSON projections."""
 
 from __future__ import annotations
 
@@ -45,9 +45,11 @@ from refcompat.reporting import (
 _REFERENCE = ResourceId("reference")
 _CONSUMER = ResourceId("consumer")
 _FIXTURE_DIR = Path(__file__).parents[2] / "fixtures" / "milestone7"
+_M8_FIXTURE_DIR = Path(__file__).parents[2] / "fixtures" / "milestone8"
 _DRAFT_FIXTURE = _FIXTURE_DIR / "draft-compatible-report.json"
 _STABLE_FIXTURE = _FIXTURE_DIR / "stable-compatible-report-1.1.0.json"
 _STABLE_INCOMPATIBLE_FIXTURE = _FIXTURE_DIR / "stable-incompatible-report-1.1.0.json"
+_BCF_STABLE_FIXTURE = _M8_FIXTURE_DIR / "stable-bcf-invalid-input-report-2.0.0.json"
 
 
 def _resource(resource_id: ResourceId, kind: ResourceKind) -> Resource:
@@ -117,6 +119,37 @@ def _invalid_report(*issues: AnalysisIssue) -> CompatibilityReport:
         analysis_status=AnalysisStatus.INVALID_INPUT,
         analysis_issues=issues,
     )
+
+
+def _bcf_invalid_report() -> CompatibilityReport:
+    request = EvaluationRequest(
+        resources=(
+            _resource(_REFERENCE, ResourceKind.FASTA),
+            _resource(_CONSUMER, ResourceKind.BCF),
+        ),
+        anchor_resource_id=_REFERENCE,
+        scope=EvaluationScope(resource_ids=(_REFERENCE, _CONSUMER)),
+    )
+    return CompatibilityReport(
+        tool_version="0.1.0.dev0",
+        request=request,
+        analysis_status=AnalysisStatus.INVALID_INPUT,
+        analysis_issues=(
+            AnalysisIssue(
+                id=AnalysisIssueId("bcf:invalid-input"),
+                kind=AnalysisIssueKind.INVALID_INPUT,
+                detail="BCF input could not be inspected",
+                resource_ids=(_CONSUMER,),
+            ),
+        ),
+    )
+
+
+def _retag_stable_fixture(path: Path) -> bytes:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["report_format"]["schema_version"] = REPORT_SCHEMA_VERSION
+    text = json.dumps(payload, ensure_ascii=False, allow_nan=False, indent=2, sort_keys=True)
+    return (text + "\n").encode("utf-8")
 
 
 def test_stable_payload_is_self_identifying() -> None:
@@ -252,13 +285,25 @@ def test_known_answer_fixture_pins_draft_bytes() -> None:
 
 
 def test_known_answer_fixture_pins_stable_bytes() -> None:
-    assert render_compatibility_report_json(_complete_report()) == _STABLE_FIXTURE.read_bytes()
+    assert render_compatibility_report_json(_complete_report()) == _retag_stable_fixture(
+        _STABLE_FIXTURE
+    )
 
 
 def test_incompatible_known_answer_fixture_pins_stable_bytes() -> None:
-    assert render_compatibility_report_json(_complete_report(length=11)) == (
-        _STABLE_INCOMPATIBLE_FIXTURE.read_bytes()
+    assert render_compatibility_report_json(_complete_report(length=11)) == _retag_stable_fixture(
+        _STABLE_INCOMPATIBLE_FIXTURE
     )
+
+
+def test_bcf_known_answer_fixture_pins_stable_bytes() -> None:
+    rendered = render_compatibility_report_json(_bcf_invalid_report())
+
+    assert rendered == _BCF_STABLE_FIXTURE.read_bytes()
+    payload = cast(dict[str, object], json.loads(rendered.decode("utf-8")))
+    request = cast(dict[str, object], payload["request"])
+    resources = cast(list[dict[str, object]], request["resources"])
+    assert resources[1]["kind"] == "bcf"
 
 
 def test_stable_and_draft_payloads_share_only_the_report_body() -> None:

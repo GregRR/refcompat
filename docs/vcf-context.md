@@ -1,10 +1,10 @@
-# VCF reference-context observation
+# VCF/BCF reference-context observation
 
-**Status:** implemented as the first Milestone 3 VCF slice. Exhaustive direct REF-to-FASTA validation is implemented separately in [`vcf-ref-validation.md`](vcf-ref-validation.md), and format-neutral contract/evidence projection is implemented in [`vcf-contract-projection.md`](vcf-contract-projection.md). Verified-binding revalidation, direct REF pattern interpretation, and whole-bundle ingestion are now implemented in separate Milestone 3 slices; stable report presentation remains later work.
+**Status:** VCF/VCF.gz observation was implemented in Milestone 3; Milestone 8 Slice 2 extends the same logical observation boundary to BCF2 with strict declared-format validation. Exhaustive direct REF-to-FASTA validation and higher reasoning layers remain documented separately, with BCF scientific-parity proof pending later M8 slices.
 
 ## Purpose
 
-RefCompat uses `pysam`/HTSlib to extract the reference-relevant facts a VCF actually exposes without turning header metadata into compatibility proof.
+RefCompat uses `pysam`/HTSlib to extract the reference-relevant facts exposed by textual VCF or BCF2 without turning header metadata into compatibility proof.
 
 The observation layer records:
 
@@ -40,7 +40,7 @@ The `md5` value on a `##contig` line is intentionally stored first as declared t
 
 `pysam>=0.24,<0.25` is loaded behind the inspector boundary. RefCompat copies primitive values into immutable RefCompat-owned models so `pysam`/HTSlib objects do not leak into the reasoning model.
 
-The first slice accepts text VCF and bgzipped VCF. Ordinary gzip-compressed VCF is not seekable through the HTSlib VCF reader and is normalized to `VcfParseError`; callers should use BGZF/bgzip for `.vcf.gz`. BCF remains deferred to the v1.0 target even though `pysam.VariantFile` can read it.
+The shared inspector accepts text VCF, bgzipped VCF, and BCF2. Ordinary gzip-compressed VCF is not seekable through the HTSlib VCF reader and is normalized to `VcfParseError`; callers should use BGZF/bgzip for `.vcf.gz`. `ResourceKind.VCF` and `ResourceKind.BCF` remain distinct, and `VariantFile.is_bcf` must agree with the caller-declared kind. Filename suffixes are not format authority. BCF is decoded only into the same logical VCF header/record facts; provider binary objects do not enter the domain model.
 
 ### HTSlib normalization boundary
 

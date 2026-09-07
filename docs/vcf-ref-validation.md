@@ -1,11 +1,13 @@
-# Exhaustive VCF REF ↔ FASTA validation
+# Exhaustive VCF/BCF REF ↔ FASTA validation
 
 **Status:** implemented direct-evidence boundary for Milestone 3 RCHECK-050B. The subsequent
 format-neutral contract/evidence bridge is implemented in
 [`vcf-contract-projection.md`](vcf-contract-projection.md).
 
-This slice exhaustively compares every VCF record's `REF` allele with an
-explicitly supplied FASTA anchor. It remains the direct record-level source
+This boundary exhaustively compares every logical VCF record's `REF` allele with an
+explicitly supplied FASTA anchor. Milestone 8 Slice 2 allows those logical records
+to originate from BCF2 as well as textual VCF; end-to-end BCF scientific parity is
+pinned in later M8 slices. It remains the direct record-level source
 result; contract/evidence projection is a separate layer, and VCF-specific
 pattern classification is implemented separately in
 [`vcf-ref-conflict-patterns.md`](vcf-ref-conflict-patterns.md), while verified-alias revalidation is implemented in
@@ -13,18 +15,20 @@ pattern classification is implemented separately in
 
 ## Inputs and traversal
 
-`iter_vcf_ref_records()` streams every VCF record sequentially in file order and
-copies only RefCompat-owned primitive fields:
+`iter_vcf_ref_records()` streams every VCF/BCF logical record sequentially in file
+order and copies only RefCompat-owned primitive fields:
 
-- source VCF resource ID;
+- source VCF/BCF resource ID;
 - zero-based file ordinal;
 - `CHROM`;
 - native one-based `POS`;
 - `REF`.
 
-The iterator supports plain VCF and BGZF-compressed VCF and does not require a
-VCF tabix/CSI index. BCF remains deferred with the rest of the current VCF
-adapter boundary.
+The iterator supports plain VCF, BGZF-compressed VCF, and BCF2 without requiring
+a tabix/CSI index for sequential traversal. For BCF, pysam exposes logical
+one-based `VariantRecord.pos`; the inspector copies that value unchanged, so the
+existing evaluator remains the single place that converts `POS - 1` for FASTA
+access.
 
 The evaluator requires every record to carry the requested VCF resource ID and
 requires ordinals to be contiguous from zero. Cross-wired, skipped, or reordered

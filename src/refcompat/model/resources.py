@@ -24,6 +24,7 @@ class ResourceKind(StrEnum):
     FASTA_INDEX = "fasta_index"
     SEQUENCE_DICTIONARY = "sequence_dictionary"
     VCF = "vcf"
+    BCF = "bcf"
     BAM = "bam"
     CRAM = "cram"
     GTF = "gtf"

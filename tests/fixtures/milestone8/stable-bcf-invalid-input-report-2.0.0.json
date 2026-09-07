@@ -1,0 +1,53 @@
+{
+  "analysis": {
+    "issues": [
+      {
+        "detail": "BCF input could not be inspected",
+        "id": "bcf:invalid-input",
+        "kind": "invalid_input",
+        "resource_ids": [
+          "consumer"
+        ]
+      }
+    ],
+    "status": "invalid_input"
+  },
+  "report_format": {
+    "name": "refcompat.compatibility_report",
+    "schema_version": "2.0.0"
+  },
+  "request": {
+    "active_profiles": [],
+    "anchor_resource_id": "reference",
+    "policy_id": null,
+    "resources": [
+      {
+        "artifact": {
+          "byte_size": null,
+          "digest": null
+        },
+        "display_name": null,
+        "id": "reference",
+        "kind": "fasta"
+      },
+      {
+        "artifact": {
+          "byte_size": null,
+          "digest": null
+        },
+        "display_name": null,
+        "id": "consumer",
+        "kind": "bcf"
+      }
+    ],
+    "scope": {
+      "anchor_sequence_names": null,
+      "resource_ids": [
+        "reference",
+        "consumer"
+      ]
+    }
+  },
+  "scientific_result": null,
+  "tool_version": "0.1.0.dev0"
+}

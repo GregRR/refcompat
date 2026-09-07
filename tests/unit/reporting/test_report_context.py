@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
@@ -70,6 +71,7 @@ from refcompat.reasoning import (
     reason_bundle,
 )
 from refcompat.reporting import (
+    REPORT_SCHEMA_VERSION,
     compatibility_report_payload,
     project_ucsc_preflight_report_context,
     render_compatibility_report_human,
@@ -100,6 +102,13 @@ _CONTENT_CONFLICT_FIXTURE = (
     / "milestone7"
     / "stable-ucsc-content-conflict-report-1.1.0.json"
 )
+
+
+def _retag_stable_fixture(path: Path) -> bytes:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["report_format"]["schema_version"] = REPORT_SCHEMA_VERSION
+    text = json.dumps(payload, ensure_ascii=False, allow_nan=False, indent=2, sort_keys=True)
+    return (text + "\n").encode("utf-8")
 
 
 def _request() -> EvaluationRequest:
@@ -360,7 +369,9 @@ def test_contextual_report_payload_exposes_relationship_and_provenance() -> None
 
 
 def test_contextual_known_answer_pins_stable_bytes() -> None:
-    assert render_compatibility_report_json(_contextual_report()) == _CONTEXT_FIXTURE.read_bytes()
+    assert render_compatibility_report_json(_contextual_report()) == _retag_stable_fixture(
+        _CONTEXT_FIXTURE
+    )
 
 
 def test_unavailable_provider_projects_unresolved_report_context() -> None:
@@ -473,9 +484,8 @@ def test_content_conflict_report_keeps_profile_capability_trace_resolvable() -> 
 
 
 def test_content_conflict_known_answer_pins_stable_bytes() -> None:
-    assert (
-        render_compatibility_report_json(_content_conflict_report())
-        == _CONTENT_CONFLICT_FIXTURE.read_bytes()
+    assert render_compatibility_report_json(_content_conflict_report()) == _retag_stable_fixture(
+        _CONTENT_CONFLICT_FIXTURE
     )
 
 
