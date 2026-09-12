@@ -1,6 +1,6 @@
 # Milestone 8 native BCF compatibility contract
 
-**Status:** Slices 1–3 implemented; core RCHECK-050 BCF scientific parity is pinned, while scoped/profile/reporting parity and milestone review remain pending.
+**Status:** Slices 1–4 implemented; core RCHECK-050 and scoped/profile/reporting parity are pinned, while internal/adversarial and external milestone review remain pending.
 
 Milestone 8 adds BCF2 as a first-class resource encoding while preserving the scientific semantics already established for VCF in RCHECK-050. The milestone is intentionally an encoding/parity milestone, not a new variant-compatibility reasoner.
 
@@ -140,6 +140,17 @@ interpretation, and categorical verdict. No BCF-specific requirement, evidence,
 finding, conflict-pattern, or verdict implementation is added.
 
 A future decision to offer explicit down-rendering to an older stable schema is separate work; M8 does not silently relabel current reports as `1.x`.
+
+Slice 4 extends that same reuse through the reporting/workflow boundary. Real generated BCF2
+inputs now exercise explicit-resource-scope conditional success, direct REF incompatibility,
+unresolved-sequence indeterminacy, and UCSC authoritative-alias resolution as complete
+`CompatibilityReport` values. Each path validates against exact stable schema `2.0.0`, renders
+deterministically to stable JSON and human text, and uses the existing workflow exit mapping.
+Retained exact `1.0.0`/`1.1.0` validators continue to reject the `bcf` resource-kind value rather
+than silently accepting a widened old contract. Declared VCF↔BCF encoding mismatches are
+represented as `INVALID_INPUT` reports with no scientific result, and the scoped compatible
+case retains the coordinate-sensitive POS 2 / FASTA base 2 check so report-level coverage also
+crosses the already-pinned single POS-normalization boundary.
 
 ## 9. Error and analysis-status boundary
 

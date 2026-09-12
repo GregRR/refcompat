@@ -108,3 +108,7 @@ See [`../docs/check-specifications.md`](../docs/check-specifications.md) for the
   cross-name binding, exhaustive coordinate-sensitive REF comparison, conflict-pattern
   interpretation, generic contract/evidence projection, and compatible/incompatible
   whole-bundle verdicts without introducing BCF-specific scientific types.
+  Slice 4 adds real-pysam BCF reporting parity for explicit scope, incompatible and
+  indeterminate outcomes, UCSC authoritative aliases, exact schema 2.0.0, deterministic
+  human/JSON rendering, stable workflow exits, and both declared/detected encoding-mismatch
+  directions as INVALID_INPUT without a scientific result.

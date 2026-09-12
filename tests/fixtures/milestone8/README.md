@@ -12,3 +12,9 @@ resource-kind enum predates BCF support.
 
 Real BCF observation fixtures are generated during integration tests through the
 pinned pysam/HTSlib provider boundary so no binary fixture provenance is hidden.
+
+Slice 4 keeps the executable BCF report cases generated at test time rather than checking in
+binary BCF fixtures. The reporting integration covers scoped conditional success, hard REF
+incompatibility, unresolved-sequence indeterminacy, UCSC authoritative-alias resolution, and
+both declared/detected VCF↔BCF mismatch directions through exact schema 2.0.0, human rendering,
+and workflow exits.
