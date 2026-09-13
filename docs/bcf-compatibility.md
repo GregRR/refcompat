@@ -1,6 +1,6 @@
 # Milestone 8 native BCF compatibility contract
 
-**Status:** Slices 1–4 plus the internal adversarial/backward-compatibility portion of Slice 5 are implemented. The independent external milestone review confirmed the scientific, coordinate, schema-versioning, and VCF/BCF-parity boundaries but found one MAJOR provider-error defect: a close-time pysam failure could mask an already-normalized mid-stream parse error. The correction is implemented with real corrupted-BGZF regression coverage; targeted external follow-up remains pending before M8 closes.
+**Status:** complete. Slices 1–4, the Slice 5 internal adversarial/backward-compatibility review, the independent external milestone review, correction of its one MAJOR provider-close error-boundary defect, and the targeted external follow-up are complete. The follow-up independently reproduced the real corrupted-BGZF BCF/VCF.gz remediation, found no remaining MAJOR issue, and assessed M8 SAFE TO CLOSE.
 
 Milestone 8 adds BCF2 as a first-class resource encoding while preserving the scientific semantics already established for VCF in RCHECK-050. The milestone is intentionally an encoding/parity milestone, not a new variant-compatibility reasoner.
 
@@ -208,4 +208,4 @@ The Slice 5 internal review is complete. It found no production-science defect a
 
 The independent milestone-boundary review then reproduced those scientific/schema claims but found one MAJOR error-boundary defect: after a genuine mid-stream BGZF/BCF read failure, pysam could also raise from `VariantFile.close()`, causing the close exception to replace the correctly normalized `VcfParseError`. The remediation preserves an already-propagating inspection error, normalizes close-only provider failures, adds real corrupted-BGZF BCF/VCF.gz integration coverage, and adds the missing BCF UCSC authoritative-alias case without a content bridge.
 
-Close M8 only after a targeted external follow-up verifies this correction.
+The targeted external follow-up independently reconstructed the original corruption scenario across multiple BCF offsets and the shared VCF.gz path, confirmed that both context inspection and REF streaming now surface `VcfParseError`, verified close-only normalization and ordinary valid VCF/VCF.gz/BCF success paths, reproduced the 1013-test gate, and assessed M8 SAFE TO CLOSE. The reviewer noted one non-blocking residual nuance: during deliberate early abandonment of the REF-record generator, `GeneratorExit` counts as an active exception, so a simultaneous provider close failure would be suppressed. No current production call site abandons the iterator before exhaustion; this remains post-M8 hardening rather than a closure blocker.
