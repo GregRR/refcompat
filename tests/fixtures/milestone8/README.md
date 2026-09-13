@@ -20,3 +20,5 @@ both declared/detected VCF↔BCF mismatch directions through exact schema 2.0.0,
 and workflow exits.
 
 Slice 5 internal review does not rewrite any retained stable fixture. Tests pin the exact bytes of the final-M7 `1.0.0`/`1.1.0` schemas and stable known answers and prove schema `2.0.0` is exactly the `1.1.0` contract plus its new version identity and the single `bcf` resource-kind value.
+
+External-review follow-up keeps binary corruption fixtures generated at test time: integration tests write real BCF and BGZF-compressed VCF through pinned pysam, corrupt an interior BGZF checksum, and require the shared inspector to retain the normalized parse/input boundary even if provider close also fails. No corrupted binary fixture is checked into the repository.

@@ -1,6 +1,6 @@
 # Milestone 8 native BCF compatibility contract
 
-**Status:** Slices 1–4 plus the internal adversarial/backward-compatibility portion of Slice 5 are implemented. The internal review found no production-science defect and hardened retained-contract immutability and format-boundary/reporting regressions; the independent external milestone review remains pending.
+**Status:** Slices 1–4 plus the internal adversarial/backward-compatibility portion of Slice 5 are implemented. The independent external milestone review confirmed the scientific, coordinate, schema-versioning, and VCF/BCF-parity boundaries but found one MAJOR provider-error defect: a close-time pysam failure could mask an already-normalized mid-stream parse error. The correction is implemented with real corrupted-BGZF regression coverage; targeted external follow-up remains pending before M8 closes.
 
 Milestone 8 adds BCF2 as a first-class resource encoding while preserving the scientific semantics already established for VCF in RCHECK-050. The milestone is intentionally an encoding/parity milestone, not a new variant-compatibility reasoner.
 
@@ -84,7 +84,7 @@ BCF record traversal remains exhaustive and sequential in source-file order. The
 
 `iter_vcf_ref_records()` continues to emit zero-based RefCompat file ordinals for traceability while preserving each record's native logical one-based POS. File ordinal and genomic coordinate remain separate concepts.
 
-A provider error during open or sequential iteration is normalized through the existing VCF/BCF inspection error boundary and is never converted into biological incompatibility.
+A provider error during open, sequential iteration, or provider close is normalized through the existing VCF/BCF inspection error boundary and is never converted into biological incompatibility. If a read/parse failure is already propagating, a secondary close-time provider failure must not replace it; if close fails after otherwise-successful processing, that close-only failure is itself normalized as `VcfParseError`.
 
 ## 6. Reuse of RCHECK-050 reasoning
 
@@ -154,7 +154,7 @@ crosses the already-pinned single POS-normalization boundary.
 
 ## 9. Error and analysis-status boundary
 
-Malformed/unreadable BCF, parser incompatibility, or declared-vs-detected format mismatch is an input/execution problem, not an `INCOMPATIBLE` biological verdict.
+Malformed/unreadable BCF, parser incompatibility, declared-vs-detected format mismatch, or provider close failure is an input/execution problem, not an `INCOMPATIBLE` biological verdict. A secondary close-time provider exception must not mask a parse failure already normalized as `VcfParseError`; a close-only failure is normalized through the same inspection-error family.
 
 If a future production `CompatibilityReport` assembler handles such failures, it must preserve the M7 separation between `INVALID_INPUT`, `PARTIAL`, and scientific compatibility. M8 does not create format-specific workflow exit codes.
 
@@ -171,10 +171,11 @@ Coverage must include at least:
 - direct REF mismatch/incompatible output;
 - unresolved sequence/indeterminate output;
 - explicit scope behavior;
-- UCSC-profile authoritative-alias reuse;
+- UCSC-profile authoritative-alias reuse, including a negative alias-without-content-bridge case;
 - stable schema `2.0.0` acceptance of `bcf` and rejection by retained exact `1.x` schemas;
 - retained exact `1.0.0` and `1.1.0` schema/fixture immutability;
-- deterministic stable JSON, human rendering, and workflow exit behavior.
+- deterministic stable JSON, human rendering, and workflow exit behavior;
+- real corrupted BGZF input where records are consumed before a provider read failure, with the normalized parse error preserved even if provider close also fails.
 
 The ordinary test gate remains network-independent.
 
@@ -203,6 +204,8 @@ After the first compatible and incompatible BCF end-to-end report paths are impl
 - accidental BCF-specific evidence/verdict behavior;
 - stable schema major-version correctness and retained `1.x` immutability.
 
-The Slice 5 internal review is complete. It found no production-science defect and no need for a BCF-specific reasoning branch. The review independently reconstructed the final M7 retained report assets and confirmed that current schema `1.0.0`, schema `1.1.0`, and the retained stable M7 known answers are byte-for-byte unchanged. Permanent tests now pin those bytes, prove schema `2.0.0` is exactly the retained `1.1.0` shape plus its version identity and the single added `bcf` resource-kind value, and exercise BCF directly through draft revision 4. Adversarial coverage also requires declared/detected format agreement during REF streaming, proves file suffixes are not encoding authority, and normalizes a provider failure during BCF iteration as a parse/input failure rather than biological incompatibility.
+The Slice 5 internal review is complete. It found no production-science defect and no need for a BCF-specific reasoning branch. The review independently reconstructed the final M7 retained report assets and confirmed that current schema `1.0.0`, schema `1.1.0`, and the retained stable M7 known answers are byte-for-byte unchanged. Permanent tests pin those bytes, prove schema `2.0.0` is exactly the retained `1.1.0` shape plus its version identity and the single added `bcf` resource-kind value, and exercise BCF directly through draft revision 4.
 
-Close M8 only after the independent milestone-boundary review is clean.
+The independent milestone-boundary review then reproduced those scientific/schema claims but found one MAJOR error-boundary defect: after a genuine mid-stream BGZF/BCF read failure, pysam could also raise from `VariantFile.close()`, causing the close exception to replace the correctly normalized `VcfParseError`. The remediation preserves an already-propagating inspection error, normalizes close-only provider failures, adds real corrupted-BGZF BCF/VCF.gz integration coverage, and adds the missing BCF UCSC authoritative-alias case without a content bridge.
+
+Close M8 only after a targeted external follow-up verifies this correction.

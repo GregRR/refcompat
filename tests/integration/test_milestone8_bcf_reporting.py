@@ -227,7 +227,16 @@ def _provider_source(
     )
 
 
-def _provider_snapshot() -> UcscProviderSnapshot:
+def _provider_snapshot(*, with_content_identity: bool = True) -> UcscProviderSnapshot:
+    identity_sources: tuple[UcscProviderSourceId, ...] = (
+        (_IDENTITY_SOURCE,) if with_content_identity else ()
+    )
+    sources: tuple[UcscProviderSource, ...] = (
+        _provider_source(_CATALOG_SOURCE, UcscProviderDimension.SEQUENCE_CATALOG),
+        _provider_source(_ALIAS_SOURCE, UcscProviderDimension.ALIASES),
+    )
+    if with_content_identity:
+        sources += (_provider_source(_IDENTITY_SOURCE, UcscProviderDimension.CONTENT_IDENTITY),)
     return UcscProviderSnapshot(
         database_id=_DB,
         context_id=_PROVIDER_CONTEXT,
@@ -236,25 +245,27 @@ def _provider_snapshot() -> UcscProviderSnapshot:
                 canonical_name="chr1",
                 length=4,
                 catalog_source_ids=(_CATALOG_SOURCE,),
-                refget_id=_REFGET,
-                identity_source_ids=(_IDENTITY_SOURCE,),
+                refget_id=_REFGET if with_content_identity else None,
+                identity_source_ids=identity_sources,
             ),
         ),
         aliases=(UcscSequenceAlias("1", "chr1", (_ALIAS_SOURCE,), authority="fixture"),),
         catalog_completeness=UcscProviderCompleteness.COMPLETE,
         alias_completeness=UcscProviderCompleteness.COMPLETE,
-        identity_completeness=UcscProviderCompleteness.COMPLETE,
-        sources=(
-            _provider_source(_CATALOG_SOURCE, UcscProviderDimension.SEQUENCE_CATALOG),
-            _provider_source(_ALIAS_SOURCE, UcscProviderDimension.ALIASES),
-            _provider_source(_IDENTITY_SOURCE, UcscProviderDimension.CONTENT_IDENTITY),
+        identity_completeness=(
+            UcscProviderCompleteness.COMPLETE
+            if with_content_identity
+            else UcscProviderCompleteness.UNKNOWN
         ),
+        sources=sources,
     )
 
 
 def _profile_bundle(
     request: EvaluationRequest,
     bcf: Resource,
+    *,
+    provider_snapshot: UcscProviderSnapshot | None = None,
 ) -> tuple[BundleReasoningResult, ProfileProvenanceContext, VcfRefValidationResult]:
     anchor = _anchor_snapshot()
     context = build_reference_context(request, anchor)
@@ -263,7 +274,7 @@ def _profile_bundle(
     preflight = project_ucsc_preflight(
         request,
         UcscPreflightTarget(_DB),
-        _provider_snapshot(),
+        provider_snapshot or _provider_snapshot(),
         context,
         (ResourceContract(_FASTA), core_contract),
     )
@@ -441,6 +452,31 @@ def test_ucsc_profile_bcf_report_surfaces_authoritative_alias_trace(tmp_path: Pa
     assert trace["name_resolution_method"] == "authoritative_alias"
     assert trace["provider_target_name"] == "chr1"
     assert trace["target_resolution_state"] == "bound"
+
+
+def test_ucsc_profile_bcf_alias_without_content_bridge_is_indeterminate(tmp_path: Path) -> None:
+    bcf = _bcf(tmp_path, sequence_name="1", ref="C", position=2)
+    request = _request(bcf, active_profiles=(UCSC_PREFLIGHT_PROFILE_ID,))
+    bundle, profile_context, validation = _profile_bundle(
+        request,
+        bcf,
+        provider_snapshot=_provider_snapshot(with_content_identity=False),
+    )
+    report = _report(request, bundle, profile_contexts=(profile_context,))
+
+    assert validation.match_count == 0
+    assert validation.unresolved_sequence_count == 1
+    payload = _assert_report_surfaces(
+        report,
+        verdict=CompatibilityVerdict.INDETERMINATE,
+        exit_code=WorkflowExitCode.INDETERMINATE,
+    )
+    scientific = cast(dict[str, Any], payload["scientific_result"])
+    contexts = cast(list[dict[str, Any]], scientific["profile_contexts"])
+    trace = cast(list[dict[str, Any]], contexts[0]["sequence_traces"])[0]
+    assert trace["name_resolution_method"] == "authoritative_alias"
+    assert trace["provider_target_name"] == "chr1"
+    assert trace["target_resolution_state"] == "unresolved"
 
 
 @pytest.mark.parametrize(

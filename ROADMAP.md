@@ -168,7 +168,7 @@ The normative Milestone 7 contract is recorded in [`docs/compatibility-report-co
 
 **Goal:** accept BCF2 as a first-class binary encoding of the existing VCF logical resource model, carry it through the same exhaustive reference-context and REF-to-FASTA reasoning, and expose the encoding honestly through the stable report without inventing BCF-specific scientific semantics.
 
-**Implementation status:** Slices 1–4 and the internal adversarial/backward-compatibility portion of Slice 5 are implemented. The internal review found no production-science defect and hardened retained-schema/fixture immutability, exact schema-2.0.0 additivity, draft BCF serialization, suffix-independent format detection, REF-stream encoding validation, and parser-failure normalization. The independent external milestone-boundary review remains pending.
+**Implementation status:** Slices 1–4 and the internal adversarial/backward-compatibility portion of Slice 5 are implemented. The independent external milestone-boundary review reproduced the scientific/schema parity claims but found one blocking provider-boundary defect: a close-time pysam failure could mask an already-normalized mid-stream parse error. The correction preserves the primary parse error, normalizes close-only failures, adds real corrupted-BGZF BCF/VCF.gz coverage, and adds the missing negative BCF UCSC-alias case. Targeted external follow-up remains pending before M8 can close.
 
 Committed scope:
 
@@ -192,7 +192,7 @@ Planned slices:
 2. add first-class BCF resource identity, strict provider-format validation, BCF context/REF observation, stable report schema `2.0.0`, draft revision update, and a minimal known-answer BCF report; **implemented**
 3. prove RCHECK-050 parity through exhaustive BCF REF validation, declared-MD5 binding, conflict-pattern interpretation, generic contract/evidence projection, and whole-bundle verdicts without adding BCF-specific reasoning; **implemented**
 4. exercise scoped, incompatible, indeterminate, and UCSC-profile BCF paths through stable JSON/schema, human rendering, and workflow exits, including VCF↔BCF encoding-mismatch and coordinate off-by-one adversarial cases; **implemented**
-5. close with internal adversarial/backward-compatibility review, retained `1.0.0`/`1.1.0` schema immutability checks, and an external milestone-boundary review; **internal review implemented; external review pending**.
+5. close with internal adversarial/backward-compatibility review, retained `1.0.0`/`1.1.0` schema immutability checks, and an external milestone-boundary review; **internal review implemented; external review completed with one MAJOR provider-close finding corrected; targeted follow-up pending**.
 
 **Exit criteria:** BCF2 resources are represented distinctly from textual VCF, parser-detected encoding must match the declared resource kind, provider-normalized BCF headers and records feed the existing VCF logical models, one-based logical POS and exhaustive REF comparison are preserved exactly, compatible/incompatible/indeterminate/scoped/profile outcomes reuse the existing RCHECK-050 and generic bundle semantics, stable machine output identifies BCF through exact schema `2.0.0` while retained `1.x` schemas remain unchanged, no BCF-specific verdict or duplicate scientific reasoner is introduced, and internal plus external milestone reviews are complete.
 

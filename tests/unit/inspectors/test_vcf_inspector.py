@@ -308,6 +308,7 @@ def test_bcf_iteration_failure_is_normalized_and_provider_is_closed(
         def close(self) -> None:
             nonlocal close_count
             close_count += 1
+            raise FileNotFoundError("synthetic provider close failure")
 
     fake_module = SimpleNamespace(__version__="0.24.0", VariantFile=FakeVariantFile)
     monkeypatch.setattr("refcompat.inspectors.vcf.import_module", lambda _: fake_module)
@@ -322,3 +323,35 @@ def test_bcf_iteration_failure_is_normalized_and_provider_is_closed(
     with pytest.raises(VcfParseError, match="cannot parse BCF records"):
         next(records)
     assert close_count == 2
+
+
+def test_provider_close_failure_without_prior_error_is_normalized(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from refcompat.inspectors.vcf import iter_vcf_ref_records
+
+    path = tmp_path / "variants.bcf"
+    path.write_bytes(b"synthetic")
+    header = _fake_module(is_bcf=True).VariantFile(str(path)).header
+
+    class FakeVariantFile:
+        is_bcf = True
+
+        def __init__(self, _: str) -> None:
+            self.header = header
+
+        def __iter__(self) -> object:
+            return iter((SimpleNamespace(contig="chr1", pos=2, ref="C"),))
+
+        def close(self) -> None:
+            raise OSError("synthetic close-only failure")
+
+    fake_module = SimpleNamespace(__version__="0.24.0", VariantFile=FakeVariantFile)
+    monkeypatch.setattr("refcompat.inspectors.vcf.import_module", lambda _: fake_module)
+
+    with pytest.raises(VcfParseError, match="cannot close BCF resource"):
+        inspect_vcf_context(_resource(path, ResourceKind.BCF))
+
+    with pytest.raises(VcfParseError, match="cannot close BCF resource"):
+        tuple(iter_vcf_ref_records(_resource(path, ResourceKind.BCF)))

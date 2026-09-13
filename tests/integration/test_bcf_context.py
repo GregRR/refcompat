@@ -115,3 +115,83 @@ def test_real_pysam_variant_detection_does_not_trust_filename_suffix(tmp_path: P
         (record.ordinal, record.sequence_name, record.position, record.ref)
         for record in vcf_records
     ]
+
+
+_CORRUPTION_RECORD_COUNT = 20_000
+
+
+def _write_dense_vcf(path: Path, *, record_count: int = _CORRUPTION_RECORD_COUNT) -> None:
+    records = "".join(
+        f"chr1\t{position}\t.\tA\tC\t.\tPASS\t.\n" for position in range(1, record_count + 1)
+    )
+    path.write_text(
+        "".join(
+            (
+                "##fileformat=VCFv4.2\n",
+                f"##contig=<ID=chr1,length={record_count}>\n",
+                "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n",
+                records,
+            )
+        ),
+        encoding="ascii",
+    )
+
+
+def _convert_variant(vcf_path: Path, target_path: Path, *, mode: str) -> None:
+    pysam = cast(Any, import_module("pysam"))
+    with (
+        pysam.VariantFile(str(vcf_path)) as source,
+        pysam.VariantFile(str(target_path), mode, header=source.header) as target,
+    ):
+        for record in source:
+            target.write(record)
+
+
+def _corrupt_middle_bgzf_crc(path: Path) -> None:
+    data = bytearray(path.read_bytes())
+    blocks: list[tuple[int, int]] = []
+    offset = 0
+    while offset < len(data):
+        assert data[offset : offset + 4] == b"\x1f\x8b\x08\x04"
+        block_size = int.from_bytes(data[offset + 16 : offset + 18], "little") + 1
+        assert block_size >= 28
+        blocks.append((offset, block_size))
+        offset += block_size
+    assert offset == len(data)
+
+    candidates = [block for block in blocks[1:-1] if block[1] > 28]
+    assert candidates
+    block_start, block_size = candidates[len(candidates) // 2]
+    crc_start = block_start + block_size - 8
+    data[crc_start] ^= 0x01
+    path.write_bytes(data)
+
+
+@pytest.mark.parametrize(
+    ("kind", "mode", "suffix"),
+    [
+        (ResourceKind.BCF, "wb", ".bcf"),
+        (ResourceKind.VCF, "wz", ".vcf.gz"),
+    ],
+)
+def test_real_pysam_midstream_bgzf_corruption_stays_inside_parse_error_boundary(
+    tmp_path: Path,
+    kind: ResourceKind,
+    mode: str,
+    suffix: str,
+) -> None:
+    source_vcf = tmp_path / "dense-source.vcf"
+    target = tmp_path / f"corrupted{suffix}"
+    _write_dense_vcf(source_vcf)
+    _convert_variant(source_vcf, target, mode=mode)
+    _corrupt_middle_bgzf_crc(target)
+    resource = _resource(target, kind)
+
+    with pytest.raises(VcfParseError, match=rf"cannot parse {kind.value.upper()} records"):
+        inspect_vcf_context(resource)
+
+    yielded = 0
+    with pytest.raises(VcfParseError, match=rf"cannot parse {kind.value.upper()} records"):
+        for _record in iter_vcf_ref_records(resource):
+            yielded += 1
+    assert 0 < yielded < _CORRUPTION_RECORD_COUNT

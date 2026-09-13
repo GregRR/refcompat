@@ -12,6 +12,7 @@ References:
 
 from __future__ import annotations
 
+import sys
 from collections.abc import Callable, Iterable, Iterator
 from importlib import import_module
 from pathlib import Path
@@ -125,7 +126,7 @@ def inspect_vcf_context(resource: Resource) -> VcfContextSnapshot:
     except (NotImplementedError, OSError, TypeError, ValueError) as exc:
         raise VcfParseError(f"cannot parse {resource.kind.value.upper()} records: {path}") from exc
     finally:
-        variant_file.close()
+        _close_variant_file(variant_file, resource_kind=resource.kind, path=path)
 
     return VcfContextSnapshot(
         resource_id=resource.id,
@@ -168,7 +169,24 @@ def iter_vcf_ref_records(resource: Resource) -> Iterator[VcfRefRecord]:
     except (NotImplementedError, OSError, TypeError, ValueError) as exc:
         raise VcfParseError(f"cannot parse {resource.kind.value.upper()} records: {path}") from exc
     finally:
+        _close_variant_file(variant_file, resource_kind=resource.kind, path=path)
+
+
+def _close_variant_file(
+    variant_file: _VariantFile,
+    *,
+    resource_kind: ResourceKind,
+    path: Path,
+) -> None:
+    """Close a provider handle without masking an already-normalized failure."""
+
+    active_exception = sys.exc_info()[0] is not None
+    try:
         variant_file.close()
+    except (NotImplementedError, OSError, TypeError, ValueError) as exc:
+        if active_exception:
+            return
+        raise VcfParseError(f"cannot close {resource_kind.value.upper()} resource: {path}") from exc
 
 
 def _require_variant_resource(resource: Resource, *, operation: str) -> None:
