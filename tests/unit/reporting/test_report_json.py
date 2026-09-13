@@ -306,6 +306,25 @@ def test_bcf_known_answer_fixture_pins_stable_bytes() -> None:
     assert resources[1]["kind"] == "bcf"
 
 
+def test_bcf_draft_revision_preserves_distinct_resource_kind() -> None:
+    report = _bcf_invalid_report()
+    draft = compatibility_report_draft_payload(report)
+    stable = compatibility_report_payload(report)
+
+    assert draft["report_format"] == {
+        "name": DRAFT_REPORT_FORMAT,
+        "stability": "draft",
+        "revision": 4,
+    }
+    request = cast(dict[str, object], draft["request"])
+    resources = cast(list[dict[str, object]], request["resources"])
+    assert resources[1]["kind"] == "bcf"
+
+    stable_body = {key: value for key, value in stable.items() if key != "report_format"}
+    draft_body = {key: value for key, value in draft.items() if key != "report_format"}
+    assert stable_body == draft_body
+
+
 def test_stable_and_draft_payloads_share_only_the_report_body() -> None:
     stable = compatibility_report_payload(_complete_report())
     draft = compatibility_report_draft_payload(_complete_report())

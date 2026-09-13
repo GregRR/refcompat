@@ -81,5 +81,37 @@ def test_real_pysam_rejects_declared_variant_encoding_mismatch(
     _convert_to_bcf(vcf_path, bcf_path)
     path = bcf_path if artifact_kind is ResourceKind.BCF else vcf_path
 
+    resource = _resource(path, declared_kind)
     with pytest.raises(VcfParseError, match="resource declared as"):
-        inspect_vcf_context(_resource(path, declared_kind))
+        inspect_vcf_context(resource)
+    with pytest.raises(VcfParseError, match="resource declared as"):
+        tuple(iter_vcf_ref_records(resource))
+
+
+def test_real_pysam_variant_detection_does_not_trust_filename_suffix(tmp_path: Path) -> None:
+    source_vcf = tmp_path / "source.vcf"
+    source_bcf = tmp_path / "source.bcf"
+    _write_vcf(source_vcf)
+    _convert_to_bcf(source_vcf, source_bcf)
+
+    bcf_named_vcf = tmp_path / "binary-content.vcf"
+    bcf_named_vcf.write_bytes(source_bcf.read_bytes())
+    vcf_named_bcf = tmp_path / "text-content.bcf"
+    vcf_named_bcf.write_bytes(source_vcf.read_bytes())
+
+    bcf_snapshot = inspect_vcf_context(_resource(bcf_named_vcf, ResourceKind.BCF))
+    vcf_snapshot = inspect_vcf_context(_resource(vcf_named_bcf, ResourceKind.VCF))
+    bcf_records = tuple(iter_vcf_ref_records(_resource(bcf_named_vcf, ResourceKind.BCF)))
+    vcf_records = tuple(iter_vcf_ref_records(_resource(vcf_named_bcf, ResourceKind.VCF)))
+
+    assert bcf_snapshot.resource_id != vcf_snapshot.resource_id
+    assert bcf_snapshot.header == vcf_snapshot.header
+    assert bcf_snapshot.record_count == vcf_snapshot.record_count
+    assert bcf_snapshot.chrom_usage == vcf_snapshot.chrom_usage
+    assert [
+        (record.ordinal, record.sequence_name, record.position, record.ref)
+        for record in bcf_records
+    ] == [
+        (record.ordinal, record.sequence_name, record.position, record.ref)
+        for record in vcf_records
+    ]

@@ -18,3 +18,5 @@ binary BCF fixtures. The reporting integration covers scoped conditional success
 incompatibility, unresolved-sequence indeterminacy, UCSC authoritative-alias resolution, and
 both declared/detected VCF↔BCF mismatch directions through exact schema 2.0.0, human rendering,
 and workflow exits.
+
+Slice 5 internal review does not rewrite any retained stable fixture. Tests pin the exact bytes of the final-M7 `1.0.0`/`1.1.0` schemas and stable known answers and prove schema `2.0.0` is exactly the `1.1.0` contract plus its new version identity and the single `bcf` resource-kind value.

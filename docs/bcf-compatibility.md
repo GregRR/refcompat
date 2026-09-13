@@ -1,6 +1,6 @@
 # Milestone 8 native BCF compatibility contract
 
-**Status:** Slices 1–4 implemented; core RCHECK-050 and scoped/profile/reporting parity are pinned, while internal/adversarial and external milestone review remain pending.
+**Status:** Slices 1–4 plus the internal adversarial/backward-compatibility portion of Slice 5 are implemented. The internal review found no production-science defect and hardened retained-contract immutability and format-boundary/reporting regressions; the independent external milestone review remains pending.
 
 Milestone 8 adds BCF2 as a first-class resource encoding while preserving the scientific semantics already established for VCF in RCHECK-050. The milestone is intentionally an encoding/parity milestone, not a new variant-compatibility reasoner.
 
@@ -203,4 +203,6 @@ After the first compatible and incompatible BCF end-to-end report paths are impl
 - accidental BCF-specific evidence/verdict behavior;
 - stable schema major-version correctness and retained `1.x` immutability.
 
-Close M8 only after an adversarial exit suite and independent milestone-boundary review are clean.
+The Slice 5 internal review is complete. It found no production-science defect and no need for a BCF-specific reasoning branch. The review independently reconstructed the final M7 retained report assets and confirmed that current schema `1.0.0`, schema `1.1.0`, and the retained stable M7 known answers are byte-for-byte unchanged. Permanent tests now pin those bytes, prove schema `2.0.0` is exactly the retained `1.1.0` shape plus its version identity and the single added `bcf` resource-kind value, and exercise BCF directly through draft revision 4. Adversarial coverage also requires declared/detected format agreement during REF streaming, proves file suffixes are not encoding authority, and normalizes a provider failure during BCF iteration as a parse/input failure rather than biological incompatibility.
+
+Close M8 only after the independent milestone-boundary review is clean.

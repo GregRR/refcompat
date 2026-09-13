@@ -112,3 +112,4 @@ See [`../docs/check-specifications.md`](../docs/check-specifications.md) for the
   indeterminate outcomes, UCSC authoritative aliases, exact schema 2.0.0, deterministic
   human/JSON rendering, stable workflow exits, and both declared/detected encoding-mismatch
   directions as INVALID_INPUT without a scientific result.
+  Slice 5 internal-review coverage pins SHA-256 hashes for retained M7 `1.0.0`/`1.1.0` schemas and stable known answers, proves exact schema `2.0.0` differs from retained `1.1.0` only by report-format version identity and the added `bcf` resource-kind enum member, exercises BCF through draft revision 4, requires declared/detected encoding validation on REF streaming as well as context inspection, proves filename suffixes do not determine VCF versus BCF, and normalizes a mid-stream BCF provider failure as a parse/input error with provider closure. The independent M8 milestone-boundary review remains pending.

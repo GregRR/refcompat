@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 from importlib import import_module
 from importlib.resources import files
@@ -54,6 +55,21 @@ _BASE_FIXTURE = _FIXTURE_DIR / "stable-compatible-report-1.0.0.json"
 _BASE_INCOMPATIBLE_FIXTURE = _FIXTURE_DIR / "stable-incompatible-report-1.0.0.json"
 _M8_FIXTURE_DIR = Path(__file__).parents[2] / "fixtures" / "milestone8"
 _BCF_FIXTURE = _M8_FIXTURE_DIR / "stable-bcf-invalid-input-report-2.0.0.json"
+
+_RETAINED_M7_HASHES = {
+    "schema-1.0.0": "030309859344be5bd74d2255865e15c052317373f15bdaeaf82568f164a71a54",
+    "schema-1.1.0": "6ce95c1eb1043a35a863a7d84d3dbb595654d6856916a5aebb621dea53e3ca67",
+    "stable-compatible-1.0.0": "30735e45930038846886c258cc3f7da9cf739350fb3607bff8fcf1766790037b",
+    "stable-incompatible-1.0.0": "6bc6dcb23a16d746c7b47014e666cb44e7d2d03929033d79b6913304d726f66d",
+    "stable-compatible-1.1.0": "febc34048157d208eba71a02f0eebd3d070497006a90b2fb07c897cf08bd2fef",
+    "stable-incompatible-1.1.0": "30e5e4e5e342edc2a43da7ec6e24efc7fd9ff78b1ab19f736ffe9384c021f315",
+    "stable-ucsc-alignment-1.1.0": (
+        "b6271160cbbb5fc9a8e0d76ddf3d14458e4610a9570083097e4b73f1590a5533"
+    ),
+    "stable-ucsc-content-conflict-1.1.0": (
+        "ad195bb252d93ab50c84bcb46e4911b75d21a5127966a01b48a37ed08bc0e83a"
+    ),
+}
 
 
 class _SchemaValidator(Protocol):
@@ -107,6 +123,43 @@ def test_stable_schema_is_packaged_and_self_identifying() -> None:
     report_format = schema["$defs"]["reportFormat"]["properties"]
     assert report_format["name"] == {"const": REPORT_FORMAT}
     assert report_format["schema_version"] == {"const": REPORT_SCHEMA_VERSION}
+
+
+def test_schema_2_0_is_exact_1_1_plus_bcf_resource_kind() -> None:
+    previous = _schema(_PREVIOUS_SCHEMA_VERSION)
+    current = copy.deepcopy(_schema())
+
+    current["$id"] = previous["$id"]
+    current["description"] = previous["description"]
+    current["$defs"]["reportFormat"]["properties"]["schema_version"] = previous["$defs"][
+        "reportFormat"
+    ]["properties"]["schema_version"]
+
+    kinds = current["$defs"]["resource"]["properties"]["kind"]["enum"]
+    kinds.remove("bcf")
+
+    assert current == previous
+
+
+def test_retained_m7_stable_contract_assets_match_frozen_hashes() -> None:
+    assets = {
+        "schema-1.0.0": files("refcompat.schemas")
+        .joinpath("compatibility-report-1.0.0.schema.json")
+        .read_bytes(),
+        "schema-1.1.0": files("refcompat.schemas")
+        .joinpath("compatibility-report-1.1.0.schema.json")
+        .read_bytes(),
+        "stable-compatible-1.0.0": _BASE_FIXTURE.read_bytes(),
+        "stable-incompatible-1.0.0": _BASE_INCOMPATIBLE_FIXTURE.read_bytes(),
+        "stable-compatible-1.1.0": _PREVIOUS_FIXTURE.read_bytes(),
+        "stable-incompatible-1.1.0": _PREVIOUS_INCOMPATIBLE_FIXTURE.read_bytes(),
+        "stable-ucsc-alignment-1.1.0": _CONTEXT_FIXTURE.read_bytes(),
+        "stable-ucsc-content-conflict-1.1.0": _CONTENT_CONFLICT_FIXTURE.read_bytes(),
+    }
+
+    observed = {name: hashlib.sha256(content).hexdigest() for name, content in assets.items()}
+
+    assert observed == _RETAINED_M7_HASHES
 
 
 def test_current_schema_adds_bcf_without_widening_retained_1_1() -> None:

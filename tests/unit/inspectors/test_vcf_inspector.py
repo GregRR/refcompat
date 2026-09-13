@@ -282,3 +282,43 @@ def test_iter_vcf_ref_records_closes_provider_after_exhaustive_iteration(
 
     assert len(tuple(iter_vcf_ref_records(_resource(path)))) == 1
     assert closed
+
+
+def test_bcf_iteration_failure_is_normalized_and_provider_is_closed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from refcompat.inspectors.vcf import iter_vcf_ref_records
+
+    path = tmp_path / "truncated.bcf"
+    path.write_bytes(b"synthetic")
+    header = _fake_module(is_bcf=True).VariantFile(str(path)).header
+    close_count = 0
+
+    class FakeVariantFile:
+        is_bcf = True
+
+        def __init__(self, _: str) -> None:
+            self.header = header
+
+        def __iter__(self) -> object:
+            yield SimpleNamespace(contig="chr1", pos=2, ref="C")
+            raise OSError("synthetic truncated BCF")
+
+        def close(self) -> None:
+            nonlocal close_count
+            close_count += 1
+
+    fake_module = SimpleNamespace(__version__="0.24.0", VariantFile=FakeVariantFile)
+    monkeypatch.setattr("refcompat.inspectors.vcf.import_module", lambda _: fake_module)
+
+    with pytest.raises(VcfParseError, match="cannot parse BCF records"):
+        inspect_vcf_context(_resource(path, ResourceKind.BCF))
+    assert close_count == 1
+
+    records = iter_vcf_ref_records(_resource(path, ResourceKind.BCF))
+    first = next(records)
+    assert (first.ordinal, first.sequence_name, first.position, first.ref) == (0, "chr1", 2, "C")
+    with pytest.raises(VcfParseError, match="cannot parse BCF records"):
+        next(records)
+    assert close_count == 2
