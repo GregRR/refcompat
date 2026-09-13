@@ -200,11 +200,47 @@ The normative Milestone 8 contract is recorded in [`docs/bcf-compatibility.md`](
 
 **Non-blocking post-M8 hardening:** if a future production caller intentionally abandons `iter_vcf_ref_records()` before exhaustion, decide whether a provider close failure during generator finalization (`GeneratorExit`) should be surfaced rather than suppressed by the current preserve-active-exception policy. No current production call site abandons variant iteration early, so this does not block M8 closure.
 
+## Milestone 9 — standard BED coordinate compatibility
+
+**Goal:** accept standard BED3–BED9 and BED12 as first-class sparse coordinate resources, preserve their native zero-based half-open semantics, and determine whether every reference-coordinate statement is representable against the explicitly selected FASTA anchor without inferring assembly identity or aliases from names.
+
+**Implementation status:** Slice 1 contract pinned; implementation pending.
+
+Committed scope:
+
+- Add a distinct `ResourceKind.BED` and keep BED separate from GTF/GFF3 domain observations because BED uses zero-based half-open coordinates and permits zero-length boundary features.
+- Require an explicit standard BED layout (`BED3` through `BED9`, or `BED12`). The format does not identify in-band which columns 4–12 are standard versus custom, so RefCompat must not infer that meaning from column count. Initial M9 support excludes custom BEDn+m layouts and the specification-prohibited BED10/BED11 layouts.
+- Preserve native `chromStart` and `chromEnd` values. A resolved feature is representable when `0 <= chromStart <= chromEnd <= anchor sequence length`; `chromStart == chromEnd` remains a valid boundary feature rather than being forced into a one-based closed interval.
+- Validate standard coordinate-bearing optional fields before reasoning: `thickStart`/`thickEnd` must remain within the feature span, and BED12 blocks must have consistent counts, remain ordered and non-overlapping, start at `chromStart`, end at `chromEnd`, and remain within the feature. Malformed internal BED structure is invalid input, not biological incompatibility.
+- Treat BED as sparse. Each feature-used `chrom` creates a mandatory sequence-presence requirement, all features contribute to one scalable anchor-owned coordinate-bounds requirement, and extra sequences in the FASTA anchor do not conflict with the BED resource.
+- Reuse generic `SequencePresenceRequirement`, `CoordinateBoundsRequirement`, coordinate-validation capability, evidence, finding, conflict-core, and verdict behavior. BED-specific models retain local parsing and diagnostic detail but do not create a second verdict system.
+- Resolve `chrom` only by exact name or an independently verified `SequenceBinding`. BED supplies no sequence-content identity and familiar names do not authorize aliases. Profile-derived naming remains subordinate to the existing independent target-content proof.
+- Stream data lines sequentially, retain compact per-sequence summaries plus bounded representative problems, and require no sort order or index for exhaustive validation. Sorting is recommended by BEDv1 but is not a compatibility requirement.
+- Accept plain and gzip-compressed BED through content-aware input handling rather than filename suffix authority. A valid empty or comment-only BED resource creates no sequence or coordinate requirements and is not itself a conflict.
+- Reject UCSC `track`/`browser` files as BED input, matching BEDv1's distinction. Defer custom BED fields, BEDPE, bedGraph, narrowPeak/broadPeak, bigBed, and other BED-derived dialects until their additional semantics receive explicit contracts.
+- Advance the current stable compatibility-report schema from exact `2.0.0` to exact `3.0.0` when `ResourceKind.BED` becomes serializable, because `ResourceKind` is a closed enum. Retain exact `1.0.0`, `1.1.0`, and `2.0.0` schemas and known answers unchanged; advance the provisional draft revision at the same boundary.
+- Keep malformed/unreadable/layout-ambiguous BED outside scientific incompatibility. A future report assembler must preserve the established `INVALID_INPUT`/`PARTIAL`/scientific-verdict separation and existing workflow exits.
+- Use small redistributable synthetic fixtures covering coordinate boundaries, empty intervals, sparse/non-human names, BED12 blocks, invalid layouts, gzip detection, unresolved names, hard bounds conflicts, explicit scope, stable reporting, and UCSC-profile reuse.
+- Perform an internal scientific/API and backward-compatibility review after representative compatible, incompatible, indeterminate, scoped, profile, and report paths are clean, then an independent milestone-boundary review before Milestone 10.
+
+Planned slices:
+
+1. pin the BEDv1 layout ambiguity, native coordinate semantics, sparse reasoning reuse, schema-version consequence, non-goals, fixtures, and exit criteria; **implemented by this contract slice**
+2. add explicit standard BED layout values and first-class BED resource identity atomically with exact stable schema `3.0.0`, the next draft revision, retained prior schemas, and a minimal known-answer BED report;
+3. add native BED observations plus strict streaming inspection for plain/gzip input and focused model/inspector tests;
+4. implement exhaustive exact-name BED-to-FASTA bounds validation and generic sparse presence/bounds projection, including zero-length boundary features and BED12 structure;
+5. exercise compatible, incompatible, indeterminate, explicit-scope, and UCSC-profile paths through whole-bundle reasoning, deterministic JSON/human rendering, and workflow exits without BED-specific verdict logic;
+6. close with integration/adversarial fixtures, internal scientific/API and backward-compatibility review, and an independent milestone-boundary review.
+
+**Exit criteria:** standard BED3–BED9 and BED12 layouts are explicit rather than inferred; native zero-based half-open and zero-length boundary semantics are preserved; malformed BED structure remains invalid input; every data row is checked sequentially without an index; sparse exact-name or verified-binding presence/bounds results flow through the existing generic reasoning and four verdicts; BED reports identify `ResourceKind.BED` through exact stable schema `3.0.0` while all retained schemas remain byte-exact; representative scoped/profile/reporting paths are covered; no BED-specific verdict or duplicate generic reasoner is introduced; and internal plus external milestone reviews are complete.
+
+The normative Milestone 9 contract is recorded in [`docs/bed-compatibility.md`](docs/bed-compatibility.md).
+
 ## v1.0 target
 
 A stable v1.0 should additionally include:
 
-- BED support;
+- BED support (Milestone 9 contract pinned; implementation pending);
 - stable machine-readable report schema;
 - alignment reporting that surfaces dictionary relationship context alongside generic verdicts, including non-bijective mappings;
 - portable reference/compatibility manifest;

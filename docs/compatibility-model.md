@@ -200,7 +200,7 @@ Describes coordinate encoding, not biological identity.
 Examples include:
 
 - one-based closed GTF/GFF intervals;
-- zero-based half-open BED intervals in a later release;
+- zero-based half-open BED intervals as pinned for Milestone 9;
 - the local sequence namespace used by a resource.
 
 The format may determine coordinate convention. The reference relationship is established separately through requirements/evidence.

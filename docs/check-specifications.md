@@ -797,6 +797,74 @@ renaming/conversion, or structural hub validation. Use UCSC tooling such as
 See [`ucsc-preflight-profile.md`](ucsc-preflight-profile.md) for the detailed
 Milestone 6 contract and primary UCSC references.
 
+## RCHECK-080 — BED ↔ FASTA
+
+**Implementation status:** Milestone 9 Slice 1 contract pinned; implementation pending.
+
+### Purpose
+
+Determine whether every coordinate statement in an explicitly declared standard
+BED3–BED9 or BED12 resource can be represented against the selected FASTA
+anchor. BED is sparse and directional: used `chrom` values require matching
+anchor sequences, while anchor sequences absent from BED do not create a
+conflict.
+
+### Layout and input validity
+
+The caller must supply the standard BED field count because BED has no in-band
+declaration distinguishing optional standard columns from custom columns.
+Initial RCHECK-080 accepts only exact standard BED3–BED9 and BED12 layouts;
+BED10/BED11, BEDn+m custom layouts, and BED-derived dialects are outside this
+contract. All data rows must have the declared field count. `track` and
+`browser` lines are not valid BEDv1 input.
+
+Malformed lexical fields, inconsistent row width, invalid standard optional
+fields, or contradictory BED12 block structure are `INVALID_INPUT` concerns,
+not biological incompatibility. Sorting is recommended but does not affect
+RCHECK-080 compatibility.
+
+### Native coordinates and exhaustive bounds
+
+BED coordinates remain zero-based and half-open in BED-owned observations. For
+an exact-name or verified-binding resolved feature on an anchor sequence of
+length `N`, representability requires:
+
+```text
+0 <= chromStart <= chromEnd <= N
+```
+
+`chromStart == chromEnd` is a valid zero-length boundary feature, including
+`[0, 0)` before the first base and `[N, N)` after the last base. RCHECK-080 must
+not force such a feature through the positive one-based closed GTF/GFF3 model.
+
+BED7–BED9 `thickStart`/`thickEnd` and BED12 block arrays are validated as local
+format structure before anchor reasoning. Once valid, they remain contained in
+the top-level feature span and do not create broader anchor bounds than
+`[chromStart, chromEnd)`. Every data row is traversed sequentially; no index is
+required.
+
+### Generic projection and name resolution
+
+Every feature-used `chrom` creates one mandatory format-neutral sequence-presence
+requirement. All valid feature spans contribute to one scalable
+`CoordinateBoundsRequirement` and one selected-anchor-owned exhaustive
+coordinate-validation capability. Resolved out-of-bounds intervals provide hard
+structural contradiction; unresolved names remain unresolved. An empty or
+comment-only valid BED has no coordinate statements and contributes no conflict.
+
+BED contains no sequence-content identity. A cross-name relationship therefore
+requires an independently verified `SequenceBinding`, including any profile
+binding whose target was first content-bound to the selected FASTA anchor.
+String resemblance, common `chr` prefixes, declared layout, score, strand,
+display fields, and file names are not identity evidence.
+
+The existing generic constraint, evidence, interpretation, conflict-core, and
+four-verdict machinery remains authoritative. RCHECK-080 must not create a BED
+verdict family or allow a BED-specific summary to override generic results.
+
+See [`bed-compatibility.md`](bed-compatibility.md) for the normative Milestone 9
+contract, detailed non-goals, schema boundary, and fixture plan.
+
 ## RCHECK-100 — Whole-bundle reference-context coherence
 
 ### Purpose

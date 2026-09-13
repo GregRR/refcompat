@@ -422,6 +422,23 @@ RefCompat does not validate gene-model biology, repair feature hierarchy, normal
 
 See [`docs/annotation-coordinate-compatibility.md`](docs/annotation-coordinate-compatibility.md) for the standards-derived Milestone 5 invariants that pin this implementation boundary.
 
+### RCHECK-080 — BED ↔ FASTA
+
+Treat standard BED3–BED9 and BED12 as sparse coordinate-bearing resources whose
+`chrom` values and zero-based half-open intervals impose directional presence
+and coordinate-bounds requirements on the selected FASTA anchor. Preserve
+native BED coordinates, including valid zero-length boundary features, and
+reuse the existing format-neutral presence, bounds, evidence, finding, and
+verdict machinery after BED-specific parsing and validation.
+
+The caller must explicitly declare the standard BED layout because BED does not
+encode whether columns 4–12 are standard or custom. Milestone 9 does not infer
+that layout from field count, infer aliases from familiar chromosome names, or
+treat sorting and display attributes as biological compatibility evidence.
+
+See [`docs/bed-compatibility.md`](docs/bed-compatibility.md) for the normative
+Milestone 9 contract.
+
 ### RCHECK-100 — whole-bundle coherence
 
 Evaluate all in-scope mandatory requirements against the FASTA-anchored reference context and aggregate the top-level verdict. Identify the smallest useful conflict/evidence core.
@@ -701,7 +718,8 @@ dependencies.
 11. implement the Milestone 6 `ucsc-preflight` provider snapshot, authoritative-alias relationship, profile projection, and representative end-to-end paths in reviewable slices (complete);
 12. implement the Milestone 7 immutable report, stable versioned machine schema, report-owned provenance/relationship context, human/workflow views, representative end-to-end coverage, adversarial internal exit review, and independent milestone-boundary review (complete; external review found no MAJOR issue and assessed M7 SAFE TO CLOSE, with accepted MINOR hardening integrated);
 13. implement Milestone 8 native BCF2 support by reusing the existing VCF logical observation/reasoning path, preserving one-based logical POS at the pysam boundary, enforcing declared-vs-detected encoding, and advancing stable report schema to `2.0.0` because `ResourceKind` is a closed enum (complete; external review blocker corrected and independently confirmed);
-14. incorporate implementation feedback into the design as concrete edge cases expose missing constraints or evidence types.
+14. implement Milestone 9 standard BED coordinate compatibility through an explicit BED3–BED9/BED12 layout, native zero-based half-open observations, sparse presence/bounds reasoning, stable report schema `3.0.0`, and reviewable end-to-end slices;
+15. incorporate implementation feedback into the design as concrete edge cases expose missing constraints or evidence types.
 
 ---
 
