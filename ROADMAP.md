@@ -204,7 +204,11 @@ The normative Milestone 8 contract is recorded in [`docs/bcf-compatibility.md`](
 
 **Goal:** accept standard BED3–BED9 and BED12 as first-class sparse coordinate resources, preserve their native zero-based half-open semantics, and determine whether every reference-coordinate statement is representable against the explicitly selected FASTA anchor without inferring assembly identity or aliases from names.
 
-**Implementation status:** Slice 1 contract pinned; implementation pending.
+**Implementation status:** Slices 1–2 complete. The contract is pinned; explicit
+standard layout values, first-class BED resource identity, exact stable schema
+`3.0.0`, draft revision 5, retained prior schemas, and the minimal layout-bearing
+BED known answer are implemented. BED inspection and coordinate reasoning begin
+in Slice 3.
 
 Committed scope:
 
@@ -226,7 +230,7 @@ Committed scope:
 Planned slices:
 
 1. pin the BEDv1 layout ambiguity, native coordinate semantics, sparse reasoning reuse, schema-version consequence, non-goals, fixtures, and exit criteria; **implemented by this contract slice**
-2. add explicit standard BED layout values and first-class BED resource identity atomically with exact stable schema `3.0.0`, the next draft revision, retained prior schemas, and a minimal known-answer BED report;
+2. add explicit standard BED layout values and first-class BED resource identity atomically with exact stable schema `3.0.0`, the next draft revision, retained prior schemas, and a minimal known-answer BED report; **implemented**
 3. add native BED observations plus strict streaming inspection for plain/gzip input and focused model/inspector tests;
 4. implement exhaustive exact-name BED-to-FASTA bounds validation and generic sparse presence/bounds projection, including zero-length boundary features and BED12 structure;
 5. exercise compatible, incompatible, indeterminate, explicit-scope, and UCSC-profile paths through whole-bundle reasoning, deterministic JSON/human rendering, and workflow exits without BED-specific verdict logic;
@@ -240,7 +244,7 @@ The normative Milestone 9 contract is recorded in [`docs/bed-compatibility.md`](
 
 A stable v1.0 should additionally include:
 
-- BED support (Milestone 9 contract pinned; implementation pending);
+- BED support (Milestone 9 Slices 1–2 complete; inspection and reasoning pending);
 - stable machine-readable report schema;
 - alignment reporting that surfaces dictionary relationship context alongside generic verdicts, including non-bijective mappings;
 - portable reference/compatibility manifest;

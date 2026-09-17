@@ -1,7 +1,7 @@
 # Milestone 7 report fixtures
 
 `draft-compatible-report.json` originated in M7 and now pins provisional draft
-revision 4 after M8 adds the `bcf` resource-kind wire value. Draft output has no
+revision 5 after M9 adds the `bed` resource-kind wire value. Draft output has no
 stable compatibility guarantee.
 
 `stable-compatible-report-1.0.0.json` and

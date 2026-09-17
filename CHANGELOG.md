@@ -6,6 +6,8 @@ The project is currently pre-release; entries under `Unreleased` describe ongoin
 
 ## Unreleased
 
+- Begin Milestone 9 implementation: add explicit immutable `BedLayout` values for BED3–BED9 and BED12, add first-class `ResourceKind.BED`, advance the current stable compatibility-report schema to exact `3.0.0` and draft output to revision 5, retain exact `1.0.0`/`1.1.0`/`2.0.0` assets unchanged, and pin a minimal empty-BED known answer carrying the declared layout as a generic resource observation before BED parsing or coordinate reasoning.
+
 - Pin the Milestone 9 BED coordinate-compatibility contract: require an explicit standard BED3–BED9 or BED12 layout because BED does not identify standard-versus-custom columns in-band, preserve native zero-based half-open coordinates including empty intervals, reuse generic sparse presence/bounds reasoning without inferring aliases, reject track files and unsupported BED-derived dialects, and plan exact stable schema `3.0.0` because adding `bed` widens the closed `ResourceKind` enum.
 
 - Close Milestone 8 after targeted external follow-up: the reviewer independently reproduced the real corrupted BCF/VCF.gz provider-error remediation, confirmed normalized `VcfParseError` preservation for mid-stream read failures plus close-only normalization, reproduced the 1013-test gate, verified the negative BCF UCSC-alias case, and assessed the repository SAFE TO CLOSE M8. Retain early-abandonment `GeneratorExit` close-failure handling as non-blocking post-M8 hardening because no current production caller abandons variant iteration before exhaustion.

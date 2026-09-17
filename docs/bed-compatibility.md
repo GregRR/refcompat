@@ -1,6 +1,9 @@
 # Milestone 9 standard BED coordinate compatibility contract
 
-**Status:** Slice 1 contract pinned; implementation pending.
+**Status:** Slices 1–2 complete. The contract, explicit standard layout values,
+first-class BED resource identity, exact stable schema `3.0.0`, draft revision 5,
+retained prior schemas, and a minimal layout-bearing BED known answer are
+implemented. BED inspection and coordinate reasoning remain pending.
 
 Milestone 9 adds standard BED as a first-class sparse coordinate resource. The
 scientific question is directional: can every reference-coordinate statement in
@@ -189,6 +192,15 @@ The enum, schema `3.0.0`, draft-revision advance, and a minimal known-answer BED
 report must land atomically. There must be no intermediate state in which the
 current serializer can emit `bed` while identifying its payload as schema
 `2.0.0`.
+
+Slice 2 implements that boundary atomically. `BedLayout` exposes exactly BED3
+through BED9 and BED12 with lowercase observation values (`bed3` through `bed9`
+and `bed12`), `ResourceKind.BED` serializes as `bed`, current stable output
+identifies exact schema `3.0.0`, and provisional output identifies revision 5.
+The first known answer represents a completed empty BED3 analysis with no
+fabricated feature requirements; it records `bed3` as a `bed.layout` resource
+observation and consequently retains the generic no-applicable-requirement
+`INDETERMINATE` verdict.
 
 The explicit BED layout is analysis input needed to interpret the artifact and
 must be retained as a report `ResourceObservation` using the existing generic

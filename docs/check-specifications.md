@@ -799,7 +799,10 @@ Milestone 6 contract and primary UCSC references.
 
 ## RCHECK-080 — BED ↔ FASTA
 
-**Implementation status:** Milestone 9 Slice 1 contract pinned; implementation pending.
+**Implementation status:** Milestone 9 Slices 1–2 complete. The contract,
+explicit layout values, first-class BED resource identity, schema `3.0.0`, draft
+revision 5, retained-schema checks, and minimal layout-bearing known answer are
+implemented. Streaming inspection begins in Slice 3.
 
 ### Purpose
 

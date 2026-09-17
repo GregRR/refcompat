@@ -52,9 +52,9 @@ from refcompat.model.report_context import (
 from refcompat.model.resources import ArtifactIdentity, Resource
 
 REPORT_FORMAT = "refcompat.compatibility_report"
-REPORT_SCHEMA_VERSION = "2.0.0"
+REPORT_SCHEMA_VERSION = "3.0.0"
 DRAFT_REPORT_FORMAT = REPORT_FORMAT
-DRAFT_REPORT_REVISION = 4
+DRAFT_REPORT_REVISION = 5
 
 
 def compatibility_report_payload(report: CompatibilityReport) -> dict[str, object]:

@@ -1,0 +1,81 @@
+{
+  "analysis": {
+    "issues": [],
+    "status": "complete"
+  },
+  "report_format": {
+    "name": "refcompat.compatibility_report",
+    "schema_version": "3.0.0"
+  },
+  "request": {
+    "active_profiles": [],
+    "anchor_resource_id": "reference",
+    "policy_id": null,
+    "resources": [
+      {
+        "artifact": {
+          "byte_size": null,
+          "digest": null
+        },
+        "display_name": null,
+        "id": "reference",
+        "kind": "fasta"
+      },
+      {
+        "artifact": {
+          "byte_size": null,
+          "digest": null
+        },
+        "display_name": null,
+        "id": "consumer",
+        "kind": "bed"
+      }
+    ],
+    "scope": {
+      "anchor_sequence_names": null,
+      "resource_ids": [
+        "reference",
+        "consumer"
+      ]
+    }
+  },
+  "scientific_result": {
+    "alignment_relationships": [],
+    "capabilities": [],
+    "conditions": [],
+    "conflict_cores": [],
+    "constraints": [],
+    "evaluations": [],
+    "evidence": {
+      "items": [],
+      "not_applicable_constraint_ids": [],
+      "unresolved_constraint_ids": []
+    },
+    "findings": [],
+    "observations": [
+      {
+        "id": "bed:layout",
+        "kind": "bed.layout",
+        "resource_id": "consumer",
+        "source_location": null,
+        "value": "bed3"
+      }
+    ],
+    "profile_contexts": [],
+    "requirements": [],
+    "sequence_bindings": [],
+    "verdict": {
+      "basis_finding_ids": [],
+      "condition_ids": [],
+      "constraint_states": {
+        "not_applicable": [],
+        "satisfied": [],
+        "unresolved": [],
+        "unsatisfied": []
+      },
+      "mandatory_constraint_ids": [],
+      "value": "indeterminate"
+    }
+  },
+  "tool_version": "0.1.0.dev0"
+}

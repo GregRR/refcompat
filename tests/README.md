@@ -112,4 +112,12 @@ See [`../docs/check-specifications.md`](../docs/check-specifications.md) for the
   indeterminate outcomes, UCSC authoritative aliases, exact schema 2.0.0, deterministic
   human/JSON rendering, stable workflow exits, and both declared/detected encoding-mismatch
   directions as INVALID_INPUT without a scientific result.
-  Slice 5 internal-review coverage pins SHA-256 hashes for retained M7 `1.0.0`/`1.1.0` schemas and stable known answers, proves exact schema `2.0.0` differs from retained `1.1.0` only by report-format version identity and the added `bcf` resource-kind enum member, exercises BCF through draft revision 4, requires declared/detected encoding validation on REF streaming as well as context inspection, and proves filename suffixes do not determine VCF versus BCF. External-review follow-up coverage additionally forces both the primary read and provider close to fail, verifies the normalized read error wins, normalizes close-only failures, exercises real mid-stream BGZF corruption for BCF and VCF.gz, and pins a BCF UCSC authoritative alias without content identity as indeterminate. Targeted external follow-up remains pending.
+  Slice 5 internal-review coverage pins SHA-256 hashes for retained M7 `1.0.0`/`1.1.0` schemas and stable known answers, proves exact schema `2.0.0` differs from retained `1.1.0` only by report-format version identity and the added `bcf` resource-kind enum member, exercises BCF through draft revision 4, requires declared/detected encoding validation on REF streaming as well as context inspection, and proves filename suffixes do not determine VCF versus BCF. External-review follow-up coverage additionally forces both the primary read and provider close to fail, verifies the normalized read error wins, normalizes close-only failures, exercises real mid-stream BGZF corruption for BCF and VCF.gz, and pins a BCF UCSC authoritative alias without content identity as indeterminate. The targeted external follow-up independently reproduced the remediation and assessed M8 SAFE TO CLOSE.
+
+- Milestone 9 Slice 2 adds explicit `BedLayout` values for BED3–BED9 and BED12,
+  first-class `ResourceKind.BED`, exact schema `3.0.0` with `bed` as the only
+  widened resource-kind value, and draft revision 5. It freezes hashes for
+  retained M7/M8 schemas and stable known answers, proves the exact 2.0.0→3.0.0
+  delta, and pins a minimal empty-BED report whose generic `bed.layout`
+  observation records the required out-of-band layout without fabricating
+  parsed features or coordinate requirements.

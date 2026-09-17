@@ -347,7 +347,7 @@ def _assert_report_surfaces(
 
     report_format = cast(dict[str, Any], payload["report_format"])
     analysis = cast(dict[str, Any], payload["analysis"])
-    assert report_format["schema_version"] == "2.0.0"
+    assert report_format["schema_version"] == REPORT_SCHEMA_VERSION
     assert analysis["status"] == status.value
     assert render_compatibility_report_json(report) == serialized
     human = render_compatibility_report_human(report)

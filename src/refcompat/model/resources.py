@@ -25,6 +25,7 @@ class ResourceKind(StrEnum):
     SEQUENCE_DICTIONARY = "sequence_dictionary"
     VCF = "vcf"
     BCF = "bcf"
+    BED = "bed"
     BAM = "bam"
     CRAM = "cram"
     GTF = "gtf"

@@ -47,7 +47,8 @@ _FIXTURE = _FIXTURE_DIR / "stable-compatible-report-1.1.0.json"
 _INCOMPATIBLE_FIXTURE = _FIXTURE_DIR / "stable-incompatible-report-1.1.0.json"
 _CONTEXT_FIXTURE = _FIXTURE_DIR / "stable-ucsc-alignment-report-1.1.0.json"
 _CONTENT_CONFLICT_FIXTURE = _FIXTURE_DIR / "stable-ucsc-content-conflict-report-1.1.0.json"
-_PREVIOUS_SCHEMA_VERSION = "1.1.0"
+_M7_SCHEMA_VERSION = "1.1.0"
+_M8_SCHEMA_VERSION = "2.0.0"
 _BASE_SCHEMA_VERSION = "1.0.0"
 _PREVIOUS_FIXTURE = _FIXTURE_DIR / "stable-compatible-report-1.1.0.json"
 _PREVIOUS_INCOMPATIBLE_FIXTURE = _FIXTURE_DIR / "stable-incompatible-report-1.1.0.json"
@@ -55,8 +56,10 @@ _BASE_FIXTURE = _FIXTURE_DIR / "stable-compatible-report-1.0.0.json"
 _BASE_INCOMPATIBLE_FIXTURE = _FIXTURE_DIR / "stable-incompatible-report-1.0.0.json"
 _M8_FIXTURE_DIR = Path(__file__).parents[2] / "fixtures" / "milestone8"
 _BCF_FIXTURE = _M8_FIXTURE_DIR / "stable-bcf-invalid-input-report-2.0.0.json"
+_M9_FIXTURE_DIR = Path(__file__).parents[2] / "fixtures" / "milestone9"
+_BED_FIXTURE = _M9_FIXTURE_DIR / "stable-empty-bed-report-3.0.0.json"
 
-_RETAINED_M7_HASHES = {
+_RETAINED_STABLE_HASHES = {
     "schema-1.0.0": "030309859344be5bd74d2255865e15c052317373f15bdaeaf82568f164a71a54",
     "schema-1.1.0": "6ce95c1eb1043a35a863a7d84d3dbb595654d6856916a5aebb621dea53e3ca67",
     "stable-compatible-1.0.0": "30735e45930038846886c258cc3f7da9cf739350fb3607bff8fcf1766790037b",
@@ -68,6 +71,10 @@ _RETAINED_M7_HASHES = {
     ),
     "stable-ucsc-content-conflict-1.1.0": (
         "ad195bb252d93ab50c84bcb46e4911b75d21a5127966a01b48a37ed08bc0e83a"
+    ),
+    "schema-2.0.0": "198ab3e2bd5666c427196d0c4cf446cc230219d53203f9145b52de8452429012",
+    "stable-bcf-invalid-input-2.0.0": (
+        "ced4ce6f4ff22c52cd8d19ea0034f07043c7ac3e50f0aa30a05a5377888436e2"
     ),
 }
 
@@ -125,8 +132,8 @@ def test_stable_schema_is_packaged_and_self_identifying() -> None:
     assert report_format["schema_version"] == {"const": REPORT_SCHEMA_VERSION}
 
 
-def test_schema_2_0_is_exact_1_1_plus_bcf_resource_kind() -> None:
-    previous = _schema(_PREVIOUS_SCHEMA_VERSION)
+def test_schema_3_0_is_exact_2_0_plus_bed_resource_kind() -> None:
+    previous = _schema(_M8_SCHEMA_VERSION)
     current = copy.deepcopy(_schema())
 
     current["$id"] = previous["$id"]
@@ -136,12 +143,12 @@ def test_schema_2_0_is_exact_1_1_plus_bcf_resource_kind() -> None:
     ]["properties"]["schema_version"]
 
     kinds = current["$defs"]["resource"]["properties"]["kind"]["enum"]
-    kinds.remove("bcf")
+    kinds.remove("bed")
 
     assert current == previous
 
 
-def test_retained_m7_stable_contract_assets_match_frozen_hashes() -> None:
+def test_retained_stable_contract_assets_match_frozen_hashes() -> None:
     assets = {
         "schema-1.0.0": files("refcompat.schemas")
         .joinpath("compatibility-report-1.0.0.schema.json")
@@ -155,30 +162,44 @@ def test_retained_m7_stable_contract_assets_match_frozen_hashes() -> None:
         "stable-incompatible-1.1.0": _PREVIOUS_INCOMPATIBLE_FIXTURE.read_bytes(),
         "stable-ucsc-alignment-1.1.0": _CONTEXT_FIXTURE.read_bytes(),
         "stable-ucsc-content-conflict-1.1.0": _CONTENT_CONFLICT_FIXTURE.read_bytes(),
+        "schema-2.0.0": files("refcompat.schemas")
+        .joinpath("compatibility-report-2.0.0.schema.json")
+        .read_bytes(),
+        "stable-bcf-invalid-input-2.0.0": _BCF_FIXTURE.read_bytes(),
     }
 
     observed = {name: hashlib.sha256(content).hexdigest() for name, content in assets.items()}
 
-    assert observed == _RETAINED_M7_HASHES
+    assert observed == _RETAINED_STABLE_HASHES
 
 
-def test_current_schema_adds_bcf_without_widening_retained_1_1() -> None:
+def test_current_schema_adds_bed_without_widening_retained_2_0() -> None:
     current_kinds = set(_schema()["$defs"]["resource"]["properties"]["kind"]["enum"])
     previous_kinds = set(
-        _schema(_PREVIOUS_SCHEMA_VERSION)["$defs"]["resource"]["properties"]["kind"]["enum"]
+        _schema(_M8_SCHEMA_VERSION)["$defs"]["resource"]["properties"]["kind"]["enum"]
     )
 
-    assert "bcf" in current_kinds
-    assert "bcf" not in previous_kinds
-    assert current_kinds == previous_kinds | {"bcf"}
+    assert "bed" in current_kinds
+    assert "bed" not in previous_kinds
+    assert current_kinds == previous_kinds | {"bed"}
 
 
 def test_bcf_known_answer_requires_exact_schema_2_0_0() -> None:
     payload = cast(dict[str, Any], json.loads(_BCF_FIXTURE.read_text(encoding="utf-8")))
 
+    _validator(_M8_SCHEMA_VERSION).validate(payload)
+    with pytest.raises(_jsonschema().ValidationError):
+        _validator(_M7_SCHEMA_VERSION).validate(payload)
+    with pytest.raises(_jsonschema().ValidationError):
+        _validator().validate(payload)
+
+
+def test_bed_known_answer_requires_exact_schema_3_0_0() -> None:
+    payload = cast(dict[str, Any], json.loads(_BED_FIXTURE.read_text(encoding="utf-8")))
+
     _validator().validate(payload)
     with pytest.raises(_jsonschema().ValidationError):
-        _validator(_PREVIOUS_SCHEMA_VERSION).validate(payload)
+        _validator(_M8_SCHEMA_VERSION).validate(payload)
 
 
 def test_stable_schema_documents_portable_provenance_locators() -> None:
@@ -201,7 +222,8 @@ def test_stable_schema_documents_portable_provenance_locators() -> None:
     ("version", "fixture"),
     [
         (_BASE_SCHEMA_VERSION, _BASE_FIXTURE),
-        (_PREVIOUS_SCHEMA_VERSION, _PREVIOUS_FIXTURE),
+        (_M7_SCHEMA_VERSION, _PREVIOUS_FIXTURE),
+        (_M8_SCHEMA_VERSION, _BCF_FIXTURE),
     ],
 )
 def test_retained_stable_schemas_remain_packaged_and_exact(version: str, fixture: Path) -> None:
@@ -240,13 +262,13 @@ def test_schema_1_1_preserves_the_1_0_core_payload(
 
 
 def test_exact_stable_schemas_cross_reject_other_versions() -> None:
-    previous_payload = json.loads(_PREVIOUS_FIXTURE.read_text(encoding="utf-8"))
+    previous_payload = json.loads(_BCF_FIXTURE.read_text(encoding="utf-8"))
     current_payload = _payload()
 
     with pytest.raises(_jsonschema().ValidationError):
         _validator().validate(previous_payload)
     with pytest.raises(_jsonschema().ValidationError):
-        _validator(_PREVIOUS_SCHEMA_VERSION).validate(current_payload)
+        _validator(_M8_SCHEMA_VERSION).validate(current_payload)
 
 
 def test_stable_known_answer_validates_against_exact_schema() -> None:
@@ -386,7 +408,7 @@ def test_exact_schema_rejects_local_artifact_paths() -> None:
 def test_exact_schema_rejects_schema_version_mismatch() -> None:
     payload = _payload()
     report_format = copy.deepcopy(cast(dict[str, Any], payload["report_format"]))
-    report_format["schema_version"] = _PREVIOUS_SCHEMA_VERSION
+    report_format["schema_version"] = _M8_SCHEMA_VERSION
     payload["report_format"] = report_format
 
     with pytest.raises(_jsonschema().ValidationError):

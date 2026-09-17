@@ -17,6 +17,8 @@ from refcompat.model import (
     CompatibilityReport,
     EvaluationRequest,
     EvaluationScope,
+    ObservationId,
+    ObservationKind,
     ProfileId,
     RefgetSequenceId,
     RequirementId,
@@ -26,6 +28,7 @@ from refcompat.model import (
     ResourceContract,
     ResourceId,
     ResourceKind,
+    ResourceObservation,
     SequenceCollectionSnapshot,
     SequenceLengthRequirement,
     SnapshotSequence,
@@ -46,10 +49,12 @@ _REFERENCE = ResourceId("reference")
 _CONSUMER = ResourceId("consumer")
 _FIXTURE_DIR = Path(__file__).parents[2] / "fixtures" / "milestone7"
 _M8_FIXTURE_DIR = Path(__file__).parents[2] / "fixtures" / "milestone8"
+_M9_FIXTURE_DIR = Path(__file__).parents[2] / "fixtures" / "milestone9"
 _DRAFT_FIXTURE = _FIXTURE_DIR / "draft-compatible-report.json"
 _STABLE_FIXTURE = _FIXTURE_DIR / "stable-compatible-report-1.1.0.json"
 _STABLE_INCOMPATIBLE_FIXTURE = _FIXTURE_DIR / "stable-incompatible-report-1.1.0.json"
 _BCF_STABLE_FIXTURE = _M8_FIXTURE_DIR / "stable-bcf-invalid-input-report-2.0.0.json"
+_BED_STABLE_FIXTURE = _M9_FIXTURE_DIR / "stable-empty-bed-report-3.0.0.json"
 
 
 def _resource(resource_id: ResourceId, kind: ResourceKind) -> Resource:
@@ -140,6 +145,51 @@ def _bcf_invalid_report() -> CompatibilityReport:
                 kind=AnalysisIssueKind.INVALID_INPUT,
                 detail="BCF input could not be inspected",
                 resource_ids=(_CONSUMER,),
+            ),
+        ),
+    )
+
+
+def _empty_bed_report() -> CompatibilityReport:
+    request = EvaluationRequest(
+        resources=(
+            _resource(_REFERENCE, ResourceKind.FASTA),
+            _resource(_CONSUMER, ResourceKind.BED),
+        ),
+        anchor_resource_id=_REFERENCE,
+        scope=EvaluationScope(resource_ids=(_REFERENCE, _CONSUMER)),
+    )
+    snapshot = SequenceCollectionSnapshot(
+        resource_id=_REFERENCE,
+        completeness=CollectionCompleteness.COMPLETE,
+        sequences=(
+            SnapshotSequence(
+                local_name="chr1",
+                length=10,
+                ordinal=0,
+                refget_id=RefgetSequenceId("SQ." + "A" * 32),
+            ),
+        ),
+    )
+    bundle = reason_bundle(
+        request,
+        snapshot,
+        (ResourceContract(_REFERENCE), ResourceContract(_CONSUMER)),
+    )
+    verdict = aggregate_bundle_verdict(bundle)
+    return CompatibilityReport(
+        tool_version="0.1.0.dev0",
+        request=request,
+        analysis_status=AnalysisStatus.COMPLETE,
+        bundle=bundle,
+        verdict=verdict,
+        conflict_cores=extract_conflict_cores(bundle, verdict),
+        observations=(
+            ResourceObservation(
+                id=ObservationId("bed:layout"),
+                resource_id=_CONSUMER,
+                kind=ObservationKind("bed.layout"),
+                value="bed3",
             ),
         ),
     )
@@ -296,10 +346,10 @@ def test_incompatible_known_answer_fixture_pins_stable_bytes() -> None:
     )
 
 
-def test_bcf_known_answer_fixture_pins_stable_bytes() -> None:
+def test_retained_bcf_known_answer_body_remains_currently_serializable() -> None:
     rendered = render_compatibility_report_json(_bcf_invalid_report())
 
-    assert rendered == _BCF_STABLE_FIXTURE.read_bytes()
+    assert rendered == _retag_stable_fixture(_BCF_STABLE_FIXTURE)
     payload = cast(dict[str, object], json.loads(rendered.decode("utf-8")))
     request = cast(dict[str, object], payload["request"])
     resources = cast(list[dict[str, object]], request["resources"])
@@ -314,11 +364,59 @@ def test_bcf_draft_revision_preserves_distinct_resource_kind() -> None:
     assert draft["report_format"] == {
         "name": DRAFT_REPORT_FORMAT,
         "stability": "draft",
-        "revision": 4,
+        "revision": 5,
     }
     request = cast(dict[str, object], draft["request"])
     resources = cast(list[dict[str, object]], request["resources"])
     assert resources[1]["kind"] == "bcf"
+
+    stable_body = {key: value for key, value in stable.items() if key != "report_format"}
+    draft_body = {key: value for key, value in draft.items() if key != "report_format"}
+    assert stable_body == draft_body
+
+
+def test_bed_known_answer_pins_resource_kind_layout_and_current_schema() -> None:
+    rendered = render_compatibility_report_json(_empty_bed_report())
+
+    assert rendered == _BED_STABLE_FIXTURE.read_bytes()
+    payload = cast(dict[str, object], json.loads(rendered.decode("utf-8")))
+    assert payload["report_format"] == {
+        "name": REPORT_FORMAT,
+        "schema_version": "3.0.0",
+    }
+    request = cast(dict[str, object], payload["request"])
+    resources = cast(list[dict[str, object]], request["resources"])
+    assert resources[1]["kind"] == "bed"
+    scientific = cast(dict[str, object], payload["scientific_result"])
+    observations = cast(list[dict[str, object]], scientific["observations"])
+    assert observations == [
+        {
+            "id": "bed:layout",
+            "kind": "bed.layout",
+            "resource_id": "consumer",
+            "source_location": None,
+            "value": "bed3",
+        }
+    ]
+
+
+def test_bed_draft_revision_preserves_resource_kind_and_layout_observation() -> None:
+    report = _empty_bed_report()
+    draft = compatibility_report_draft_payload(report)
+    stable = compatibility_report_payload(report)
+
+    assert draft["report_format"] == {
+        "name": DRAFT_REPORT_FORMAT,
+        "stability": "draft",
+        "revision": 5,
+    }
+    request = cast(dict[str, object], draft["request"])
+    resources = cast(list[dict[str, object]], request["resources"])
+    assert resources[1]["kind"] == "bed"
+
+    scientific = cast(dict[str, object], draft["scientific_result"])
+    observations = cast(list[dict[str, object]], scientific["observations"])
+    assert observations[0]["value"] == "bed3"
 
     stable_body = {key: value for key, value in stable.items() if key != "report_format"}
     draft_body = {key: value for key, value in draft.items() if key != "report_format"}

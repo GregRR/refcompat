@@ -1,6 +1,12 @@
 # Milestone 7 compatibility report and workflow contract
 
-**Status:** Milestone 7 complete and independently reviewed. Exact stable schemas `1.0.0` and `1.1.0` remain retained. Milestone 8 Slice 2 makes exact schema `2.0.0` the current machine contract solely by adding the closed `bcf` resource-kind value, and draft revision 4 is separately provisional. The M7 external milestone-boundary review reproduced the full gate, found no MAJOR issue, assessed the repository `SAFE TO CLOSE M7`, and the accepted MINOR hardening is integrated.
+**Status:** Milestone 7 complete and independently reviewed. Exact stable schemas
+`1.0.0`, `1.1.0`, and `2.0.0` remain retained. Milestone 9 Slice 2 makes exact
+schema `3.0.0` the current machine contract solely by adding the closed `bed`
+resource-kind value, and draft revision 5 is separately provisional. The M7
+external milestone-boundary review reproduced the full gate, found no MAJOR
+issue, assessed the repository `SAFE TO CLOSE M7`, and the accepted MINOR
+hardening is integrated.
 
 Milestone 7 stabilizes how RefCompat exposes already-established compatibility
 reasoning to people, automation, and downstream software. It does not add a new
@@ -11,8 +17,8 @@ compatibility semantics.
 Historically, M7 Slice 6 did not change the machine-report wire shape: stable JSON
 remained schema `1.1.0` and provisional JSON remained draft revision 3. Human
 rendering and workflow exit policy are views over the report boundary rather than
-new serialized fields. M8 later advances only the resource-kind/version surface as
-described below.
+new serialized fields. M8 and M9 later advance only the resource-kind/version
+surface as described below.
 
 The milestone exists because RefCompat now has mature internal reasoning pieces
 (`BundleReasoningResult`, categorical verdict aggregation, findings/conditions,
@@ -215,13 +221,13 @@ legitimately differ. Independently verified target content is represented by the
 target-anchor capability/identity fields instead.
 
 `compatibility_report_payload()` and `render_compatibility_report_json()` now
-identify the current stable body as schema `2.0.0`. Milestone 8 advances the
+identify the current stable body as schema `3.0.0`. Milestone 9 advances the
 major version solely because the already-closed `ResourceKind` enum gains the
-new `bcf` value; the report body shape otherwise remains the M7 `1.1.0` shape.
-Exact schemas `1.0.0` and `1.1.0` remain packaged and their known-answer reports
-remain unchanged. The draft payload/rendering functions remain separate and now
-emit revision 4; callers are never silently migrated from draft to stable
-semantics.
+new `bed` value; the report body shape otherwise remains the M8 `2.0.0` shape.
+Exact schemas `1.0.0`, `1.1.0`, and `2.0.0` remain packaged and their
+known-answer reports remain unchanged. The draft payload/rendering functions
+remain separate and now emit revision 5; callers are never silently migrated
+from draft to stable semantics.
 
 ## 6. Schema versioning
 
@@ -233,7 +239,7 @@ before the body through:
 {
   "report_format": {
     "name": "refcompat.compatibility_report",
-    "schema_version": "2.0.0"
+    "schema_version": "3.0.0"
   }
 }
 ```
@@ -243,13 +249,17 @@ as `refcompat.schemas/compatibility-report-1.0.0.schema.json` with the stable
 identifier `urn:refcompat:schema:compatibility-report:1.0.0`. Slice 5 added exact
 schema `1.1.0` at `refcompat.schemas/compatibility-report-1.1.0.schema.json`, with
 identifier `urn:refcompat:schema:compatibility-report:1.1.0`. Milestone 8 Slice 2
-adds current exact schema `2.0.0` at
+added exact schema `2.0.0` at
 `refcompat.schemas/compatibility-report-2.0.0.schema.json`, with identifier
-`urn:refcompat:schema:compatibility-report:2.0.0`. All use JSON Schema Draft
-2020-12. The 2.0.0 body shape is otherwise unchanged from 1.1.0; the major bump
-exists because the previously closed resource-kind enum gains `bcf`. Stable 1.0.0
-and 1.1.0 known-answer bytes remain retained, while the first M8 BCF known answer
-pins exact 2.0.0. The draft fixture is now revision 4.
+`urn:refcompat:schema:compatibility-report:2.0.0`. Milestone 9 Slice 2 adds
+current exact schema `3.0.0` at
+`refcompat.schemas/compatibility-report-3.0.0.schema.json`, with identifier
+`urn:refcompat:schema:compatibility-report:3.0.0`. All use JSON Schema Draft
+2020-12. The 2.0.0 body shape is otherwise unchanged from 1.1.0 and adds only
+`bcf`; the 3.0.0 body shape is otherwise unchanged from 2.0.0 and adds only
+`bed`. Stable 1.0.0, 1.1.0, and 2.0.0 known-answer bytes remain retained, while
+the first M9 BED known answer pins exact 3.0.0. The draft fixture is now
+revision 5.
 
 One schema-only pre-release erratum is applied to the retained 1.0.0 validator:
 its refget identity regex was originally over-escaped and rejected the already-
@@ -289,9 +299,10 @@ Version compatibility rules are:
 Each checked-in schema is an **exact-version validator**. Version `1.0.0` is
 closed against unknown object fields and closed over its current enum/type
 variants, so a `1.1.0` report is validated against the `1.1.0` schema rather than
-being relabeled as `1.0.0`; likewise, a report claiming `2.0.0` is validated
-against exact 2.0.0. In particular, `bcf` is valid only in 2.0.0 and is rejected
-by retained exact 1.x validators. Consumers may deliberately implement
+being relabeled as `1.0.0`; likewise, reports claiming `2.0.0` or `3.0.0` are
+validated against their exact matching schemas. In particular, `bcf` first
+becomes valid in 2.0.0, while `bed` is valid only in 3.0.0 and is rejected by
+retained exact 1.x and 2.0.0 validators. Consumers may deliberately implement
 same-major forward tolerance by ignoring unknown optional fields, but they must
 inspect `schema_version` first. Unknown values in an existing closed enum or
 typed union are not a same-major extension and must not be silently
@@ -460,11 +471,17 @@ PARTIAL/INVALID_INPUT reporting-pipeline examples, and live exact-1.0.0 core
 downgrade validation. No accepted finding requires new scientific reasoning or a
 stable schema-shape change.
 
-Milestone 8 subsequently advances the **current** serializer to exact schema
+Milestone 8 subsequently advanced the then-current serializer to exact schema
 `2.0.0` and draft revision 4 when first-class `ResourceKind.BCF` becomes
 emit-able. That transition does not retroactively change any M7 1.0.0/1.1.0
 fixture or schema byte; M7's historical integration statements above continue to
 refer to the exact schema current when those paths were frozen.
+
+Milestone 9 Slice 2 subsequently advances the current serializer to exact
+schema `3.0.0` and draft revision 5 when first-class `ResourceKind.BED` becomes
+emit-able. That transition retains every M7/M8 stable schema and known answer
+byte-for-byte; schema 3.0.0 differs from 2.0.0 only in version identity and the
+added closed-enum value `bed`.
 
 The new PARTIAL/INVALID_INPUT integration examples exercise the stable reporting
 pipeline over real parser/reasoning outcomes, but RefCompat still has no production
