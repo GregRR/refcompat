@@ -27,7 +27,8 @@ Core domain objects use standard-library immutable dataclasses, enums, and typed
 `model/observations.py` owns the format-neutral `ResourceObservation`, `ObservationId`, `ObservationKind`, and `SourceLocation` primitives. `model/evaluation.py`, `model/contracts.py`, and `model/constraints.py` own the first Milestone 2 request/scope, typed requirement/capability contract, and question/result boundaries. `model/evidence.py` owns generalized qualitative evidence items and aggregates. `model/interpretation.py` owns structured findings and explicit-scope conditions. `model/reference_context.py` owns the FASTA-anchored `ReferenceContext` and evidence-backed `SequenceBinding`; `model/bundle.py` groups the whole-bundle reasoning result. `model/verdict.py` owns categorical verdict aggregation output, `model/conflict_core.py` owns compact decisive failure cores, `model/report.py` owns the Milestone 7 analysis-status/issues plus immutable whole-evaluation report root, and `model/report_context.py` owns report-specific provider/source/profile provenance DTOs that preserve trace without exposing profile implementation objects. `model/alignment_relationship.py` owns the descriptive BAM/CRAM declared-dictionary relationship summary, `model/cram_reference.py` owns the deterministic offline CRAM reference plan, while `model/vcf_contract.py` owns the VCF-specific projection result; these reuse format-neutral reasoning types rather than defining parallel verdict systems.
 
 Milestone 9 adds `model/bed.py` for the explicit standard BED3–BED9/BED12
-layout vocabulary before BED observation models are introduced.
+layout vocabulary and immutable native-coordinate feature, sparse-usage, and
+resource-snapshot observations.
 
 ## `identity/`
 
@@ -52,7 +53,7 @@ Remote metadata/discovery is separate from deterministic local identity. A metad
 
 Format-specific extraction. Inspectors produce immutable observations and claims. They do not emit top-level compatibility verdicts or decide that a familiar-looking name is a verified alias.
 
-Inspectors are added one format at a time rather than pre-populating unused modules. `inspectors/fasta_index.py` parses supplied five-column FAI data and computes expected uncompressed FASTA geometry. `inspectors/sequence_dictionary.py` parses narrow SAM/Picard `.dict` artifacts and derives expected `SN`/`LN`/`M5` records from the already-computed complete FASTA identity snapshot. `inspectors/vcf.py` streams parser-isolated VCF observations, `inspectors/alignment.py` copies BAM/CRAM SAM-header declarations without scanning reads, and `inspectors/fasta_sequence.py` provides temporary-index FASTA random access computed from the FASTA itself. None decides a top-level compatibility verdict.
+Inspectors are added one format at a time rather than pre-populating unused modules. `inspectors/fasta_index.py` parses supplied five-column FAI data and computes expected uncompressed FASTA geometry. `inspectors/sequence_dictionary.py` parses narrow SAM/Picard `.dict` artifacts and derives expected `SN`/`LN`/`M5` records from the already-computed complete FASTA identity snapshot. `inspectors/vcf.py` streams parser-isolated VCF observations, `inspectors/alignment.py` copies BAM/CRAM SAM-header declarations without scanning reads, and `inspectors/fasta_sequence.py` provides temporary-index FASTA random access computed from the FASTA itself. `inspectors/bed.py` requires an explicit standard layout, streams plain/gzip BED by content, preserves zero-based half-open coordinates, summarizes sparse usage, and validates standard optional fields plus BED12 blocks without accessing a FASTA. None decides a top-level compatibility verdict.
 
 ## `reasoning/`
 

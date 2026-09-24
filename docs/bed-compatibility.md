@@ -1,9 +1,10 @@
 # Milestone 9 standard BED coordinate compatibility contract
 
-**Status:** Slices 1–2 complete. The contract, explicit standard layout values,
+**Status:** Slices 1–3 complete. The contract, explicit standard layout values,
 first-class BED resource identity, exact stable schema `3.0.0`, draft revision 5,
-retained prior schemas, and a minimal layout-bearing BED known answer are
-implemented. BED inspection and coordinate reasoning remain pending.
+retained prior schemas, a minimal layout-bearing BED known answer, and strict
+native-coordinate streaming inspection are implemented. BED-to-FASTA reasoning
+remains pending.
 
 Milestone 9 adds standard BED as a first-class sparse coordinate resource. The
 scientific question is directional: can every reference-coordinate statement in
@@ -79,6 +80,15 @@ receive a different scientific verdict solely because of order.
 The inspector validates the declared standard fields closely enough that later
 reasoning never consumes ambiguous coordinates. It need not retain display-only
 values after their syntax and local invariants are checked.
+
+Slice 3 implements this boundary through immutable `BedFeatureRecord`,
+`BedSequenceUsage`, and `BedContextSnapshot` values plus exhaustive
+`iter_bed_features()` and compact `inspect_bed_context()` APIs. Input is read
+sequentially, gzip is detected from content rather than suffix, every data row
+must match the caller-declared exact layout, and display-only fields are checked
+without being promoted to reference evidence. Normalized parse/unreadable errors
+remain input-layer results; no FASTA access, name binding, generic requirement,
+evidence, or verdict is created in this slice.
 
 ## 4. Native zero-based half-open coordinates
 
@@ -248,6 +258,13 @@ scientific/API and backward-compatibility review focused on coordinate edges,
 layout authority, sparse semantics, binding provenance, generic-reasoner reuse,
 report-schema versioning, and retained-schema immutability. Then obtain an
 independent milestone-boundary review before M9 closes.
+
+After Slice 5 and before that closure review, run realistic hands-on workflows
+and audit all user-facing language plus the stable JSON contract. The audit must
+cover CLI/help/errors, human report explanations and next actions, JSON field
+names and meanings, enum values, nesting, and human/machine consistency. Any
+machine-readable contract correction must be explicit and versioned rather than
+a silent field rename.
 
 ## 11. Non-goals
 

@@ -36,7 +36,12 @@ from refcompat.model.annotation_bounds import (
     Gff3SequenceRegionValidationResult,
 )
 from refcompat.model.annotation_contract import AnnotationContractProjection
-from refcompat.model.bed import BedLayout
+from refcompat.model.bed import (
+    BedContextSnapshot,
+    BedFeatureRecord,
+    BedLayout,
+    BedSequenceUsage,
+)
 from refcompat.model.bundle import BundleReasoningResult
 from refcompat.model.conflict_core import (
     ConflictCore,
@@ -230,7 +235,10 @@ __all__ = [
     "ArtifactDigest",
     "ArtifactDigestAlgorithm",
     "ArtifactIdentity",
+    "BedContextSnapshot",
+    "BedFeatureRecord",
     "BedLayout",
+    "BedSequenceUsage",
     "BundleReasoningResult",
     "Capability",
     "CapabilityId",

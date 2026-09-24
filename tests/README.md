@@ -121,3 +121,9 @@ See [`../docs/check-specifications.md`](../docs/check-specifications.md) for the
   delta, and pins a minimal empty-BED report whose generic `bed.layout`
   observation records the required out-of-band layout without fabricating
   parsed features or coordinate requirements.
+  Slice 3 adds immutable native-coordinate BED feature/sparse-usage snapshots
+  and strict sequential inspection across every explicit standard layout. Tests
+  pin valid zero-length boundaries, unsorted and empty inputs, exact row width,
+  ASCII/field syntax, optional display-coordinate bounds, BED12 block structure,
+  track/browser rejection, content-detected gzip, misleading suffixes, and
+  normalized parse/unreadable errors without invoking FASTA or verdict logic.
